@@ -1,0 +1,21 @@
+body { font-family: 'Inter', sans-serif; background-color: #f5f7fa; }
+.wrapper { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 250px; background: #fff; border-right: 1px solid #e5e7eb; padding: 1.5rem; transition: all 0.3s ease; }
+.sidebar h4 { font-weight: 600; margin-bottom: 2rem; }
+.sidebar .nav-link { padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.75rem; transition: all 0.2s; color: #374151; font-weight: 500; }
+.sidebar .nav-link:hover { background-color: #f3f4f6; color: #111827; }
+.main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+.topbar { background: #fff; padding: 1rem 2rem; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; }
+.stat-card { background: #fff; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s ease; height: 100%; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.stat-icon { width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.5rem; }
+.stat-icon.primary { background: #e0f2fe; color: #0284c7; }
+.stat-icon.success { background: #dcfce7; color: #16a34a; }
+.stat-icon.warning { background: #fef9c3; color: #ca8a04; }
+.stat-value { font-size: 1.75rem; font-weight: 700; margin: 0.25rem 0; }
+.animate-fade { animation: fadeIn 0.5s ease forwards; opacity: 0; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.progress { height: 0.5rem; border-radius: 1rem; margin-top: 0.5rem; }
+.floating-btn { position: fixed; bottom: 2rem; right: 2rem; border-radius: 50%; width: 3.5rem; height: 3.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 100; }
+.alert-info { border-radius: 0.75rem; background: #e0f2fe; border: none; color: #075985; }
+#heatmap-container { margin-top: 1rem; }

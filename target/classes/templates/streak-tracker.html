@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streak Tracker – ClimbUp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .new-streak {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        #categoryInput {
+            padding: 8px;
+            width: 60%;
+            border: 1px solid #ccc;
+            border-radius: 4px 0 0 4px;
+        }
+        #addStreakBtn {
+            padding: 8px 16px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+        }
+        #addStreakBtn:hover {
+            background-color: #218838;
+        }
+        .streak-card {
+            background-color: white;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .streak-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .streak-info p {
+            margin: 4px 0;
+        }
+        .mark-btn {
+            padding: 6px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .mark-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .mark-btn:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        /* Heatmap */
+        .heatmap {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .heatmap div {
+            width: 14px;
+            height: 14px;
+            margin: 1px;
+            border-radius: 3px;
+            background-color: #eee;
+        }
+        .level-0 { background-color: #eee; }
+        .level-1 { background-color: #c6e48b; }
+        .level-2 { background-color: #7bc96f; }
+        .level-3 { background-color: #239a3b; }
+        .level-4 { background-color: #196127; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Your Streaks 🔥</h1>
+
+    <div class="new-streak">
+        <input type="text" id="categoryInput" placeholder="Enter habit/category">
+        <button id="addStreakBtn">Add Streak</button>
+    </div>
+
+    <div id="streaksContainer" class="streaks-list"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const streaksContainer = document.getElementById("streaksContainer");
+    const addStreakBtn = document.getElementById("addStreakBtn");
+    const categoryInput = document.getElementById("categoryInput");
+
+    // Fetch all streaks
+    function fetchStreaks() {
+        fetch("/api/streaks")
+            .then(res => res.json())
+            .then(data => {
+                streaksContainer.innerHTML = "";
+                data.forEach(streak => renderStreak(streak));
+            });
+    }
+
+    // Render single streak
+    function renderStreak(streak) {
+        const card = document.createElement("div");
+        card.className = "streak-card";
+
+        const info = document.createElement("div");
+        info.className = "streak-info";
+        info.innerHTML = `
+            <div>
+                <strong>${streak.category}</strong>
+                <p>Current: ${streak.currentStreak} days</p>
+                <p>Longest: ${streak.longestStreak} days</p>
+                <p>Last Active: ${streak.lastActiveDate}</p>
+            </div>
+            <button class="mark-btn">Mark Today</button>
+        `;
+
+        const markBtn = info.querySelector(".mark-btn");
+        if (streak.lastActiveDate === new Date().toISOString().split("T")[0]) {
+            markBtn.disabled = true;
+        }
+
+        markBtn.addEventListener("click", function () {
+            fetch("/api/streaks/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ category: streak.category })
+            })
+            .then(res => res.json())
+            .then(() => fetchStreaks());
+        });
+
+        card.appendChild(info);
+
+        // Heatmap container
+        const heatmap = document.createElement("div");
+        heatmap.className = "heatmap";
+        card.appendChild(heatmap);
+
+        // Fetch heatmap data from backend
+        fetch(`/api/streaks/heatmap/${streak.category}`)
+            .then(res => res.json())
+            .then(heatmapData => {
+                heatmapData.forEach(day => {
+                    const div = document.createElement("div");
+                    // Shade based on number of tasks completed (0-4+)
+                    const level = Math.min(day.completedCount, 4);
+                    div.className = "level-" + level;
+                    heatmap.appendChild(div);
+                });
+            });
+
+        streaksContainer.appendChild(card);
+    }
+
+    addStreakBtn.addEventListener("click", function () {
+        const category = categoryInput.value.trim();
+        if (!category) return alert("Enter a category!");
+
+        fetch("/api/streaks/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ category })
+        })
+        .then(res => res.json())
+        .then(() => {
+            categoryInput.value = "";
+            fetchStreaks();
+        });
+    });
+
+    fetchStreaks();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>User Profile | ClimbUp</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+</head>
+<body>
+    <header>
+        <h1>Welcome back, <span th:text="${user.displayName ?: user.username}">User</span>! 👋</h1>
+        <a href="/logout" class="logout">Logout</a>
+    </header>
+
+    <main>
+        <div class="profile-card">
+            <h2>Your Productivity Dashboard</h2>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Current Streak</h3>
+                    <div class="stat-value" th:text="${streak}">0</div>
+                    <p>days of consistent productivity</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Productivity Score</h3>
+                    <div class="stat-value" th:text="${score} + '%'">0%</div>
+                    <p>of your weekly goal</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Tasks Completed</h3>
+                    <div class="stat-value" th:text="${completedTasks}">0</div>
+                    <p>this week</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="achievement-toast" style="display: none;" class="toast">
+    🎉 New achievement unlocked!
+</div>
+
+<script>
+    const hasNewAchievement = /*[[${newAchievementUnlocked}]]*/ false;
+    if (hasNewAchievement) {
+        const toast = document.getElementById("achievement-toast");
+        toast.style.display = "block";
+        setTimeout(() => toast.style.display = "none", 5000);
+    }
+</script>
+        
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="/dashboard" class="btn">Go to Task Dashboard →</a>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Heatmap – ClimbUp</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .heatmap-container { display: flex; flex-wrap: wrap; width: 350px; }
+        .day {
+            width: 14px;
+            height: 14px;
+            margin: 2px;
+            border-radius: 3px;
+            background-color: #ebedf0; /* default light */
+        }
+        .day.level-1 { background-color: #c6e48b; }
+        .day.level-2 { background-color: #7bc96f; }
+        .day.level-3 { background-color: #239a3b; }
+        .day.level-4 { background-color: #196127; }
+    </style>
+</head>
+<body>
+
+<h2>Activity Heatmap</h2>
+<div>Total Days: <span id="totalDays"></span></div>
+<div>Current Streak: <span id="currentStreak"></span></div>
+<div class="heatmap-container" id="heatmap"></div>
+
+<script>
+    const userId = 1; // replace with actual logged-in user
+    const category = 'task'; // example
+    const days = 30;
+
+    fetch(`/api/heatmap/${category}?userId=${userId}&days=${days}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("totalDays").textContent = data.totalDays;
+            document.getElementById("currentStreak").textContent = data.currentStreak;
+
+            const container = document.getElementById("heatmap");
+            data.heatmapData.forEach(day => {
+                const div = document.createElement("div");
+                div.classList.add("day");
+
+                // color intensity based on taskCount
+                if (day.taskCount >= 4) div.classList.add("level-4");
+                else if (day.taskCount === 3) div.classList.add("level-3");
+                else if (day.taskCount === 2) div.classList.add("level-2");
+                else if (day.taskCount === 1) div.classList.add("level-1");
+
+                div.title = `${day.date}: ${day.taskCount} tasks`;
+                container.appendChild(div);
+            });
+        })
+        .catch(err => console.error(err));
+</script>
+
+</body>
+</html>

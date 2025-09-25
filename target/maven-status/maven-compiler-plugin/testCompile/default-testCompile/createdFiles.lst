@@ -1,0 +1,10 @@
+com\climbup\productivity_app\StreakTrackerServiceTest.class
+com\climbup\productivity_app\AuthControllerTest.class
+com\climbup\productivity_app\AchievementServiceTest.class
+com\climbup\productivity_app\DashboardControllerTest.class
+com\climbup\productivity_app\StreakTrackerControllerTest.class
+com\climbup\productivity_app\GoalControllerTest.class
+com\climbup\productivity_app\TaskControllerTest.class
+com\climbup\productivity_app\TaskServiceTest.class
+com\climbup\productivity_app\UserServiceTest.class
+com\climbup\productivity_app\AchievementControllerTest.class

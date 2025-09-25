@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Goals</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+
+    <h1 class="mb-4">My Goals</h1>
+
+    <!-- Add Goal Form -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Add New Goal</h5>
+            <form id="add-goal-form">
+                <div class="mb-2">
+                    <input type="text" id="goal-title" class="form-control" placeholder="Title" required maxlength="150">
+                </div>
+                <div class="mb-2">
+                    <textarea id="goal-description" class="form-control" placeholder="Description" maxlength="500"></textarea>
+                </div>
+                <div class="mb-2 row">
+                    <div class="col">
+                        <input type="date" id="goal-due-date" class="form-control">
+                    </div>
+                    <div class="col">
+                        <select id="goal-priority" class="form-select">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Add Goal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="mb-3">
+        <label for="filter-status" class="form-label">Filter by Status:</label>
+        <select id="filter-status" class="form-select w-auto d-inline-block">
+            <option value="ALL" selected>All</option>
+            <option value="ACTIVE">Active</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="DROPPED">Dropped</option>
+        </select>
+    </div>
+
+    <!-- Goals List -->
+    <div id="goal-list" class="list-group"></div>
+</div>
+
+<script>
+const token = localStorage.getItem('token'); // JWT token stored in localStorage
+
+// ===== Fetch & Render Goals =====
+function fetchGoals() {
+    const status = document.getElementById('filter-status').value;
+
+    axios.get(`/api/goals?status=${status}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    }).then(response => {
+        const goals = response.data;
+        const list = document.getElementById('goal-list');
+        list.innerHTML = '';
+
+        goals.forEach(goal => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            item.innerHTML = `
+                <div>
+                    <h5>${goal.title}</h5>
+                    <p>${goal.description || ''}</p>
+                    <small>Due: ${goal.deadline || 'N/A'} | Priority: ${goal.category}</small>
+                </div>
+                <div class="btn-group">
+                    ${!goal.completed ? `<button class="btn btn-success btn-sm" onclick="completeGoal(${goal.id})">Complete</button>
+                    <button class="btn btn-warning btn-sm" onclick="dropGoal(${goal.id})">Drop</button>` : ''}
+                    <button class="btn btn-secondary btn-sm" onclick="editGoal(${goal.id})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteGoal(${goal.id})">Delete</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }).catch(err => console.error(err));
+}
+
+// ===== CRUD Actions =====
+function completeGoal(id) {
+    axios.put(`/api/goals/${id}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } })
+        .then(() => fetchGoals());
+}
+
+function dropGoal(id) {
+    axios.put(`/api/goals/${id}/drop`, {}, { headers: { Authorization: `Bearer ${token}` } })
+        .then(() => fetchGoals());
+}
+
+function deleteGoal(id) {
+    if (!confirm('Delete this goal?')) return;
+    axios.delete(`/api/goals/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(() => fetchGoals());
+}
+
+function editGoal(id) {
+    const newTitle = prompt('Enter new goal title:');
+    if (!newTitle) return;
+    axios.put(`/api/goals/${id}`, { title: newTitle }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(() => fetchGoals());
+}
+
+// ===== Add Goal Form =====
+document.getElementById('add-goal-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const newGoal = {
+        title: document.getElementById('goal-title').value,
+        description: document.getElementById('goal-description').value,
+        dueDate: document.getElementById('goal-due-date').value,
+        priority: document.getElementById('goal-priority').value
+    };
+
+    axios.post('/api/goals/save', newGoal, { headers: { Authorization: `Bearer ${token}` } })
+        .then(() => {
+            document.getElementById('add-goal-form').reset();
+            fetchGoals();
+        }).catch(err => console.error(err));
+});
+
+// ===== Filter Change =====
+document.getElementById('filter-status').addEventListener('change', fetchGoals);
+
+// ===== Initial Load =====
+fetchGoals();
+</script>
+</body>
+</html>
