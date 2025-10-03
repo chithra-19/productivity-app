@@ -6,6 +6,7 @@ import com.climbup.dto.response.HeatmapResponse;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.ActivityLogService;
 import com.climbup.service.user.UserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +14,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("/api/dashboard")
+@RequestMapping("/dashboard")
 public class DashboardController {
 
     private final ActivityLogService activityLogService;
@@ -34,30 +36,27 @@ public class DashboardController {
         this.achievementService = achievementService;
     }
 
-    // 🧭 Dashboard view (frontend template or Thymeleaf)
-    @GetMapping("/view/{userId}")
+    // 🧭 Dashboard view (Thymeleaf template)
+    @GetMapping("/api/dashboard/view/{userId}")
     public String getDashboardView(@PathVariable Long userId, Model model) {
         User user = userService.getUserById(userId);
-
         model.addAttribute("user", user);
         model.addAttribute("achievements", achievementService.getUserAchievements(user));
         model.addAttribute("heatmapData", activityLogService.getHeatmapData(user));
-
-        return "dashboard"; // maps to templates/dashboard.html
+        return "dashboard";
     }
 
-    // 📅 Heatmap API: returns structured activity data
-    @GetMapping("/activity-log/{userId}/{category}")
+    // 📅 Heatmap API: structured activity data for logged-in user
+    @GetMapping("/api/activity-log/{category}")
     public ResponseEntity<HeatmapResponse> getActivityDates(
-            @PathVariable Long userId,
             @PathVariable String category,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            Principal principal) {
 
-        User user = userService.getUserById(userId);
+        User user = userService.findByUsername(principal.getName());
         List<ActivityLog> logs = activityLogService.getLogs(user, category, from, to);
 
-        // Extract dates and convert to strings for the heatmap
         List<String> activeDates = logs.stream()
                 .map(ActivityLog::getActivityDate)
                 .map(LocalDate::toString)

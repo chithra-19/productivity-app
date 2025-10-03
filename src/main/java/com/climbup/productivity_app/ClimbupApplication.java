@@ -6,11 +6,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.climbup")
 @EnableJpaRepositories(basePackages = "com.climbup.repository")
 @EntityScan(basePackages = "com.climbup.model")
 public class ClimbupApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(ClimbupApplication.class, args);
     }

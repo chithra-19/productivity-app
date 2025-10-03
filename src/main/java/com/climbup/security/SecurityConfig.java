@@ -22,16 +22,18 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authenticationProvider(authProvider()) // ✅ Add this line
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/register").permitAll()
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
-                .anyRequest().authenticated()
-            )
+            	    .requestMatchers("/register", "/register/**").permitAll()
+            	    .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
+            	    .anyRequest().authenticated()
+            	)
+
             .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .permitAll()
-            )
+            	    .loginPage("/login")
+            	    .loginProcessingUrl("/login") // 👈 This is the missing piece
+            	    .defaultSuccessUrl("/dashboard", true)
+            	    .failureUrl("/login?error") 
+            	    .permitAll()
+            	)
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")

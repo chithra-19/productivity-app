@@ -1,9 +1,5 @@
 package com.climbup.productivity_app;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.climbup.controller.task.DashboardController;
 import com.climbup.model.ActivityLog;
 import com.climbup.model.User;
@@ -12,6 +8,7 @@ import com.climbup.service.productivity.ActivityLogService;
 import com.climbup.service.user.UserService;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -21,8 +18,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class DashboardControllerTest {
 
@@ -46,9 +48,8 @@ public class DashboardControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        // Add a view resolver so "dashboard" view can be resolved
         InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
-        viewResolver.setPrefix("/templates/"); // match your templates folder
+        viewResolver.setPrefix("/templates/");
         viewResolver.setSuffix(".html");
 
         mockMvc = MockMvcBuilders.standaloneSetup(dashboardController)
@@ -61,36 +62,49 @@ public class DashboardControllerTest {
     }
 
     @Test
+    @DisplayName("Should return dashboard view with user, achievements, and heatmap")
     void getDashboardView_ShouldReturnDashboardTemplate() throws Exception {
         when(userService.getUserById(1L)).thenReturn(testUser);
         when(achievementService.getUserAchievements(testUser)).thenReturn(List.of());
         when(activityLogService.getHeatmapData(testUser)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/dashboard/view/1"))
+        // ✅ Corrected path based on @RequestMapping("/dashboard") + @GetMapping("/api/dashboard/view/{userId}")
+        mockMvc.perform(get("/dashboard/api/dashboard/view/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
                 .andExpect(model().attributeExists("user"))
                 .andExpect(model().attributeExists("achievements"))
                 .andExpect(model().attributeExists("heatmapData"));
+
+        verify(userService).getUserById(1L);
+        verify(achievementService).getUserAchievements(testUser);
+        verify(activityLogService).getHeatmapData(testUser);
     }
 
     @Test
+    @DisplayName("Should return heatmap JSON with streak and active dates")
     void getActivityDates_ShouldReturnHeatmapResponse() throws Exception {
         LocalDate from = LocalDate.now().minusDays(5);
         LocalDate to = LocalDate.now();
         List<ActivityLog> logs = List.of();
 
-        when(userService.getUserById(1L)).thenReturn(testUser);
+        when(userService.findByUsername("testuser")).thenReturn(testUser);
         when(activityLogService.getLogs(testUser, "task", from, to)).thenReturn(logs);
         when(activityLogService.getCurrentStreak(testUser, "task")).thenReturn(3);
 
-        mockMvc.perform(get("/api/dashboard/activity-log/1/task")
+        // ✅ Corrected path based on @RequestMapping("/dashboard") + @GetMapping("/api/activity-log/{category}")
+        mockMvc.perform(get("/dashboard/api/activity-log/task")
                         .param("from", from.toString())
                         .param("to", to.toString())
+                        .principal(() -> "testuser")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalDays").value(0))
                 .andExpect(jsonPath("$.currentStreak").value(3))
                 .andExpect(jsonPath("$.activeDates").isArray());
+
+        verify(userService).findByUsername("testuser");
+        verify(activityLogService).getLogs(testUser, "task", from, to);
+        verify(activityLogService).getCurrentStreak(testUser, "task");
     }
 }

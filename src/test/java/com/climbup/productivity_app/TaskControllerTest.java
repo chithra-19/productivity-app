@@ -3,17 +3,17 @@ package com.climbup.productivity_app;
 import com.climbup.controller.task.TaskController;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.model.User;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.security.Principal;
@@ -24,19 +24,18 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(controllers = TaskController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TaskControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private TaskService taskService; // Mock the service layer
+    private TaskService taskService;
 
     @MockBean
-    private UserService userService; // Mock the service layer
+    private UserService userService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -55,9 +54,11 @@ class TaskControllerTest {
         response.setTitle("New Task");
         response.setCompleted(false);
 
-        // Mock the service calls
-        when(userService.findByUsername("testuser")).thenReturn(new com.climbup.model.User());
-        when(taskService.createTask(any(), any())).thenReturn(response);
+        User mockUser = new User();
+        mockUser.setUsername("testuser");
+
+        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(taskService.createTask(any(TaskRequestDTO.class), any(User.class))).thenReturn(response);
 
         mockMvc.perform(post("/tasks")
                         .principal(mockPrincipal())
@@ -75,8 +76,11 @@ class TaskControllerTest {
         dto.setTitle("Sample Task");
         dto.setCompleted(false);
 
-        when(userService.findByUsername("testuser")).thenReturn(new com.climbup.model.User());
-        when(taskService.getTasksForUser(any())).thenReturn(List.of(dto));
+        User mockUser = new User();
+        mockUser.setUsername("testuser");
+
+        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(taskService.getTasksForUser(any(User.class))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/tasks")
                         .principal(mockPrincipal()))

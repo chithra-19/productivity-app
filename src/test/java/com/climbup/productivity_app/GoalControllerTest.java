@@ -77,6 +77,7 @@ public class GoalControllerTest {
         when(userRepository.findByUsername(testUser.getUsername())).thenReturn(java.util.Optional.of(testUser));
     }
 
+    
 
     @Test
     void getGoals_ShouldReturnGoalList() throws Exception {
