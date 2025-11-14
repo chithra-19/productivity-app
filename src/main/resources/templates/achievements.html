@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏆 Achievements – ClimbUp</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <style>
+    body {
+      background: #f9fafb;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .container {
+      max-width: 900px;
+    }
+
+    h2 {
+      font-weight: 600;
+    }
+
+    .badge-card {
+      position: relative;
+      border-radius: 1rem;
+      padding: 1.2rem;
+      text-align: center;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .badge-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .badge-card:not(.locked) {
+      background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    }
+
+    .locked {
+      opacity: 0.45;
+      filter: grayscale(100%);
+    }
+
+    .locked::after {
+      content: "🔒";
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 1.4rem;
+      opacity: 0.7;
+    }
+
+    .newly-unlocked {
+      box-shadow: 0 0 15px 2px gold;
+      border: 2px solid gold;
+      animation: glowPulse 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glowPulse {
+      from { box-shadow: 0 0 6px gold; }
+      to { box-shadow: 0 0 15px 3px gold; }
+    }
+
+    .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    small {
+      font-size: 0.9rem;
+    }
+    
+        .back-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 16px;
+  color: black;
+  text-decoration: none;
+  margin: 20px;
+  transition: 0.2s ease-in-out;
+}
+
+.back-arrow:hover {
+  color: #0056b3;
+  transform: translateX(-3px);
+}
+  </style>
+</head>
+<body>
+
+	<a href="/dashboard" class="back-arrow">
+  <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+</a>
+  <div class="container mt-4">
+    <h2 class="mb-4">🏆 My Achievements</h2>
+    <div id="achievement-grid" class="row g-4"></div>
+  </div>
+
+<script>
+const token = localStorage.getItem('token');
+
+// fetch and render achievements
+async function fetchAchievements() {
+  try {
+    const response = await axios.get('/api/achievements', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    renderAchievements(response.data);
+  } catch (err) {
+    console.error('Failed to load achievements', err);
+  }
+}
+
+// render achievements into the grid
+function renderAchievements(achievements) {
+  const grid = document.getElementById('achievement-grid');
+  grid.innerHTML = '';
+
+  achievements.forEach(a => {
+    const col = document.createElement('div');
+    col.className = 'col-md-4';
+
+    const card = document.createElement('div');
+    card.className = 'badge-card';
+
+    if (!a.unlocked) card.classList.add('locked');
+    if (a.newlyUnlocked) card.classList.add('newly-unlocked');
+
+    const unlockedDate = a.unlockedDate
+      ? new Date(a.unlockedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      : null;
+
+    card.innerHTML = `
+      <div class="icon"><i class="bi ${a.icon}"></i></div>
+      <h5 class="fw-semibold">${a.title}</h5>
+      <p class="text-muted small">${a.description}</p>
+      ${
+        a.unlocked
+          ? `<small class="text-success fw-semibold">Unlocked on ${unlockedDate}</small>`
+          : `<small class="text-muted">Locked</small>`
+      }
+    `;
+
+    col.appendChild(card);
+    grid.appendChild(col);
+
+    // fade out glow after a few seconds
+    if (a.newlyUnlocked) {
+      setTimeout(() => card.classList.remove('newly-unlocked'), 5000);
+    }
+  });
+}
+
+// call after completing a goal
+async function refreshAchievementsAfterGoal() {
+  try {
+    // hits a dedicated endpoint that checks new achievements and returns updated list
+    const response = await axios.get('/api/achievements/refresh', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    renderAchievements(response.data);
+  } catch (err) {
+    console.error('Failed to refresh achievements', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', fetchAchievements);
+</script>
+
+</body>
+</html>

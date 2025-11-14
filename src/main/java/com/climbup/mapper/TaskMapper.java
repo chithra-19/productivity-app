@@ -6,22 +6,41 @@ import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.model.Task;
 import com.climbup.model.User;
 
+/**
+ * Mapper class for converting between Task DTOs and Task entity.
+ * Keeps transformation logic centralized and reusable across layers.
+ */
 public class TaskMapper {
 
-    // 🔄 RequestDTO → Entity
+    /**
+     * Converts a TaskRequestDTO and associated User into a Task entity.
+     * Used during task creation.
+     *
+     * @param dto  incoming task data from client
+     * @param user authenticated user creating the task
+     * @return Task entity ready for persistence
+     */
     public static Task toEntity(TaskRequestDTO dto, User user) {
         if (dto == null || user == null) return null;
 
         Task task = new Task();
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
-        task.setDueDate(dto.getDueDate());   // already LocalDate
+        task.setDueDate(dto.getDueDate()); // already LocalDate
         task.setPriority(dto.getPriority());
-        task.setUser(user);
+        task.setCategory(dto.getCategory());
+
+        task.setUser(user); // establish ownership
         return task;
     }
 
-    // 🔄 UpdateDTO → Update existing Entity
+    /**
+     * Updates an existing Task entity using TaskUpdateDTO.
+     * Used during task editing.
+     *
+     * @param task existing task entity
+     * @param dto  update payload from client
+     */
     public static void updateEntity(Task task, TaskUpdateDTO dto) {
         if (dto == null || task == null) return;
 
@@ -29,10 +48,12 @@ public class TaskMapper {
         if (dto.getDescription() != null) task.setDescription(dto.getDescription());
         if (dto.getDueDate() != null) task.setDueDate(dto.getDueDate());
         if (dto.getPriority() != null) task.setPriority(dto.getPriority());
+        if (dto.getCategory() != null) task.setCategory(dto.getCategory()); // optional tag
 
+        // Handle completion toggle
         if (dto.getCompleted() != null) {
             if (dto.getCompleted()) {
-                task.markCompleted(); // sets completed + completionDate + completedDateTime
+                task.markCompleted(); // sets completed + timestamps
             } else {
                 task.setCompleted(false);
                 task.setCompletionDate(null);
@@ -41,7 +62,13 @@ public class TaskMapper {
         }
     }
 
-    // 🔄 Entity → ResponseDTO
+    /**
+     * Converts a Task entity into a TaskResponseDTO.
+     * Used in GET responses to shape data for frontend.
+     *
+     * @param task persisted task entity
+     * @return TaskResponseDTO for UI rendering
+     */
     public static TaskResponseDTO toResponse(Task task) {
         if (task == null) return null;
 
@@ -49,13 +76,13 @@ public class TaskMapper {
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
-                task.getDueDate(),               // LocalDate
+                task.getDueDate(),
                 task.isCompleted(),
                 task.getPriority() != null ? task.getPriority().name() : null,
-                task.getCategory(),              // optional
-                task.getIconUrl(),               // optional
-                task.getCompletionDate(),        // LocalDate
-                task.getCompletedDateTime()      // LocalDateTime
+                task.getCategory(),
+                task.getIconUrl(),
+                task.getCompletionDate(),
+                task.getCompletedDateTime()
         );
     }
 }

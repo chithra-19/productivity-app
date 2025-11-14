@@ -2,6 +2,7 @@ package com.climbup.service.task;
 
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
+import com.climbup.dto.response.HeatmapDTO;
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.mapper.TaskMapper;
 import com.climbup.model.Task;
@@ -11,14 +12,20 @@ import com.climbup.repository.TaskRepository;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.StreakTrackerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class TaskService {
 
+    // --- Dependencies ---
     private final TaskRepository taskRepository;
     private final ActivityService activityService;
     private final StreakTrackerService streakTrackerService;
@@ -27,25 +34,36 @@ public class TaskService {
     @Autowired
     public TaskService(TaskRepository taskRepository,
                        ActivityService activityService,
-                       StreakTrackerService streakService,
-                       AchievementService achievementService) {
+                       StreakTrackerService streakTrackerService,
+                       @Lazy AchievementService achievementService) {
         this.taskRepository = taskRepository;
         this.activityService = activityService;
-        this.streakTrackerService = streakService;
+        this.streakTrackerService = streakTrackerService;
         this.achievementService = achievementService;
     }
 
-    // ➕ Create a new task
+    // ➕ Create Task
     public TaskResponseDTO createTask(TaskRequestDTO dto, User user) {
-        Task task = TaskMapper.toEntity(dto, user);
-        task.setCompleted(false);
-        Task savedTask = taskRepository.save(task);
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Task title cannot be empty");
+        }
 
-        activityService.log("Created Task: " + savedTask.getTitle(), ActivityType.TASK, savedTask.getUser());
+        Task task = new Task();
+        task.setTitle(dto.getTitle());
+        task.setUser(user);
+        task.setCompleted(false);
+        task.setCategory(dto.getCategory());
+        task.setDescription(dto.getDescription());
+        task.setDueDate(dto.getDueDate());
+        task.setPriority(dto.getPriority() != null ? dto.getPriority() : Task.Priority.MEDIUM);
+
+        Task savedTask = taskRepository.save(task);
+        activityService.log("Created Task: " + savedTask.getTitle(), ActivityType.TASK, user);
+
         return TaskMapper.toResponse(savedTask);
     }
 
-    // 📋 Get all tasks for a specific user
+    // 📋 Get all tasks for a user
     public List<TaskResponseDTO> getTasksForUser(User user) {
         return taskRepository.findByUser(user)
                 .stream()
@@ -53,52 +71,59 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // ✏️ Update a task
+    // ✏️ Update Task
     public TaskResponseDTO updateTask(Long taskId, TaskUpdateDTO dto, User user) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+        Task task = taskRepository.findByIdAndUser(taskId, user)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
 
-        if (!task.getUser().equals(user)) {
-            throw new SecurityException("You can only update your own tasks!");
+        Optional.ofNullable(dto.getTitle()).ifPresent(task::setTitle);
+        Optional.ofNullable(dto.getDescription()).ifPresent(task::setDescription);
+        Optional.ofNullable(dto.getDueDate()).ifPresent(task::setDueDate);
+        Optional.ofNullable(dto.getPriority()).ifPresent(task::setPriority);
+        Optional.ofNullable(dto.getCategory()).ifPresent(task::setCategory);
+
+        if (dto.getCompleted() != null) {
+            task.setCompleted(dto.getCompleted());
+            if (dto.getCompleted() && task.getCompletionDate() == null) {
+                task.setCompletionDate(LocalDate.now());
+                task.setCompletedDateTime(LocalDateTime.now());
+                streakTrackerService.updateStreak(user);
+                achievementService.checkForNewAchievements(user);
+            } else if (!dto.getCompleted()) {
+                task.setCompletionDate(null);
+                task.setCompletedDateTime(null);
+            }
         }
 
-        TaskMapper.updateEntity(task, dto);
         Task updatedTask = taskRepository.save(task);
+        activityService.log("Updated Task: " + updatedTask.getTitle(), ActivityType.TASK, user);
 
-        activityService.log("Updated Task: " + updatedTask.getTitle(), ActivityType.TASK, updatedTask.getUser());
         return TaskMapper.toResponse(updatedTask);
     }
 
-    // ❌ Delete a task
+    // ❌ Delete Task
     public void deleteTask(Long taskId, User user) {
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
 
-        if (!task.getUser().equals(user)) {
-            throw new SecurityException("You can only delete your own tasks!");
-        }
-
         taskRepository.delete(task);
-        activityService.log("Deleted Task: " + task.getTitle(), ActivityType.TASK, task.getUser());
+        activityService.log("Deleted Task: " + task.getTitle(), ActivityType.TASK, user);
     }
 
-    // ✅ Complete a task with completion timestamp
-    public TaskResponseDTO completeTask(Long taskId) {
-        Task task = taskRepository.findById(taskId)
+    // ✅ Complete Task
+    public TaskResponseDTO completeTask(Long taskId, User user) {
+        Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
 
         if (!task.isCompleted()) {
             task.setCompleted(true);
-            task.setCompletionDate(java.time.LocalDate.now());
-            task.setCompletedDateTime(java.time.LocalDateTime.now());
+            task.setCompletionDate(LocalDate.now());
+            task.setCompletedDateTime(LocalDateTime.now());
 
             Task savedTask = taskRepository.save(task);
-
-            activityService.log("Completed Task: " + savedTask.getTitle(), ActivityType.TASK, savedTask.getUser());
-            streakTrackerService.updateStreak(savedTask.getUser());
-
-            // ✅ Check for new achievements
-            achievementService.checkForNewAchievements(savedTask.getUser());
+            activityService.log("Completed Task: " + savedTask.getTitle(), ActivityType.TASK, user);
+            streakTrackerService.updateStreak(user);
+            achievementService.checkForNewAchievements(user);
 
             return TaskMapper.toResponse(savedTask);
         }
@@ -106,13 +131,95 @@ public class TaskService {
         return TaskMapper.toResponse(task);
     }
 
-    // 🔹 Count of completed tasks for a user
-    public int getCompletedTaskCount(User user) {
-        return taskRepository.findByUserAndCompletedTrue(user).size();
+    // 🔹 Completed task count
+    public long getCompletedTaskCount(User user) {
+        return taskRepository.countByUserAndCompleted(user, true);
     }
 
-	public Object getAllTasks(Object any) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    // 🔹 Focus hours by date
+    public Map<LocalDate, Double> getFocusHoursByDate(List<Task> tasks) {
+        return tasks.stream()
+                .filter(Task::isCompleted)
+                .filter(task -> task.getCompletionDate() != null)
+                .collect(Collectors.groupingBy(
+                        Task::getCompletionDate,
+                        Collectors.summingDouble(task -> task.getFocusHours() != null ? task.getFocusHours() : 0.0)
+                ));
+    }
+
+    // 🔹 Heatmap Data
+    public List<HeatmapDTO> getHeatmapData(User user) {
+        List<Task> tasks = taskRepository.findByUserAndCompletedTrue(user);
+
+        Map<LocalDate, List<Task>> grouped = tasks.stream()
+                .filter(t -> t.getCompletionDate() != null)
+                .collect(Collectors.groupingBy(Task::getCompletionDate));
+
+        List<HeatmapDTO> result = new ArrayList<>();
+        for (Map.Entry<LocalDate, List<Task>> entry : grouped.entrySet()) {
+            LocalDate date = entry.getKey();
+            List<Task> dayTasks = entry.getValue();
+
+            int taskCount = dayTasks.size();
+            int focusMinutes = dayTasks.stream()
+                    .mapToInt(t -> t.getFocusHours() != null ? (int) (t.getFocusHours() * 60) : 0)
+                    .sum();
+
+            result.add(new HeatmapDTO(date.toString(), taskCount, focusMinutes, true));
+        }
+
+        return result;
+    }
+
+    // 🔹 Get all tasks (dashboard)
+    public List<TaskResponseDTO> getAllTasks() {
+        return taskRepository.findAll().stream()
+                .map(TaskMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 🔹 Get today’s tasks
+    public List<TaskResponseDTO> getTodayTasks() {
+        LocalDate today = LocalDate.now();
+        return taskRepository.findByUserAndDueDateBetween(
+                        null, today, today) // Replace null with actual User when calling
+                .stream()
+                .map(TaskMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    
+
+    public Map<LocalDate, Long> getTaskStats(User user) {
+        List<Task> tasks = taskRepository.findByUser(user);
+        return tasks.stream()
+                .collect(Collectors.groupingBy(
+                        task -> task.getCreatedAt().toLocalDate(),
+                        Collectors.counting()
+                ));
+    }
+    
+    public Map<String, Integer> getHeatmapDataForUser(User user) {
+        // Example: group tasks by date and count them
+        return user.getTasks().stream()
+            .filter(task -> task.getDueDate() != null)
+            .collect(Collectors.groupingBy(
+                task -> task.getDueDate().toString(), // format as yyyy-MM-dd
+                Collectors.collectingAndThen(Collectors.counting(), Long::intValue)
+            ));
+    }
+
+    public boolean markTaskAsCompleted(Long taskId, User user) {
+        Optional<Task> optionalTask = taskRepository.findById(taskId);
+        if (optionalTask.isPresent()) {
+            Task task = optionalTask.get();
+
+            if (task.getUser().getId().equals(user.getId())) {
+                task.setCompleted(true);
+                taskRepository.save(task);
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

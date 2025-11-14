@@ -11,6 +11,16 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "achievements")
+@NamedQueries({
+    @NamedQuery(
+        name = "Achievement.findByTitle",
+        query = "SELECT a FROM Achievement a WHERE a.title = :title"
+    ),
+    @NamedQuery(
+        name = "Achievement.findByUserAndType",
+        query = "SELECT a FROM Achievement a WHERE a.user = :user AND a.type = :type"
+    )
+})
 public class Achievement {
 
     @Id
@@ -49,6 +59,9 @@ public class Achievement {
     @Column(name = "unlocked_date")
     private LocalDate unlockedDate;
 
+    @Column(name = "code", unique = true, length = 100)
+    private String code; // e.g. "GOAL_COMPLETED", "STREAK_7_DAYS"
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
@@ -56,6 +69,9 @@ public class Achievement {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
+
+    @Column(name = "unlocked_at")
+    private LocalDateTime unlockedAt;
 
     // ------------------ Enum ------------------
     public enum Type {
@@ -77,9 +93,6 @@ public class Achievement {
         this.type = type;
         this.title = title;
         this.description = description;
-        this.unlocked = false;
-        this.newlyUnlocked = false;
-        this.seen = false;
     }
 
     // ------------------ Getters & Setters ------------------
@@ -114,27 +127,26 @@ public class Achievement {
     public void setUnlockedDate(LocalDate unlockedDate) { this.unlockedDate = unlockedDate; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUnlockedAt() { return unlockedAt; }
+    public void setUnlockedAt(LocalDateTime unlockedAt) { this.unlockedAt = unlockedAt; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
     // ------------------ Utility Methods ------------------
-    /**
-     * Unlock this achievement safely
-     */
+    /** Unlock this achievement safely */
     public void unlock() {
         if (!this.unlocked) {
             this.unlocked = true;
             this.newlyUnlocked = true;
             this.unlockedDate = LocalDate.now();
+            this.unlockedAt = LocalDateTime.now();
         }
-    }
-
-    /**
-     * Generate a unique code for the achievement
-     */
-    public String getCode() {
-        return "ACH-" + (id != null ? id : "NEW") + "-" + type.name();
     }
 
     // ------------------ Lifecycle Hooks ------------------
@@ -143,6 +155,9 @@ public class Achievement {
     protected void onSave() {
         if (this.unlocked && this.unlockedDate == null) {
             this.unlockedDate = LocalDate.now();
+        }
+        if (this.unlocked && this.unlockedAt == null) {
+            this.unlockedAt = LocalDateTime.now();
         }
     }
 
@@ -160,7 +175,6 @@ public class Achievement {
         return Objects.hash(id);
     }
 
-    // ------------------ toString ------------------
     @Override
     public String toString() {
         return "Achievement{" +

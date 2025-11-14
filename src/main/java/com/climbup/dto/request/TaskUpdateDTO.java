@@ -10,16 +10,19 @@ public class TaskUpdateDTO {
     private LocalDate dueDate;
     private Task.Priority priority;
     private Boolean completed;  // nullable for partial updates
+    private String category;    // added category field
 
     // ===== Constructors =====
     public TaskUpdateDTO() {}
 
-    public TaskUpdateDTO(String title, String description, LocalDate dueDate, Task.Priority priority, Boolean completed) {
+    public TaskUpdateDTO(String title, String description, LocalDate dueDate,
+                         Task.Priority priority, Boolean completed, String category) {
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.priority = priority;
         this.completed = completed;
+        this.category = category;
     }
 
     // ===== Getters & Setters =====
@@ -58,6 +61,13 @@ public class TaskUpdateDTO {
         this.completed = completed;
     }
 
+    public String getCategory() {
+        return category;
+    }
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     // ===== toString (optional) =====
     @Override
     public String toString() {
@@ -67,6 +77,7 @@ public class TaskUpdateDTO {
                 ", dueDate=" + dueDate +
                 ", priority=" + priority +
                 ", completed=" + completed +
+                ", category='" + category + '\'' +
                 '}';
     }
 }

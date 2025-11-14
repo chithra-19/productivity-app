@@ -2,25 +2,20 @@ package com.climbup.controller.user;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@RequestMapping("/user")
 public class UserPageController {
 
-    // Serve the register page
     @GetMapping("/register")
     public String showRegisterPage() {
-        return "register"; // resolves to src/main/resources/templates/register.html
+        return "user/register";
     }
 
-    // Serve the login page
-    @GetMapping("/login")
-    public String showLoginPage() {
-        return "login"; // resolves to src/main/resources/templates/login.html
-    }
-
-    // Serve the dashboard page
     @GetMapping("/dashboard")
-    public String showDashboardPage() {
-        return "dashboard"; // resolves to src/main/resources/templates/dashboard.html
+    public String showDashboard() {
+        return "user/dashboard";
     }
+       
 }

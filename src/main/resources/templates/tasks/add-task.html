@@ -3,52 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <title>My Tasks</title>
-  <link rel="stylesheet" 
+  <link rel="preload" href="/images/sticky-pages.jpg" as="image">
+  
+  <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" 
+  <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
+
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: url('/images/sticky-pages.jpg') no-repeat center center fixed;
+  background-size: cover;
+  background-attachment: fixed;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.page-title {
+  font-weight: 800; /* extra bold */
+  font-size: 2.5rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: dark blue;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+  margin-top: 30px;
+}
+
+.form-container {
+  max-width: 600px;
+  margin: 100px auto;
+  background-color: rgba(255, 255, 255, 0.9); /* slightly transparent white */
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+</style>
+
+
 <body class="container mt-5">
 
-  <h2 class="mb-4">My Tasks</h2>
+  <h1 class="page-title mb-4 text-center">
+  <i class="bi bi-list-task text-primary"></i> 
+</h1>
+  
 
   <!-- Add Task Form -->
-  <div class="card mb-4">
+  <div class="card mb-4 shadow-sm">
     <div class="card-header bg-primary text-white">
       <i class="bi bi-plus-circle"></i> Add New Task
     </div>
     <div class="card-body">
       <form th:action="@{/tasks/save}" th:object="${task}" method="post">
+        
+        <!-- Task Title -->
         <div class="mb-3">
-          <label for="title" class="form-label">Task Title</label>
-          <input type="text" class="form-control" id="title" th:field="*{title}" required>
+          <label for="title" class="form-label fw-semibold">Task Title</label>
+          <input type="text" class="form-control" id="title" th:field="*{title}" placeholder="Enter task title" required>
         </div>
 
+        <!-- Description -->
         <div class="mb-3">
-          <label for="description" class="form-label">Description</label>
-          <textarea class="form-control" id="description" th:field="*{description}"></textarea>
+          <label for="description" class="form-label fw-semibold">Description</label>
+          <textarea class="form-control" id="description" th:field="*{description}" placeholder="Optional short note"></textarea>
         </div>
 
+        <!-- Due Date -->
         <div class="mb-3">
-          <label for="dueDate" class="form-label">Due Date</label>
+          <label for="dueDate" class="form-label fw-semibold">Due Date</label>
           <input type="date" class="form-control" id="dueDate" th:field="*{dueDate}" required>
         </div>
 
+        <!-- Category Dropdown -->
         <div class="mb-3">
-          <label for="category" class="form-label">Category</label>
-          <input type="text" class="form-control" id="category" th:field="*{category}">
+          <label for="category" class="form-label fw-semibold">Category</label>
+          <select class="form-select" id="category" th:field="*{category}">
+            <option value="">-- Select Category --</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
+            <option value="Study">Study</option>
+            <option value="Health">Health</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Project">Project</option>
+          </select>
         </div>
 
-        <button type="submit" class="btn btn-success">
-          <i class="bi bi-check-circle"></i> Save Task
-        </button>
-        <a th:href="@{/dashboard}" class="btn btn-secondary">Cancel</a>
+        <!-- Priority Dropdown -->
+        <div class="mb-3">
+          <label for="priority" class="form-label fw-semibold">Priority</label>
+          <select class="form-select" id="priority" th:field="*{priority}">
+            <option value="LOW">Low</option>
+            <option value="MEDIUM" selected>Medium</option>
+            <option value="HIGH">High</option>
+          </select>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-success me-2">
+            <i class="bi bi-check-circle"></i> Save Task
+          </button>
+          <a th:href="@{/dashboard}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Cancel
+          </a>
+        </div>
       </form>
     </div>
   </div>
 
   <!-- Task List -->
-  <div class="list-group">
+  <div class="list-group shadow-sm">
     <div th:each="task : ${tasks}" class="list-group-item">
       <div class="d-flex justify-content-between align-items-center">
         <div>
@@ -59,6 +125,7 @@
             Due: <span th:text="${#temporals.format(task.dueDate, 'MMM dd, yyyy')}"></span>
           </small>
           <span class="badge bg-info text-dark mt-1" th:text="${task.category}">Category</span>
+          <span class="badge bg-secondary mt-1" th:text="${task.priority}">Priority</span>
         </div>
 
         <!-- Status + Actions -->
@@ -78,13 +145,77 @@
       </div>
     </div>
 
-    <!-- Empty state -->
+    <!-- Empty State -->
     <div th:if="${#lists.isEmpty(tasks)}" class="text-center py-4">
       <i class="bi bi-emoji-frown" style="font-size: 2rem;"></i>
       <p class="mt-2">No tasks yet. Add one above!</p>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+ const form = document.getElementById("addTaskForm");
+  const modal = new bootstrap.Modal(document.getElementById("addTaskModal"));
+  const listGroup = document.querySelector(".list-group");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); // stop page reload
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch("/tasks/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error("Failed to save task");
+
+      const newTask = await response.json();
+
+      // create a new task item dynamically
+      const item = document.createElement("div");
+      item.className = "list-group-item";
+      item.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5>${newTask.title}</h5>
+            <p class="text-muted mb-1">${newTask.description || ""}</p>
+            <small class="d-block text-secondary">
+              <i class="bi bi-calendar"></i>
+              Due: ${new Date(newTask.dueDate).toLocaleDateString()}
+            </small>
+            <span class="badge bg-info text-dark mt-1">${newTask.category || ""}</span>
+            <span class="badge bg-secondary mt-1">${newTask.priority}</span>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-warning text-dark">⏳ Pending</span>
+            <div class="btn-group mt-2">
+              <a href="/tasks/edit/${newTask.id}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="/tasks/delete/${newTask.id}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      listGroup.prepend(item);
+
+      // close modal + reset form
+      modal.hide();
+      form.reset();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  });
+});
+</script>
+ 
 </body>
 </html>

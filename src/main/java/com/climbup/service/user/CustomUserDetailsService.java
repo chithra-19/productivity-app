@@ -27,21 +27,21 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        // Try to find user by username first, then email
         User user = userRepository.findByUsername(login)
                 .or(() -> userRepository.findByEmail(login))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username/email: " + login));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(), // use username for Spring Security session
+                user.getEmail(), // 👈 principal is email
                 user.getPassword(),
                 user.isEnabled(),
                 user.isAccountNonExpired(),
                 user.isCredentialsNonExpired(),
                 user.isAccountNonLocked(),
-                getAuthorities(user)
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
     }
+
 
 
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {

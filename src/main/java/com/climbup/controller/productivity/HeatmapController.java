@@ -27,30 +27,39 @@ public class HeatmapController {
     /**
      * Get heatmap data for the currently logged-in user.
      *
-     * Example: GET /api/heatmap/workout?days=30
+     * Example: GET /api/heatmap/all?days=30
      *
      * @param category activity type (or "all" for all types)
      * @param days     number of days back (default 30)
      * @return list of {date, count} maps
      */
     @GetMapping("/{category}")
-    public ResponseEntity<List<Map<String, Object>>> getHeatmap(
+    public ResponseEntity<?> getHeatmap(
             @PathVariable String category,
             @RequestParam(defaultValue = "30") int days
     ) {
-        User user = userService.getCurrentUser(); // ✅ get current user from JWT
-        Activity.ActivityType type = null;
+        User user = userService.getCurrentUser(); // ✅ get current user from JWT/session
 
+        Activity.ActivityType type = null;
         if (!"all".equalsIgnoreCase(category)) {
             try {
                 type = Activity.ActivityType.valueOf(category.toUpperCase());
             } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest()
-                        .body(List.of(Map.of("error", "Invalid category: " + category)));
+                return ResponseEntity.badRequest().body(
+                        Map.of("error", "Invalid category: " + category)
+                );
             }
         }
 
         List<Map<String, Object>> data = heatmapService.getHeatmapData(user.getId(), type, days);
         return ResponseEntity.ok(data);
+    }
+
+    /**
+     * Optional fallback for GET /api/heatmap without category
+     */
+    @GetMapping
+    public ResponseEntity<?> getDefaultHeatmap(@RequestParam(defaultValue = "30") int days) {
+        return getHeatmap("all", days);
     }
 }

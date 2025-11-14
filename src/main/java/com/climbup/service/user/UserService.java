@@ -65,33 +65,28 @@ public class UserService implements UserDetailsService {
     }
 
     // ---------- Find by Username ----------
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+    public User findByUsername(String login) {
+        return userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username/email: " + login));
     }
+
 
     // ---------- Current Authenticated User ----------
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResourceNotFoundException("No authenticated user found");
         }
 
-        Object principal = authentication.getPrincipal();
-        final String userEmail;
-
-        if (principal instanceof UserDetails) {
-            userEmail = ((UserDetails) principal).getUsername();
-        } else if (principal instanceof String) {
-            userEmail = (String) principal;
-        } else {
-            throw new ResourceNotFoundException("Unable to get current user");
-        }
-
-        return userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        String login = authentication.getName(); // this is email now
+        return userRepository.findByEmail(login)
+                .or(() -> userRepository.findByUsername(login))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
+
+
+
 
     // ---------- Register User (Using DTO) ----------
     public User registerUser(UserRequestDTO dto) {
@@ -146,18 +141,18 @@ public class UserService implements UserDetailsService {
         userRepository.delete(user);
     }
 
-    // ---------- UserDetailsService Implementation ----------
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
+                user.getEmail(),   // or user.getUsername(), depending on what you store
                 user.getPassword(),
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"))
         );
     }
+
 
     // ---------- Optional Authentication Helper ----------
     public boolean authenticate(String email, String rawPassword) {
@@ -166,4 +161,36 @@ public class UserService implements UserDetailsService {
 
         return passwordEncoder.matches(rawPassword, user.getPassword());
     }
+    
+  
+    public User getUserWithGoals(String email) {
+    	User user = userRepository.findByEmail(email)
+    		    .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+        user.getGoals().size(); // triggers lazy loading
+        return user;
+    }
+    
+    
+    public User getUserWithTasks(String username) {
+        return userRepository.findUserWithTasks(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+    
+    public User getUserWithAllData(String login) {
+        // Try with username first, then email
+        return userRepository.findUserWithAllData(login)
+            .or(() -> userRepository.findByEmail(login))
+            .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + login));
+    }
+
+    
+    public User findByUsernameOrEmail(String login) {
+        return userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username or email: " + login));
+    }
+
+    
+    
+    
 }

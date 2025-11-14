@@ -12,6 +12,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "tasks")
+
 public class Task {
 
     @Id
@@ -24,6 +25,9 @@ public class Task {
 
     @Size(max = 500)
     private String description;
+    
+    @Column(name = "focus_hours")
+    private Double focusHours;
 
     @NotNull
     @FutureOrPresent
@@ -142,6 +146,14 @@ public class Task {
 
     public String getIconUrl() { return iconUrl; }
     public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
+    
+    public Double getFocusHours() {
+        return focusHours;
+    }
+
+    public void setFocusHours(Double focusHours) {
+        this.focusHours = focusHours;
+    }
 
     // 🔁 equals and hashCode
     @Override
@@ -171,4 +183,11 @@ public class Task {
                 ", completed=" + completed +
                 '}';
     }
+    
+    public enum TaskCategory {
+        HEALTH, PROJECT, STUDY, PERSONAL, OTHER
+    }
+
+
+	
 }

@@ -2,10 +2,14 @@ package com.climbup.controller.user;
 
 import com.climbup.dto.request.UserRequestDTO;
 import com.climbup.dto.response.UserResponseDTO;
+import com.climbup.dto.response.UserStatsDTO;
 import com.climbup.mapper.UserMapper;
 import com.climbup.model.User;
+import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.user.UserService;
 import jakarta.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +21,14 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final AchievementService achievementService;
 
-    public UserController(UserService userService) {
+    @Autowired
+    public UserController(AchievementService achievementService, UserService userService) {
+        this.achievementService = achievementService;
         this.userService = userService;
     }
+    
 
     // ---------- Register new user ----------
     @PostMapping("/register")
@@ -62,5 +70,14 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/stats")
+    public ResponseEntity<UserStatsDTO> getStats(Principal principal) {
+        User user = userService.findByUsername(principal.getName());
+        int streak = user.getCurrentStreak();
+        int best = user.getBestStreak();
+        int productivity = achievementService.getProductivityScore(user);
+        return ResponseEntity.ok(new UserStatsDTO(streak, best, productivity));
     }
 }

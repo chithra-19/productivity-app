@@ -1,58 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Heatmap – ClimbUp</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .heatmap-container { display: flex; flex-wrap: wrap; width: 350px; }
-        .day {
-            width: 14px;
-            height: 14px;
-            margin: 2px;
-            border-radius: 3px;
-            background-color: #ebedf0; /* default light */
-        }
-        .day.level-1 { background-color: #c6e48b; }
-        .day.level-2 { background-color: #7bc96f; }
-        .day.level-3 { background-color: #239a3b; }
-        .day.level-4 { background-color: #196127; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Task Heatmap – ClimbUp</title>
+  <style>
+    .heatmap {
+      display: grid;
+      grid-template-columns: repeat(53, 1fr); /* 53 weeks */
+      gap: 2px;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+
+    .day {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background-color: #ebedf0;
+      transition: transform 0.1s ease-in-out;
+    }
+
+    .day:hover {
+      transform: scale(1.2);
+    }
+
+    .level-1 { background-color: #c6e48b; }
+    .level-2 { background-color: #7bc96f; }
+    .level-3 { background-color: #239a3b; }
+    .level-4 { background-color: #196127; }
+
+    .streak-day {
+      outline: 2px solid gold;
+      box-shadow: 0 0 4px gold;
+    }
+
+    .today {
+      border: 2px solid #000;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+    }
+
+    .legend {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .legend span {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin: 0 4px;
+      border-radius: 2px;
+    }
+  </style>
 </head>
 <body>
 
-<h2>Activity Heatmap</h2>
-<div>Total Days: <span id="totalDays"></span></div>
-<div>Current Streak: <span id="currentStreak"></span></div>
-<div class="heatmap-container" id="heatmap"></div>
+<h2 style="text-align:center;">Task Completion Heatmap</h2>
+<div class="heatmap" id="heatmap"></div>
+<div class="tooltip" id="tooltip"></div>
+
+<div class="legend">
+  <span class="level-1"></span>1 task
+  <span class="level-2"></span>2 tasks
+  <span class="level-3"></span>3 tasks
+  <span class="level-4"></span>4+ tasks
+</div>
 
 <script>
-    const userId = 1; // replace with actual logged-in user
-    const category = 'task'; // example
-    const days = 30;
+  const container = document.getElementById("heatmap");
+  const tooltip = document.getElementById("tooltip");
 
-    fetch(`/api/heatmap/${category}?userId=${userId}&days=${days}`)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById("totalDays").textContent = data.totalDays;
-            document.getElementById("currentStreak").textContent = data.currentStreak;
+  fetch("/api/heatmap/all")
+    .then(res => res.json())
+    .then(data => {
+      const today = new Date().toISOString().split("T")[0];
 
-            const container = document.getElementById("heatmap");
-            data.heatmapData.forEach(day => {
-                const div = document.createElement("div");
-                div.classList.add("day");
+      data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-                // color intensity based on taskCount
-                if (day.taskCount >= 4) div.classList.add("level-4");
-                else if (day.taskCount === 3) div.classList.add("level-3");
-                else if (day.taskCount === 2) div.classList.add("level-2");
-                else if (day.taskCount === 1) div.classList.add("level-1");
+      data.forEach(day => {
+        const div = document.createElement("div");
+        div.classList.add("day");
 
-                div.title = `${day.date}: ${day.taskCount} tasks`;
-                container.appendChild(div);
-            });
-        })
-        .catch(err => console.error(err));
+        const count = day.taskCount;
+        if (count >= 4) div.classList.add("level-4");
+        else if (count === 3) div.classList.add("level-3");
+        else if (count === 2) div.classList.add("level-2");
+        else if (count === 1) div.classList.add("level-1");
+
+        if (day.isStreakDay) div.classList.add("streak-day");
+        if (day.date === today) div.classList.add("today");
+
+        div.title = `${day.date}: ${count} tasks, ${day.focusMinutes} mins`;
+
+        div.addEventListener("mouseenter", e => {
+          tooltip.textContent = div.title;
+          tooltip.style.left = e.pageX + 10 + "px";
+          tooltip.style.top = e.pageY + 10 + "px";
+          tooltip.style.opacity = 1;
+        });
+
+        div.addEventListener("mouseleave", () => {
+          tooltip.style.opacity = 0;
+        });
+
+        container.appendChild(div);
+      });
+    })
+    .catch(err => {
+      console.error("Heatmap load failed:", err);
+    });
 </script>
 
 </body>

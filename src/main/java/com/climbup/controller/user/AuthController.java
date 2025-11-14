@@ -9,8 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@RequestMapping("/auth")
-
+@RequestMapping("/auth") // 🔧 All routes here will be prefixed with /auth
 public class AuthController {
 
     private final UserService userService;
@@ -19,35 +18,39 @@ public class AuthController {
         this.userService = userService;
     }
 
-    @GetMapping("/register")
+    @GetMapping("/register") // 📥 Show registration form
     public String showRegisterForm(Model model) {
-        model.addAttribute("userDTO", new UserRequestDTO());
-        return "register";
+        model.addAttribute("userDTO", new UserRequestDTO()); // 🧠 Bind empty DTO for form
+        return "register"; // 🖼️ Return register.html view
     }
 
-    @PostMapping("/register")
+    @PostMapping("/register") // 📝 Handle form submission
     public String registerUser(@Validated @ModelAttribute("userDTO") UserRequestDTO userDTO,
                                BindingResult result,
                                Model model) {
         if (result.hasErrors()) {
-            return "register";
+            return "register"; // ❌ Validation failed — redisplay form
         }
         try {
-            userService.registerUser(userDTO);
+            userService.registerUser(userDTO); // ✅ Register user via service
         } catch (IllegalArgumentException e) {
-            model.addAttribute("error", e.getMessage());
+            model.addAttribute("error", e.getMessage()); // ⚠️ Show error message
             return "register";
+        }catch (RuntimeException e) {
+            model.addAttribute("error", "Something went wrong");
+            return "error";
         }
-        return "redirect:/login";
+        
+        return "redirect:/auth/login"; // 🎯 Redirect to login after success
     }
 
-    @GetMapping("/login")
+    @GetMapping("/login") // 🔐 Show login page
     public String showLoginPage() {
-        return "login";
+        return "login"; // 🖼️ Return login.html view
     }
 
-    @GetMapping("/dashboard")
+    @GetMapping("/dashboard") // 📊 Protected dashboard view
     public String dashboard() {
-        return "dashboard";
+        return "dashboard"; // 🖼️ Return dashboard.html view
     }
 }

@@ -1,72 +1,205 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>All Tasks</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <meta charset="UTF-8">
+  <title>All Tasks – ClimbUp</title>
+  <style>
+    /* 🌙 Base styles */
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --success: #16a34a;
+      --success-dark: #138c3b;
+      --warning: #facc15;
+      --bg: #f5f7fa;
+      --text: #1e293b;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    body {
+  font-family: "Inter", Arial, sans-serif;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8fbff 100%);
+  color: #1e293b;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+    
+
+    .container {
+      max-width: 1000px;
+      margin: 2.5rem auto;
+      background: var(--card-bg);
+      padding: 2rem 2.5rem;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .container:hover {
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: var(--primary-dark);
+      text-align: center;
+      font-size: 1.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* 📋 Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 1rem 1.2rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border-bottom: 2px solid var(--primary-dark);
+    }
+
+    tr:hover {
+      background: #f1f5f9;
+      transition: background 0.2s ease-in-out;
+    }
+
+    /* ✅ Buttons */
+    button {
+      padding: 0.5rem 0.9rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+
+    .btn-complete {
+      background: var(--success);
+      color: white;
+      box-shadow: 0 2px 5px rgba(22,163,74,0.3);
+    }
+
+    .btn-complete:hover {
+      background: var(--success-dark);
+      transform: scale(1.05);
+    }
+
+    /* 📊 Status badges */
+    .status-done,
+    .status-pending {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .status-done {
+      background: rgba(22,163,74,0.1);
+      color: var(--success-dark);
+    }
+
+    .status-pending {
+      background: rgba(250,204,21,0.15);
+      color: #b45309;
+    }
+
+    /* 📱 Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1.5rem;
+      }
+
+      th, td {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="container mt-4">
-    <h2 class="mb-3">My Tasks</h2>
-    <table class="table table-striped" id="tasksTable">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Due Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="taskBody"></tbody>
-    </table>
+<div class="container">
+  <h2>All Tasks</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Due Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="task : ${tasks}">
+        <td th:text="${task.title}">Task Title</td>
+        <td th:text="${task.description}">Task Description</td>
+        <td>
+          <span th:text="${task.completed} ? 'Done' : 'Pending'"
+                th:classappend="${task.completed} ? 'status-done' : 'status-pending'">Status</span>
+        </td>
+        <td th:text="${task.dueDate != null ? task.dueDate : '-'}">Due Date</td>
+        <td>
+          <button th:if="${!task.completed}"
+                  th:attr="onclick='markTaskCompleted(' + ${task.id} + ', this)'"
+                  class="btn-complete">
+            Mark Done
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        loadTasks();
-    });
+async function markTaskCompleted(taskId, button) {
+  try {
+    const res = await fetch(`/tasks/complete/${taskId}`, { method: 'POST' });
+    if (!res.ok) throw new Error("Failed to mark as done");
 
-    function loadTasks() {
-        axios.get("/api/tasks/user")
-            .then(response => {
-                const tasks = response.data;
-                const tbody = document.getElementById("taskBody");
-                tbody.innerHTML = "";
+    const row = button.closest('tr');
+    row.style.transition = 'opacity 0.3s ease';
+    row.style.opacity = 0;
+    setTimeout(() => row.remove(), 300);
 
-                tasks.forEach(task => {
-                    const row = document.createElement("tr");
-
-                    row.innerHTML = `
-                        <td>${task.title}</td>
-                        <td>${task.description}</td>
-                        <td>${task.completed ? "✅ Done" : "⏳ Pending"}</td>
-                        <td>${task.dueDate || "-"}</td>
-                        <td>
-                            ${!task.completed ? 
-                                `<button class="btn btn-success btn-sm" onclick="completeTask(${task.id})">Mark Done</button>` 
-                                : ""}
-                        </td>
-                    `;
-
-                    tbody.appendChild(row);
-                });
-            })
-            .catch(error => console.error("Error loading tasks:", error));
+    const statsRes = await fetch('/dashboard/api/stats');
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      const scoreElem = document.querySelector("#score");
+      const streakElem = document.querySelector("#streak");
+      const pendingElem = document.querySelector("#pendingCount");
+      if (scoreElem) scoreElem.textContent = stats.score;
+      if (streakElem) streakElem.textContent = stats.streak;
+      if (pendingElem) pendingElem.textContent = stats.pendingCount;
     }
-
-    function completeTask(taskId) {
-        axios.put(`/api/tasks/${taskId}/complete`)
-            .then(() => {
-                alert("Task marked as completed!");
-                loadTasks(); // 🔄 refresh table
-            })
-            .catch(error => {
-                console.error("Error completing task:", error);
-                alert("Failed to complete task.");
-            });
-    }
+  } catch (err) {
+    console.error(err);
+  }
+}
 </script>
+
 </body>
 </html>

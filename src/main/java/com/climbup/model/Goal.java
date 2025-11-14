@@ -24,7 +24,7 @@ public class Goal {
     private String description;
 
     @Column(nullable = false)
-    private int progress = 0;  // progress in percentage (0–100)
+    private int progress = 0; // progress in percentage (0–100)
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -36,6 +36,12 @@ public class Goal {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Priority priority = Priority.MEDIUM;
+
+    @Column(nullable = false)
+    private boolean completed = false;
+
+    @Column(nullable = false)
+    private boolean dropped = false;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -66,12 +72,15 @@ public class Goal {
 
     // ==== BUSINESS LOGIC ====
     public void markCompleted() {
+        this.completed = true;
         this.status = GoalStatus.COMPLETED;
         this.progress = 100;
     }
 
     public void dropGoal() {
+        this.dropped = true;
         this.status = GoalStatus.DROPPED;
+        this.completed = false;
     }
 
     // ==== GETTERS & SETTERS ====
@@ -96,8 +105,17 @@ public class Goal {
     public Priority getPriority() { return priority; }
     public void setPriority(Priority priority) { this.priority = priority; }
 
+    public boolean isCompleted() { return completed; }
+    public void setCompleted(boolean completed) { this.completed = completed; }
+
+    public boolean isDropped() { return dropped; }
+    public void setDropped(boolean dropped) { this.dropped = dropped; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
@@ -110,27 +128,9 @@ public class Goal {
                 ", title='" + title + '\'' +
                 ", status=" + status +
                 ", progress=" + progress +
+                ", completed=" + completed +
+                ", dropped=" + dropped +
                 ", dueDate=" + dueDate +
                 '}';
     }
-
-	public Object isAchieved() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public void setAchieved(Object achieved) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public Object isCompleted() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public void setCompleted(Object completed) {
-		// TODO Auto-generated method stub
-		
-	}
 }

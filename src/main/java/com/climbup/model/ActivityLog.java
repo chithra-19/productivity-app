@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "activity_log")
 public class ActivityLog {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -23,50 +23,85 @@ public class ActivityLog {
 
     @Column(name = "activity_date", nullable = false)
     private LocalDate activityDate;
+    
+    private LocalDate date;
 
-    @CreationTimestamp
+
+	@CreationTimestamp
     @Column(name = "logged_at", updatable = false)
     private LocalDateTime loggedAt;
 
-    // Getters and setters omitted for brevity
-    
+    // ✅ Added these fields
+    @Column(name = "task_count", nullable = false)
+    private int taskCount = 0;
+
+    @Column(name = "focus_minutes", nullable = false)
+    private int focusMinutes = 0;
+
+    // ----- Getters and Setters -----
+
     public Long getId() {
-		return id;
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public LocalDate getActivityDate() {
+        return activityDate;
+    }
+
+    public void setActivityDate(LocalDate activityDate) {
+        this.activityDate = activityDate;
+    }
+
+    public LocalDateTime getLoggedAt() {
+        return loggedAt;
+    }
+
+    public void setLoggedAt(LocalDateTime loggedAt) {
+        this.loggedAt = loggedAt;
+    }
+
+    public int getTaskCount() {
+        return taskCount;
+    }
+
+    public void setTaskCount(int taskCount) {
+        this.taskCount = taskCount;
+    }
+
+    public int getFocusMinutes() {
+        return focusMinutes;
+    }
+
+    public void setFocusMinutes(int focusMinutes) {
+        this.focusMinutes = focusMinutes;
+    }
+    
+    public LocalDate getDate() {
+		return date;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setDate(LocalDate date) {
+		this.date = date;
 	}
 
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
-
-	public String getCategory() {
-		return category;
-	}
-
-	public void setCategory(String category) {
-		this.category = category;
-	}
-
-	public LocalDate getActivityDate() {
-		return activityDate;
-	}
-
-	public void setActivityDate(LocalDate activityDate) {
-		this.activityDate = activityDate;
-	}
-
-	public LocalDateTime getLoggedAt() {
-		return loggedAt;
-	}
-
-	public void setLoggedAt(LocalDateTime loggedAt) {
-		this.loggedAt = loggedAt;
-	}
 }

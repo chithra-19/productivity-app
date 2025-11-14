@@ -26,7 +26,8 @@ public class HeatmapService {
     }
 
     /**
-     * Core heatmap logic including streaks and focus minutes
+     * Core heatmap logic including streaks and focus minutes.
+     * Returns a map with streak metadata and daily activity breakdown.
      */
     public Map<String, Object> getHeatmapDataForUser(User user, ActivityType type, int days) {
         LocalDate startDate = LocalDate.now().minusDays(days - 1);
@@ -35,15 +36,13 @@ public class HeatmapService {
 
         List<Activity> activities = activityRepository.findByUserAndTimestampBetween(user, startDateTime, endDateTime);
 
-        // Filter by type if provided
         if (type != null) {
             activities = activities.stream()
                     .filter(a -> a.getType() == type)
-                    .toList();
+                    .collect(Collectors.toList());
         }
 
-        // Group activities by date
-        Map<LocalDate, List<Activity>> grouped = activities.stream()
+        Map<LocalDate, List<Activity>> groupedByDate = activities.stream()
                 .collect(Collectors.groupingBy(a -> a.getTimestamp().toLocalDate()));
 
         List<Map<String, Object>> heatmapData = new ArrayList<>();
@@ -53,18 +52,14 @@ public class HeatmapService {
         int maxStreak = 0;
 
         for (LocalDate date : startDate.datesUntil(LocalDate.now().plusDays(1)).toList()) {
-            List<Activity> dayActivities = grouped.getOrDefault(date, Collections.emptyList());
+            List<Activity> dayActivities = groupedByDate.getOrDefault(date, Collections.emptyList());
             int taskCount = dayActivities.size();
             int focusMinutes = dayActivities.stream().mapToInt(Activity::getFocusMinutes).sum();
             boolean isStreakDay = taskCount > 0;
 
             if (isStreakDay) {
                 activeDates.add(date.toString());
-                if (previousDay == null || previousDay.plusDays(1).equals(date)) {
-                    currentStreak++;
-                } else {
-                    currentStreak = 1;
-                }
+                currentStreak = (previousDay != null && previousDay.plusDays(1).equals(date)) ? currentStreak + 1 : 1;
                 maxStreak = Math.max(maxStreak, currentStreak);
             } else {
                 currentStreak = 0;
@@ -90,7 +85,8 @@ public class HeatmapService {
     }
 
     /**
-     * Public method called by controller
+     * Public method called by controller.
+     * Wraps the response in a list for compatibility with frontend expectations.
      */
     public List<Map<String, Object>> getHeatmapData(Long userId, ActivityType type, int days) {
         User user = userService.getUserById(userId);

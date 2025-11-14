@@ -34,7 +34,11 @@ public class User {
     @Size(min = 8)
     private String password;
 
-    // Streak tracking
+    // 🔥 Productivity tracking
+    @Column(name = "productivity_score")
+    private Integer productivityScore = 0;
+
+    // 🔥 Streak tracking
     @Column(name = "current_streak")
     private Integer currentStreak = 0;
 
@@ -64,18 +68,18 @@ public class User {
 
     // Relationships
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Task> tasks = new ArrayList<>();
+    private Set<Task> tasks = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StreakChallenge> streakChallenges = new ArrayList<>();
+    private Set<StreakChallenge> streakChallenges = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Achievement> achievements = new ArrayList<>();
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Goal> goals = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Goal> goals = new ArrayList<>();
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Achievement> achievements = new HashSet<>();
 
-    // 🛠️ Constructors
+    // Constructors
     public User() {}
 
     public User(String username, String email, String password) {
@@ -84,7 +88,7 @@ public class User {
         this.password = password;
     }
 
-    // ✅ Utility Methods
+    // Utility methods
     public void addTask(Task task) {
         tasks.add(task);
         task.setUser(this);
@@ -95,17 +99,17 @@ public class User {
         challenge.setUser(this);
     }
 
-    public void addAchievement(Achievement achievement) {
-        achievements.add(achievement);
-        achievement.setUser(this);
-    }
-
     public void addGoal(Goal goal) {
         goals.add(goal);
         goal.setUser(this);
     }
 
-    // ✅ Getters and Setters
+    public void addAchievement(Achievement achievement) {
+        achievements.add(achievement);
+        achievement.setUser(this);
+    }
+
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -154,19 +158,28 @@ public class User {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public List<Task> getTasks() { return tasks; }
-    public void setTasks(List<Task> tasks) { this.tasks = tasks; }
+    public Set<Task> getTasks() { return tasks; }
+    public void setTasks(Set<Task> tasks) { this.tasks = tasks; }
 
-    public List<StreakChallenge> getStreakChallenges() { return streakChallenges; }
-    public void setStreakChallenges(List<StreakChallenge> streakChallenges) { this.streakChallenges = streakChallenges; }
+    public Set<StreakChallenge> getStreakChallenges() { return streakChallenges; }
+    public void setStreakChallenges(Set<StreakChallenge> streakChallenges) { this.streakChallenges = streakChallenges; }
 
-    public List<Achievement> getAchievements() { return achievements; }
-    public void setAchievements(List<Achievement> achievements) { this.achievements = achievements; }
+    public Set<Goal> getGoals() { return goals; }
+    public void setGoals(Set<Goal> goals) { this.goals = goals; }
 
-    public List<Goal> getGoals() { return goals; }
-    public void setGoals(List<Goal> goals) { this.goals = goals; }
+    public Set<Achievement> getAchievements() { return achievements; }
+    public void setAchievements(Set<Achievement> achievements) { this.achievements = achievements; }
 
-    // 🔁 equals and hashCode
+    // ✅ Productivity Score
+    public Integer getProductivityScore() {
+        return productivityScore == null ? 0 : productivityScore;
+    }
+
+    public void setProductivityScore(Integer productivityScore) {
+        this.productivityScore = productivityScore;
+    }
+
+    // equals and hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -181,27 +194,14 @@ public class User {
         return Objects.hash(id, email);
     }
 
-    // 🧾 toString
+    // toString
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
+                ", productivityScore=" + productivityScore +
                 '}';
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

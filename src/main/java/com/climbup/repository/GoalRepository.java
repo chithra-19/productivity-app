@@ -25,7 +25,9 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     // Find all goals belonging to a User entity
     List<Goal> findByUser(User user);
 
+    // ✅ NEW — find all ACTIVE (not completed) goals
+    List<Goal> findByUserAndCompletedFalse(User user);
+
     // Find a specific goal by ID and username (ownership check)
     Optional<Goal> findByIdAndUser_Username(Long id, String username);
-
 }

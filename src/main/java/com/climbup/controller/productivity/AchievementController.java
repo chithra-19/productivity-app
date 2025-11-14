@@ -2,11 +2,18 @@ package com.climbup.controller.productivity;
 
 import com.climbup.dto.request.AchievementRequestDTO;
 import com.climbup.dto.response.AchievementResponseDTO;
+import com.climbup.exception.NotFoundException;
+import com.climbup.mapper.AchievementMapper;
+import com.climbup.model.Achievement;
 import com.climbup.model.User;
+import com.climbup.repository.AchievementRepository;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.user.UserService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,23 +21,28 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RestController
+@Controller
 @RequestMapping("/api/achievements")
 public class AchievementController {
 
+	@Autowired
     private final AchievementService achievementService;
     private final UserService userService;
+    private final AchievementRepository achievementRepository;
 
-    public AchievementController(AchievementService achievementService, UserService userService) {
+    @Autowired
+    public AchievementController(AchievementService achievementService,
+                                 UserService userService,
+                                 AchievementRepository achievementRepository) {
         this.achievementService = achievementService;
         this.userService = userService;
+        this.achievementRepository = achievementRepository;
     }
 
-    // ---------------- Create a new achievement (admin or system use) ----------------
+    // ---------------- Create a new achievement (admin/system) ----------------
     @PostMapping("/create")
     public ResponseEntity<AchievementResponseDTO> createAchievement(
             @Valid @RequestBody AchievementRequestDTO dto) {
-
         User currentUser = userService.getCurrentUser();
         AchievementResponseDTO response = achievementService.createAchievement(dto, currentUser);
         return ResponseEntity.ok(response);
@@ -40,9 +52,17 @@ public class AchievementController {
     @GetMapping
     public ResponseEntity<List<AchievementResponseDTO>> getUserAchievements() {
         User currentUser = userService.getCurrentUser();
-        List<AchievementResponseDTO> achievements = achievementService.getUserAchievements(currentUser);
-        return ResponseEntity.ok(achievements);
+
+        // ✅ Fetch ALL achievements for the user
+        List<Achievement> all = achievementRepository.findByUser(currentUser);
+
+        List<AchievementResponseDTO> dtoList = all.stream()
+                .map(AchievementMapper::toResponseDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtoList);
     }
+
 
     // ---------------- Unlock an achievement manually ----------------
     @PostMapping("/{achievementId}/unlock")
@@ -68,7 +88,7 @@ public class AchievementController {
         return ResponseEntity.ok().build();
     }
 
-    // ---------------- Thymeleaf page rendering for dashboard ----------------
+    // ---------------- Thymeleaf page rendering ----------------
     @GetMapping("/dashboard")
     public String achievementsPage(Model model, @AuthenticationPrincipal User user) {
         List<AchievementResponseDTO> achievements = achievementService.getUserAchievements(user);
@@ -78,6 +98,6 @@ public class AchievementController {
 
         model.addAttribute("achievements", achievements);
         model.addAttribute("newAchievements", newAchievements);
-        return "achievements"; // Thymeleaf template name
+        return "achievements"; // Thymeleaf template
     }
 }

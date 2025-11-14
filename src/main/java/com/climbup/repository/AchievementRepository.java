@@ -6,22 +6,29 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AchievementRepository extends JpaRepository<Achievement, Long> {
 
-    // Count all achievements for a specific user
     long countByUser(User user);
 
-    // Get all achievements for a user
     List<Achievement> findByUser(User user);
 
-    // Get achievements by user and unlocked status
     List<Achievement> findByUserAndUnlocked(User user, boolean unlocked);
 
-    // Check if the user has any unlocked achievements
     boolean existsByUserAndUnlockedTrue(User user);
 
-    // Get all newly unlocked (not yet seen) achievements for a user
+    boolean existsByUserAndTitle(User user, String title);
+ 
+    Optional<Achievement> findByUserAndTitle(User user, String title);  // ✅ Add this line
+
     List<Achievement> findByUserAndNewlyUnlockedTrue(User user);
+
+    Optional<Achievement> findByCode(String code);
+    
+    Optional<Achievement> findByUserIdAndCode(Long userId, String code);
+
+	Optional<Achievement> findByTitleAndUser(String title, User user);
+
 }

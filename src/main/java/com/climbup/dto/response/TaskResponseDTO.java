@@ -3,23 +3,36 @@ package com.climbup.dto.response;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * DTO for sending task data from backend to frontend.
+ * Used in GET responses to shape task details for UI rendering.
+ */
 public class TaskResponseDTO {
 
-    private Long id;                 // task ID for frontend
-    private String title;
-    private String description;
-    private LocalDate dueDate;       // due date of task
-    private boolean completed;
-    private String priority;         // LOW / MEDIUM / HIGH
-    private String category;         // optional
-    private String iconUrl;          // optional for UI
-    private LocalDate completionDate;      // date when task was completed
-    private LocalDateTime completedDateTime; // timestamp when task was completed
+    private Long id; // Unique task identifier
 
-    // 🛠️ No-args constructor
-    public TaskResponseDTO() {}
+    private String title; // Task name/title
 
-    // 🛠️ Full constructor (all fields)
+    private String description; // Optional notes or details
+
+    private LocalDate dueDate; // Deadline for task completion
+
+    private boolean completed; // Status flag
+
+    private String priority; // LOW / MEDIUM / HIGH (stored as String for UI flexibility)
+
+    private String category; // Optional grouping tag (e.g., Work, Personal)
+
+    private String iconUrl; // Optional icon for visual representation in UI
+
+    private LocalDate completionDate; // Date-only stamp for streaks or calendar
+
+    private LocalDateTime completedDateTime; // Precise timestamp for analytics/logs
+
+    // --- Constructors ---
+
+    public TaskResponseDTO() {} // No-args constructor for serialization
+
     public TaskResponseDTO(Long id, String title, String description,
                            LocalDate dueDate, boolean completed,
                            String priority, String category, String iconUrl,
@@ -36,14 +49,14 @@ public class TaskResponseDTO {
         this.completedDateTime = completedDateTime;
     }
 
-    // 🛠️ Overloaded constructor (without completion fields)
     public TaskResponseDTO(Long id, String title, String description,
                            LocalDate dueDate, boolean completed,
                            String priority, String category, String iconUrl) {
         this(id, title, description, dueDate, completed, priority, category, iconUrl, null, null);
     }
 
-    // ✅ Getters and Setters
+    // --- Getters & Setters ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
