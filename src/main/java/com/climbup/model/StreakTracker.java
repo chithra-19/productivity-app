@@ -144,4 +144,9 @@ public class StreakTracker {
     public boolean hasUpdatedToday(LocalDate today) {
         return lastActiveDate != null && lastActiveDate.equals(today);
     }
+
+	public LocalDate getDate() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

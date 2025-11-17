@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.climbup.service.task.TaskServiceTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.080 s <<< FAILURE! -- in com.climbup.service.task.TaskServiceTest
-com.climbup.service.task.TaskServiceTest.updateTask_UnauthorizedUser_ShouldThrowException -- Time elapsed: 0.008 s <<< FAILURE!
+Tests run: 8, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.059 s <<< FAILURE! -- in com.climbup.service.task.TaskServiceTest
+com.climbup.service.task.TaskServiceTest.updateTask_UnauthorizedUser_ShouldThrowException -- Time elapsed: 0.009 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.SecurityException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)

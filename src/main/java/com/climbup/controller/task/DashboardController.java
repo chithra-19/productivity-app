@@ -52,8 +52,11 @@ public class DashboardController {
         if (principal == null) {
             throw new IllegalStateException("No authenticated user found.");
         }
-        return userService.findByUsernameOrEmail(principal.getName());
+
+        String email = principal.getName();
+        return userService.findByEmail(email);
     }
+
 
 
     /**

@@ -56,28 +56,36 @@ public class DashboardViewController {
     }
     
     @GetMapping("")
-    public String showDashboard(Model model, Principal principal, HttpServletRequest request) {
+    public String showDashboard(Model model, Principal principal) {
         if (principal == null) {
             return "redirect:/login";
         }
 
-        // ✅ Use flexible lookup (username or email)
         String login = principal.getName();
-        User user = userService.findByUsernameOrEmail(login);
 
-        // If your getUserWithAllData() is important (fetches tasks/goals eagerly),
-        // you can adjust it like this:
-        // User user = userService.getUserWithAllDataByUsernameOrEmail(login);
+        // Load user with tasks/goals/achievements/streaks
+        User user = userService.getUserWithAllData(login);
 
-        int streak = streakTrackerService.getCurrentStreak(user);
+        // Streak values
+        int currentStreak = streakTrackerService.calculateCurrentStreak(user.getId());
+        int bestStreak = streakTrackerService.getBestStreak(user.getId());
+
+        // Productivity score
         int score = achievementService.getProductivityScore(user);
-        int pendingCount = (int) taskService.getTasksForUser(user).stream()
+
+        // Pending tasks count
+        int pendingCount = (int) taskService.getTasksForUser(user)
+                .stream()
                 .filter(task -> !task.isCompleted())
                 .count();
 
+        // Heatmap data
         List<HeatmapDTO> heatmapData = taskService.getHeatmapData(user);
 
-        model.addAttribute("streak", streak);
+        // Add attributes
+        model.addAttribute("user", user);
+        model.addAttribute("currentStreak", currentStreak);
+        model.addAttribute("bestStreak", bestStreak);
         model.addAttribute("score", score);
         model.addAttribute("pendingCount", pendingCount);
         model.addAttribute("heatmapData", heatmapData);
@@ -85,10 +93,7 @@ public class DashboardViewController {
 
         return "dashboard";
     }
-
-
- 
-
+    
     @GetMapping("/goals")
     public String showGoalsPage(Model model, Principal principal, HttpServletRequest request) {
         model.addAttribute("currentPath", request.getRequestURI());

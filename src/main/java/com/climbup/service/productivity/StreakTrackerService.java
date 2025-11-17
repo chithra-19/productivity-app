@@ -60,13 +60,15 @@ public class StreakTrackerService {
         if (daysBetween == 1) {
             tracker.setCurrentStreak(tracker.getCurrentStreak() + 1);
             tracker.setLastActiveDate(today);
+
             if (tracker.getCurrentStreak() > tracker.getLongestStreak()) {
                 tracker.setLongestStreak(tracker.getCurrentStreak());
                 log(user, category, "New longest streak: " + tracker.getCurrentStreak() + " days 🏆");
             } else {
                 log(user, category, "Streak continued: " + tracker.getCurrentStreak() + " days ✅");
             }
-        } else if (daysBetween > 1 || tracker.getLastActiveDate() == null) {
+
+        } else if (daysBetween > 1) {
             tracker.setCurrentStreak(1);
             tracker.setLastActiveDate(today);
             log(user, category, "Streak reset after " + daysBetween + " days 😢");
@@ -75,14 +77,15 @@ public class StreakTrackerService {
         return repository.save(tracker);
     }
 
-    // 🔄 Default streak update
     public void updateStreak(User user) {
         updateStreak(user, "GENERAL");
     }
 
     // 📊 Get current streak based on completed tasks
     public int getCurrentStreak(User user) {
-        List<Task> completedTasks = taskRepository.findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(user);
+        List<Task> completedTasks = taskRepository
+                .findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(user);
+
         if (completedTasks.isEmpty()) return 0;
 
         int streak = 0;
@@ -99,27 +102,22 @@ public class StreakTrackerService {
                 break;
             }
         }
-
         return streak;
     }
 
-    // 📈 Get streak by category
     public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
         return repository.findByUserIdAndCategory(userId, category)
                 .orElseThrow(() -> new IllegalArgumentException("Streak not found for user and category: " + category));
     }
 
-    // 📋 Get all streaks for a user
     public List<StreakTracker> getAllStreaksForUser(Long userId) {
         return repository.findAllByUserId(userId);
     }
 
-    // 📝 Log streak activity
     private void log(User user, String category, String message) {
         activityService.log("[" + category + "] " + message, ActivityType.STREAK, user);
     }
 
-    // 🏅 Generate badge labels
     public List<String> getBadgeLabels(StreakTracker tracker) {
         int longest = tracker.getLongestStreak();
         List<String> badges = new ArrayList<>();
@@ -131,7 +129,6 @@ public class StreakTrackerService {
         return badges;
     }
 
-    // 🔥 Heatmap data for completed tasks
     public Map<String, Integer> getHeatmapData(List<Task> tasks) {
         return tasks.stream()
                 .filter(Task::isCompleted)
@@ -141,4 +138,36 @@ public class StreakTrackerService {
                         Collectors.summingInt(t -> 1)
                 ));
     }
+
+    // 🏅 Best streak calculated from DB
+    public int getBestStreak(Long userId) {
+        return repository.getUserBestStreak(userId).orElse(0);
+    }
+    
+    public int calculateCurrentStreak(Long userId) {
+        List<StreakTracker> streaks = repository.findByUserIdOrderByLastActiveDateAsc(userId);
+
+        if (streaks.isEmpty()) return 0;
+
+        int streak = 1;
+        StreakTracker last = streaks.get(0);
+
+        for (int i = 1; i < streaks.size(); i++) {
+            StreakTracker current = streaks.get(i);
+
+            long diff = ChronoUnit.DAYS.between(last.getLastActiveDate(), current.getLastActiveDate());
+
+            if (diff == 1) {
+                streak++;
+            } else if (diff > 1) {
+                streak = 1;
+            }
+
+            last = current;
+        }
+
+        return streak;
+    }
+
+
 }

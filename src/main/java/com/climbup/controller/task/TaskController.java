@@ -61,12 +61,11 @@ public class TaskController {
     @PostMapping("/complete/{id}")
     public ResponseEntity<Map<String, Object>> completeTask(@PathVariable Long id, Principal principal) {
         try {
-        	User user = userRepository.findByUsername(principal.getName())
-        	        .orElseThrow(() -> new RuntimeException("User not found"));
+            // Logged-in email
+            String email = principal.getName();
 
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
-            }
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             Task task = taskRepository.findById(id).orElse(null);
             if (task == null) {
@@ -77,11 +76,9 @@ public class TaskController {
                 return ResponseEntity.ok(Map.of("message", "Task already completed"));
             }
 
-            // ✅ Mark as done
             task.setCompleted(true);
             taskRepository.save(task);
 
-            // ✅ Update user metrics
             int newScore = user.getProductivityScore() + 10;
             int newStreak = user.getCurrentStreak() + 1;
 
@@ -89,7 +86,6 @@ public class TaskController {
             user.setCurrentStreak(newStreak);
             userRepository.save(user);
 
-            // ✅ Send back updated stats
             Map<String, Object> response = new HashMap<>();
             response.put("score", newScore);
             response.put("streak", newStreak);
@@ -103,6 +99,7 @@ public class TaskController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
+
 
     /** ✅ Update task */
     @PutMapping("/{taskId}")

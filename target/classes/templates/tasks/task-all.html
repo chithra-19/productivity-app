@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <title>All Tasks – ClimbUp</title>
   <style>
     /* 🌙 Base styles */
@@ -120,6 +122,23 @@
       background: rgba(250,204,21,0.15);
       color: #b45309;
     }
+	
+	 .back-arrow {
+	  display: inline-flex;
+	  align-items: center;
+	  gap: 6px;
+	  font-weight: 600;
+	  font-size: 16px;
+	  color: black;
+	  text-decoration: none;
+	  margin: 20px;
+	  transition: 0.2s ease-in-out;
+	}
+
+	.back-arrow:hover {
+	  color: #0056b3;
+	  transform: translateX(-3px);
+	}
 
     /* 📱 Responsive */
     @media (max-width: 768px) {
@@ -140,6 +159,10 @@
 </head>
 
 <body>
+	
+	<a href="/dashboard" class="back-arrow">
+	  <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+	</a>
 <div class="container">
   <h2>All Tasks</h2>
 

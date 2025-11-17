@@ -1,5 +1,7 @@
 package com.climbup.service.user;
 
+import com.climbup.dto.request.UserRequestDTO;
+import com.climbup.dto.response.UserResponseDTO;
 import com.climbup.model.User;
 import com.climbup.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -49,4 +51,9 @@ public class AuthService {
         return userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found: " + auth.getName()));
     }
+
+	 public UserResponseDTO signup(UserRequestDTO request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

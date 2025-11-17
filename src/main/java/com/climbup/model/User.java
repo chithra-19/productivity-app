@@ -70,9 +70,7 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Task> tasks = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<StreakChallenge> streakChallenges = new HashSet<>();
-
+    
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Goal> goals = new HashSet<>();
 
@@ -92,11 +90,6 @@ public class User {
     public void addTask(Task task) {
         tasks.add(task);
         task.setUser(this);
-    }
-
-    public void addStreakChallenge(StreakChallenge challenge) {
-        streakChallenges.add(challenge);
-        challenge.setUser(this);
     }
 
     public void addGoal(Goal goal) {
@@ -161,9 +154,7 @@ public class User {
     public Set<Task> getTasks() { return tasks; }
     public void setTasks(Set<Task> tasks) { this.tasks = tasks; }
 
-    public Set<StreakChallenge> getStreakChallenges() { return streakChallenges; }
-    public void setStreakChallenges(Set<StreakChallenge> streakChallenges) { this.streakChallenges = streakChallenges; }
-
+    
     public Set<Goal> getGoals() { return goals; }
     public void setGoals(Set<Goal> goals) { this.goals = goals; }
 

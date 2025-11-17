@@ -1,17 +1,14 @@
 com\climbup\dto\response\StreakChallengeResponseDTO.class
 com\climbup\dto\request\HeatmapRequestDTO.class
-com\climbup\mapper\StreakChallengeMapper.class
 com\climbup\dto\response\HeatmapDTO.class
 com\climbup\dto\response\UserResponseDTO.class
 com\climbup\repository\StreakTrackerRepository.class
-com\climbup\dto\request\UpdateChallengeRequestDTO.class
 com\climbup\dto\request\ProfileRequestDTO.class
 com\climbup\mapper\FocusSessionMapper.class
 com\climbup\controller\task\TaskController.class
 com\climbup\controller\productivity\AchievementController.class
 com\climbup\exception\ResourceNotFoundException.class
 com\climbup\controller\user\UserController.class
-com\climbup\model\StreakChallenge$ChallengeType.class
 com\climbup\service\user\ProfileServiceImpl.class
 com\climbup\mapper\ProfileMapper.class
 com\climbup\dto\request\ProfileUpdateDTO.class
@@ -20,7 +17,6 @@ com\climbup\repository\ProfileRepository.class
 com\climbup\controller\user\UserPageController.class
 com\climbup\service\user\ProfileService.class
 com\climbup\service\productivity\FocusSessionService.class
-com\climbup\dto\request\StreakChallengeRequestDTO.class
 com\climbup\model\Activity$ActivityType.class
 com\climbup\service\productivity\StreakTrackerService.class
 com\climbup\controller\task\DashboardViewController.class
@@ -28,7 +24,6 @@ com\climbup\controller\productivity\MotivationController.class
 com\climbup\service\task\TaskService.class
 com\climbup\repository\FocusSessionRepository.class
 com\climbup\service\task\ActivityService.class
-com\climbup\repository\StreakChallengeRepository.class
 com\climbup\dto\response\FocusSessionResponseDTO.class
 com\climbup\model\Task$Priority.class
 com\climbup\controller\productivity\HeatmapController.class
@@ -39,7 +34,6 @@ com\climbup\service\productivity\ActivityLogService.class
 com\climbup\controller\productivity\StreakTrackerController.class
 com\climbup\dto\request\FocusSessionRequestDTO.class
 com\climbup\model\Goal$GoalStatus.class
-com\climbup\service\productivity\StreakAutoResetService.class
 com\climbup\dto\request\LoginRequestDTO.class
 com\climbup\model\Task$TaskCategory.class
 com\climbup\dto\request\TaskRequestDTO.class
@@ -52,7 +46,6 @@ com\climbup\repository\UserAchievementRepository.class
 com\climbup\service\user\CustomUserDetailsService.class
 com\climbup\model\Goal$Priority.class
 com\climbup\service\user\UserService.class
-com\climbup\controller\productivity\StreakChallengeController.class
 com\climbup\repository\ActivityLogRepository.class
 com\climbup\model\Profile.class
 com\climbup\dto\response\HeatmapResponse.class
@@ -72,13 +65,11 @@ com\climbup\service\task\DashboardService.class
 com\climbup\dto\response\GoalResponseDTO.class
 com\climbup\service\task\HeatmapService.class
 com\climbup\dto\request\StreakTrackerRequestDTO.class
-com\climbup\service\productivity\StreakChallengeService.class
 com\climbup\repository\AchievementRepository.class
 com\climbup\dto\response\ProfileResponseDTO.class
 com\climbup\dto\request\AchievementRequestDTO.class
 com\climbup\dto\request\RegisterRequestDTO.class
 com\climbup\model\UserAchievement.class
-com\climbup\model\StreakChallenge.class
 com\climbup\mapper\GoalMapper.class
 com\climbup\model\FocusSession$SessionType.class
 com\climbup\controller\productivity\GoalController.class

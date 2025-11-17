@@ -32,7 +32,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     	    LEFT JOIN FETCH u.tasks
     	    LEFT JOIN FETCH u.goals
     	    LEFT JOIN FETCH u.achievements
-    	    LEFT JOIN FETCH u.streakChallenges
+    	  
     	    WHERE u.username = :username
     	""")
     	Optional<User> findUserWithAllData(@Param("username") String username);
@@ -40,7 +40,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
     	    SELECT u FROM User u
     	    LEFT JOIN FETCH u.tasks
-    	    LEFT JOIN FETCH u.streakChallenges
+    	    
     	    WHERE u.username = :username
     	""")
     	Optional<User> findUserWithTasksAndChallenges(@Param("username") String username);
