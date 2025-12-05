@@ -94,7 +94,15 @@ public class StreakTrackerController {
     public ResponseEntity<Map<String, Integer>> getHeatmapData() {
         User currentUser = userService.getCurrentUser();
         List<Task> tasks = taskRepo.findByUserAndCompletedTrue(currentUser);
-        Map<String, Integer> heatmap = streakService.getHeatmapData(tasks);
+
+        // Convert LocalDate keys to String
+        Map<String, Integer> heatmap = streakService.getHeatmapData(tasks).entrySet().stream()
+                .collect(Collectors.toMap(
+                    e -> e.getKey().toString(),
+                    Map.Entry::getValue
+                ));
+
         return ResponseEntity.ok(heatmap);
     }
+
 }

@@ -5,6 +5,7 @@ import com.climbup.dto.response.AchievementResponseDTO;
 import com.climbup.exception.NotFoundException;
 import com.climbup.mapper.AchievementMapper;
 import com.climbup.model.Achievement;
+import com.climbup.model.Achievement.AchievementCode;
 import com.climbup.model.Goal;
 import com.climbup.model.Task;
 import com.climbup.model.User;
@@ -17,8 +18,9 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,27 +41,27 @@ public class AchievementService {
         this.taskService = taskService;
     }
 
-    // ---------------- Create a new achievement ----------------
+    // ---------------- Create Achievement ----------------
+    @Transactional
     public AchievementResponseDTO createAchievement(AchievementRequestDTO dto, User user) {
         Achievement achievement = AchievementMapper.toEntity(dto, user);
         Achievement saved = achievementRepository.save(achievement);
         return AchievementMapper.toResponseDTO(saved);
     }
 
-    // ---------------- Get all achievements as DTOs ----------------
+    // ---------------- Get All User Achievements ----------------
     public List<AchievementResponseDTO> getUserAchievements(User user) {
-        List<Achievement> achievements = achievementRepository.findByUser(user);
-        if (achievements == null) return List.of();
-        return achievements.stream()
-                .map(AchievementMapper::toResponseDTO)
+        return achievementRepository.findByUser(user)
+                .stream()
+                .map(a -> AchievementMapper.toResponseDTO(a, a.isNewlyUnlocked()))
                 .collect(Collectors.toList());
     }
-    // ---------------- Get all achievements as entities ----------------
+
     public List<Achievement> getUserAchievementsEntities(User user) {
         return achievementRepository.findByUser(user);
     }
 
-    // ---------------- Unlock achievement manually ----------------
+    // ---------------- Unlock Manually ----------------
     @Transactional
     public AchievementResponseDTO unlockAchievement(Long achievementId, User user) {
         Achievement achievement = achievementRepository.findById(achievementId)
@@ -76,15 +78,15 @@ public class AchievementService {
             achievementRepository.save(achievement);
         }
 
-        return AchievementMapper.toResponseDTO(achievement);
+        return AchievementMapper.toResponseDTO(achievement, achievement.isNewlyUnlocked());
     }
 
-    // ---------------- Check if user has newly unlocked achievements ----------------
+    // ---------------- Newly Unlocked Check ----------------
     public boolean hasNewAchievement(User user) {
         return !achievementRepository.findByUserAndNewlyUnlockedTrue(user).isEmpty();
     }
 
-    // ---------------- Mark newly unlocked achievements as seen ----------------
+    // ---------------- Mark as Seen ----------------
     @Transactional
     public void markAchievementsAsSeen(User user) {
         List<Achievement> newAchievements = achievementRepository.findByUserAndNewlyUnlockedTrue(user);
@@ -92,7 +94,7 @@ public class AchievementService {
         achievementRepository.saveAll(newAchievements);
     }
 
-    // ---------------- Automatically check and unlock achievements ----------------
+    // ---------------- Auto Unlock Check ----------------
     @Transactional
     public void checkForNewAchievements(User user) {
         List<Achievement> lockedAchievements = achievementRepository.findByUserAndUnlocked(user, false);
@@ -100,13 +102,14 @@ public class AchievementService {
         boolean anyUnlocked = false;
 
         for (Achievement achievement : lockedAchievements) {
-            if (shouldUnlockAchievement(user, achievement)) {
+
+            AchievementCode code = achievement.getCode(); // <-- FIXED
+
+            if (shouldUnlock(user, code)) {
                 achievement.setUnlocked(true);
                 achievement.setUnlockedDate(LocalDate.now());
                 achievement.setNewlyUnlocked(true);
                 anyUnlocked = true;
-
-                System.out.println("✅ Unlocked: " + achievement.getTitle());
             }
         }
 
@@ -115,62 +118,82 @@ public class AchievementService {
         }
     }
 
-    // ---------------- Rules to unlock achievements ----------------
-    private boolean shouldUnlockAchievement(User user, Achievement achievement) {
-        String title = achievement.getTitle().trim().toLowerCase();
+    // ---------------- Rules for Unlocking ----------------
+    private boolean shouldUnlock(User user, AchievementCode code) {
+        return switch (code) {
+            case GOAL_1 -> goalRepository.findByUser(user).stream()
+                    .filter(Goal::isCompleted)
+                    .count() >= 1;
 
-        switch (title) {
-            case "first step":
-                return taskService.getCompletedTaskCount(user) >= 1;
+            case GOAL_5 -> goalRepository.findByUser(user).stream()
+                    .filter(Goal::isCompleted)
+                    .count() >= 5;
 
-            case "streak starter":
-                return getCurrentStreak(user) >= 3;
+            case GOAL_10 -> goalRepository.findByUser(user).stream()
+                    .filter(Goal::isCompleted)
+                    .count() >= 10;
 
-            case "task master":
-                return taskService.getCompletedTaskCount(user) >= 10;
+            case BEFORE_DEADLINE -> goalRepository.findByUser(user).stream()
+                    .anyMatch(g -> g.isCompleted()
+                            && g.getDueDate() != null
+                            && g.getCompletedDate() != null
+                            && !g.getCompletedDate().isAfter(g.getDueDate()));
 
-            case "early bird":
-                return taskRepository.findByUserAndCompletedTrue(user).stream()
-                        .anyMatch(task -> task.getCompletedDateTime() != null &&
-                                task.getCompletedDateTime().getHour() < 8);
+            case STREAK_3 -> calculateGoalStreak(user) >= 3;
+            case STREAK_7 -> calculateGoalStreak(user) >= 7;
 
-            case "productivity pro":
-                return getProductivityScore(user) >= 80;
+            case HEATMAP_50 -> goalRepository.findByUser(user).stream()
+                    .filter(Goal::isCompleted)
+                    .map(Goal::getCompletedDate)
+                    .distinct()
+                    .count() >= 50;
 
-            case "goal completed":
-                return hasCompletedGoal(user);
+            case FIRST_STEP -> taskService.getCompletedTaskCount(user) >= 1;
+            case STREAK_STARTER -> getCurrentStreak(user) >= 3;
+            case TASK_MASTER -> taskService.getCompletedTaskCount(user) >= 10;
 
-            default:
-                return false;
-        }
+            case EARLY_BIRD -> taskRepository.findByUserAndCompletedTrue(user).stream()
+                    .anyMatch(task -> task.getCompletedDateTime() != null
+                            && task.getCompletedDateTime().getHour() < 8);
+
+            case PRODUCTIVITY_PRO -> getProductivityScore(user) >= 80;
+            case GOAL_COMPLETED -> goalRepository.findByUser(user).stream()
+                    .anyMatch(Goal::isCompleted);
+
+            default -> false;
+        };
     }
 
-    // ---------------- Check if user has completed a goal ----------------
-    private boolean hasCompletedGoal(User user) {
-        return goalRepository.findByUser(user).stream()
-                .anyMatch(goal -> goal.isCompleted() && !goal.isDropped());
+    // ---------------- Streak Calculations ----------------
+    private int calculateGoalStreak(User user) {
+        List<Goal> goals = goalRepository.findByUser(user);
+        AtomicInteger streak = new AtomicInteger(0);
+        LocalDate today = LocalDate.now();
+
+        goals.stream()
+                .filter(Goal::isCompleted)
+                .map(Goal::getCompletedDate)
+                .sorted((d1, d2) -> d2.compareTo(d1))
+                .forEach(date -> {
+                    if (streak.get() == 0 || date.plusDays(streak.get()).equals(today)) {
+                        streak.incrementAndGet();
+                    }
+                });
+
+        return streak.get();
     }
 
-    // ---------------- Calculate productivity score ----------------
-    public int getProductivityScore(User user) {
-    	List<Task> allTasks = taskRepository.findByUser(user);
-    	if (allTasks == null || allTasks.isEmpty()) return 0;
-        
-    	long completedTasks = allTasks.stream().filter(Task::isCompleted).count();
-        double score = ((double) completedTasks / allTasks.size()) * 100;
-        return (int) Math.round(score);
-    }
-
-    // ---------------- Get current streak ----------------
     public int getCurrentStreak(User user) {
-        List<Task> completedTasks = taskRepository.findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(user);
+        List<Task> completedTasks =
+                taskRepository.findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(user);
+
         if (completedTasks.isEmpty()) return 0;
 
         int streak = 0;
         LocalDate current = LocalDate.now();
 
         for (Task task : completedTasks) {
-            LocalDate completedDate = task.getCompletionDate();
+            LocalDate completedDate = task.getCompletedDateTime().toLocalDate();
             if (completedDate.equals(current)) {
                 streak++;
                 current = current.minusDays(1);
@@ -178,32 +201,38 @@ public class AchievementService {
                 break;
             }
         }
+
         return streak;
     }
 
-    // ---------------- Initialize default achievements ----------------
+    public int getProductivityScore(User user) {
+        List<Task> tasks = taskRepository.findByUser(user);
+        if (tasks.isEmpty()) return 0;
+
+        long completed = tasks.stream().filter(Task::isCompleted).count();
+        return (int) Math.round(((double) completed / tasks.size()) * 100);
+    }
+
+    // ---------------- Default Seeder ----------------
     @Transactional
     public void initializeAchievements(User user) {
-    	
-    	if (user == null) {
-    	    throw new IllegalArgumentException("User is null in initializeAchievements");
-    	}
-    	
+
         if (achievementRepository.countByUser(user) == 0) {
+
             List<Achievement> defaultAchievements = List.of(
-                createDefaultAchievement("First Step", "Complete your first task", "bi-check-circle", user, "FIRST_STEP"),
-                createDefaultAchievement("Streak Starter", "Complete tasks for 3 consecutive days", "bi-fire", user, "STREAK_STARTER"),
-                createDefaultAchievement("Task Master", "Complete 10 tasks", "bi-trophy", user, "TASK_MASTER"),
-                createDefaultAchievement("Early Bird", "Complete a task before 8 AM", "bi-sun", user, "EARLY_BIRD"),
-                createDefaultAchievement("Productivity Pro", "Maintain 80%+ productivity for a week", "bi-graph-up", user, "PRODUCTIVITY_PRO"),
-                createDefaultAchievement("Goal Completed", "Complete any goal", "bi-flag", user, "GOAL_COMPLETED")
+                    createDefaultAchievement("First Step", "Complete your first task", "bi-check-circle", user, AchievementCode.FIRST_STEP),
+                    createDefaultAchievement("Streak Starter", "Complete tasks for 3 consecutive days", "bi-fire", user, AchievementCode.STREAK_STARTER),
+                    createDefaultAchievement("Task Master", "Complete 10 tasks", "bi-trophy", user, AchievementCode.TASK_MASTER),
+                    createDefaultAchievement("Early Bird", "Complete a task before 8 AM", "bi-sun", user, AchievementCode.EARLY_BIRD),
+                    createDefaultAchievement("Productivity Pro", "Maintain 80%+ productivity for a week", "bi-graph-up", user, AchievementCode.PRODUCTIVITY_PRO),
+                    createDefaultAchievement("Goal Completed", "Complete any goal", "bi-flag", user, AchievementCode.GOAL_COMPLETED)
             );
 
             achievementRepository.saveAll(defaultAchievements);
         }
     }
 
-    private Achievement createDefaultAchievement(String title, String description, String icon, User user, String code) {
+    private Achievement createDefaultAchievement(String title, String description, String icon, User user, AchievementCode code) {
         Achievement achievement = new Achievement();
         achievement.setTitle(title);
         achievement.setDescription(description);
@@ -211,42 +240,52 @@ public class AchievementService {
         achievement.setUser(user);
         achievement.setUnlocked(false);
         achievement.setNewlyUnlocked(false);
-        achievement.setCode(code);
+        achievement.setCode(code); // <-- FIXED
         return achievement;
     }
 
-    // ---------------- Extra: Unlock by code directly ----------------
+    // ---------------- Refresh Achievements ----------------
     @Transactional
-    public void unlockAchievement(Long userId, String code) {
-        Achievement achievement = achievementRepository
-                .findByUserIdAndCode(userId, code)
-                .orElseThrow(() -> new RuntimeException("Achievement not found"));
+    public List<AchievementResponseDTO> refreshAchievements(User user) {
+        checkForNewAchievements(user);
+        return getUserAchievements(user);
+    }
 
-        if (!achievement.isUnlocked()) {
-            achievement.setUnlocked(true);
-            achievement.setUnlockedDate(LocalDate.now());
-            achievementRepository.save(achievement);
+    // ---------------- Lock Manually ----------------
+    @Transactional
+    public void lockAchievement(User user, Long achievementId) {
+        Achievement achievement = achievementRepository.findById(achievementId)
+                .orElseThrow(() -> new NotFoundException("Achievement not found"));
+
+        if (!achievement.getUser().equals(user)) {
+            throw new SecurityException("Achievement does not belong to user");
         }
+
+        achievement.setUnlocked(false);
+        achievementRepository.save(achievement);
     }
     
-    public AchievementResponseDTO unlockByTitle(String title, User user) {
-        Achievement achievement = achievementRepository.findByTitleAndUser(title, user)
-            .orElseGet(() -> {
-                Achievement newAch = new Achievement();
-                newAch.setTitle(title);
-                newAch.setDescription("Unlocked by completing goal: " + title);
-                newAch.setUser(user);
-                return newAch;
-            });
+    public void unlockGoalAchievement(Goal goal, AchievementCode code) {
+        Optional<Achievement> existing = achievementRepository
+            .findByUserIdAndCode(goal.getUser().getId(), code);
 
-        achievement.setUnlocked(true);
-        achievement.setSeen(false);
+        Achievement achievement = existing.orElseGet(() -> {
+            Achievement a = new Achievement();
+            a.setUser(goal.getUser());
+            a.setCode(code);
+            a.setGoal(goal);
+
+            // Always use code title for consistency with dashboard
+            a.setTitle(goal.getTitle());
+            a.setDescription("You completed the goal: " + goal.getTitle());
+            return a;
+        });
+
+        achievement.setGoal(goal);
+        achievement.unlock();
         achievementRepository.save(achievement);
-
-        return mapToDTO(achievement);
     }
 
-    private AchievementResponseDTO mapToDTO(Achievement achievement) {
-        return AchievementMapper.toResponseDTO(achievement);
-    }
+
+
 }

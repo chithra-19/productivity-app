@@ -3,175 +3,220 @@
 <head>
   <meta charset="UTF-8">
   <title>🏆 Achievements – ClimbUp</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
     body {
-      background: #f9fafb;
+      background: #f5f6fa;
       font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1100px;
+      margin-top: 40px;
+      margin-bottom: 60px;
     }
 
     h2 {
-      font-weight: 600;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 20px;
     }
 
-    .badge-card {
+    .achievement-card {
       position: relative;
       border-radius: 1rem;
-      padding: 1.2rem;
+      padding: 1.5rem 1rem;
       text-align: center;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      background: linear-gradient(145deg,#fff,#f0f0f0);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-
-    .badge-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .badge-card:not(.locked) {
-      background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    .achievement-card:hover {
+      transform: translateY(-7px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.18);
     }
 
     .locked {
-      opacity: 0.45;
+      opacity: 0.4;
       filter: grayscale(100%);
     }
-
     .locked::after {
       content: "🔒";
       position: absolute;
-      top: 10px;
-      right: 14px;
-      font-size: 1.4rem;
-      opacity: 0.7;
+      top: 12px;
+      right: 16px;
+      font-size: 1.6rem;
+      opacity: 0.8;
     }
 
     .newly-unlocked {
-      box-shadow: 0 0 15px 2px gold;
-      border: 2px solid gold;
-      animation: glowPulse 1.2s ease-in-out infinite alternate;
+      border: 3px solid gold;
+      box-shadow: 0 0 25px 5px gold;
+      animation: bounceGlow 1s ease infinite alternate;
+    }
+    @keyframes bounceGlow {
+      0% { transform: translateY(0); box-shadow: 0 0 10px 3px gold; }
+      50% { transform: translateY(-5px); box-shadow: 0 0 20px 5px gold; }
+      100% { transform: translateY(0); box-shadow: 0 0 25px 7px gold; }
     }
 
-    @keyframes glowPulse {
-      from { box-shadow: 0 0 6px gold; }
-      to { box-shadow: 0 0 15px 3px gold; }
-    }
-
-    .icon {
-      font-size: 2.5rem;
+    .achievement-icon {
+      font-size: 3.2rem;
       margin-bottom: 0.6rem;
+      color: #ffb400;
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { text-shadow: 0 0 2px #fff; }
+      50% { text-shadow: 0 0 10px gold, 0 0 12px #ffd700; }
+      100% { text-shadow: 0 0 2px #fff; }
     }
 
-    small {
-      font-size: 0.9rem;
+    .achievement-title {
+      font-weight: 600;
+      font-size: 1.15rem;
+      margin-bottom: 0.3rem;
+      color: #333;
     }
-    
-        .back-arrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 16px;
-  color: black;
-  text-decoration: none;
-  margin: 20px;
-  transition: 0.2s ease-in-out;
-}
+    .achievement-desc {
+      font-size: 0.92rem;
+      color: #666;
+      min-height: 40px;
+    }
 
-.back-arrow:hover {
-  color: #0056b3;
-  transform: translateX(-3px);
-}
+    .achievement-progress {
+      height: 6px;
+      border-radius: 3px;
+      margin-top: 10px;
+      background: #e0e0e0;
+    }
+    .achievement-progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: #4caf50;
+      transition: width 0.5s ease;
+    }
+
+    .achievement-meta {
+      font-size: 0.8rem;
+      margin-top: 6px;
+      color: #555;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #333;
+      text-decoration: none;
+      margin-bottom: 20px;
+      transition: 0.2s ease-in-out;
+    }
+    .back-link:hover {
+      color: #0056b3;
+      transform: translateX(-4px);
+    }
+
+    @media (max-width: 768px) {
+      .achievement-icon { font-size: 2.6rem; }
+      .achievement-title { font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
 
-	<a href="/dashboard" class="back-arrow">
-  <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
-</a>
-  <div class="container mt-4">
-    <h2 class="mb-4">🏆 My Achievements</h2>
-    <div id="achievement-grid" class="row g-4"></div>
-  </div>
+<div class="container">
+
+  <a href="/dashboard" class="back-link">
+    <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+  </a>
+
+  <h2>🏅 Newly Unlocked</h2>
+  <div id="new-achievements" class="row g-4 mb-4"></div>
+
+  <h2>All Achievements</h2>
+  <div id="all-achievements" class="row g-4"></div>
+</div>
 
 <script>
 const token = localStorage.getItem('token');
 
-// fetch and render achievements
 async function fetchAchievements() {
   try {
-    const response = await axios.get('/api/achievements', {
+    const res = await axios.get('/api/achievements', {
       headers: { Authorization: `Bearer ${token}` }
     });
-
-    renderAchievements(response.data);
+    renderAchievements(res.data);
   } catch (err) {
-    console.error('Failed to load achievements', err);
+    console.error('Error fetching achievements', err);
   }
 }
 
-// render achievements into the grid
 function renderAchievements(achievements) {
-  const grid = document.getElementById('achievement-grid');
-  grid.innerHTML = '';
+  const allGrid = document.getElementById('all-achievements');
+  const newGrid = document.getElementById('new-achievements');
+  allGrid.innerHTML = '';
+  newGrid.innerHTML = '';
 
   achievements.forEach(a => {
     const col = document.createElement('div');
-    col.className = 'col-md-4';
+    col.className = 'col-sm-6 col-md-4';
 
     const card = document.createElement('div');
-    card.className = 'badge-card';
-
+    card.className = 'achievement-card';
     if (!a.unlocked) card.classList.add('locked');
     if (a.newlyUnlocked) card.classList.add('newly-unlocked');
 
     const unlockedDate = a.unlockedDate
-      ? new Date(a.unlockedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      ? new Date(a.unlockedDate).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric'})
       : null;
 
     card.innerHTML = `
-      <div class="icon"><i class="bi ${a.icon}"></i></div>
-      <h5 class="fw-semibold">${a.title}</h5>
-      <p class="text-muted small">${a.description}</p>
-      ${
-        a.unlocked
-          ? `<small class="text-success fw-semibold">Unlocked on ${unlockedDate}</small>`
-          : `<small class="text-muted">Locked</small>`
-      }
+      <div class="achievement-icon"><i class="bi ${a.icon}"></i></div>
+      <div class="achievement-title">${a.title}</div>
+      <div class="achievement-desc">${a.description}</div>
+      ${a.progress !== undefined ? `<div class="achievement-progress"><div class="achievement-progress-bar" style="width:${a.progress}%"></div></div>` : ''}
+      <div class="achievement-meta">${a.unlocked ? `Unlocked on ${unlockedDate}` : 'Locked'}</div>
     `;
 
     col.appendChild(card);
-    grid.appendChild(col);
 
-    // fade out glow after a few seconds
     if (a.newlyUnlocked) {
-      setTimeout(() => card.classList.remove('newly-unlocked'), 5000);
-    }
+      newGrid.appendChild(col);
+      // Confetti for newly unlocked
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#FFD700','#FFB400','#FF4500','#00BFFF','#7CFC00']
+      });
+    } else allGrid.appendChild(col);
+
+    // Remove glow after 5s
+    if (a.newlyUnlocked) setTimeout(() => card.classList.remove('newly-unlocked'), 5000);
   });
 }
 
-// call after completing a goal
-async function refreshAchievementsAfterGoal() {
+async function refreshAchievements() {
   try {
-    // hits a dedicated endpoint that checks new achievements and returns updated list
-    const response = await axios.get('/api/achievements/refresh', {
+    const res = await axios.get('/api/achievements/refresh', {
       headers: { Authorization: `Bearer ${token}` }
     });
-    renderAchievements(response.data);
+    renderAchievements(res.data);
   } catch (err) {
-    console.error('Failed to refresh achievements', err);
+    console.error('Error refreshing achievements', err);
   }
 }
 
 document.addEventListener('DOMContentLoaded', fetchAchievements);
+window.updateAchievements = refreshAchievements;
 </script>
 
 </body>

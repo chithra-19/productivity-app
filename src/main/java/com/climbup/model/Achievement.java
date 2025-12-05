@@ -58,16 +58,17 @@ public class Achievement {
 
     @Column(name = "unlocked_date")
     private LocalDate unlockedDate;
-
+    @Enumerated(EnumType.STRING)
     @Column(name = "code", unique = true, length = 100)
-    private String code; // e.g. "GOAL_COMPLETED", "STREAK_7_DAYS"
+    private AchievementCode code;
+
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
     private User user;
 
     @Column(name = "unlocked_at")
@@ -95,6 +96,14 @@ public class Achievement {
         this.description = description;
     }
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_id")
+    private Goal goal;
+
+    public Goal getGoal() { return goal; }
+    public void setGoal(Goal goal) { this.goal = goal; }
+
+    
     // ------------------ Getters & Setters ------------------
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -132,8 +141,9 @@ public class Achievement {
     public LocalDateTime getUnlockedAt() { return unlockedAt; }
     public void setUnlockedAt(LocalDateTime unlockedAt) { this.unlockedAt = unlockedAt; }
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    public AchievementCode getCode() { return code; }
+    public void setCode(AchievementCode code) { this.code = code; }
+
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
@@ -185,5 +195,21 @@ public class Achievement {
                 ", newlyUnlocked=" + newlyUnlocked +
                 ", seen=" + seen +
                 '}';
+    }
+    
+    public enum AchievementCode {
+        GOAL_1,
+        GOAL_5,
+        GOAL_10,
+        BEFORE_DEADLINE,
+        STREAK_3,
+        STREAK_7,
+        HEATMAP_50,
+        FIRST_STEP,
+        STREAK_STARTER,
+        TASK_MASTER,
+        EARLY_BIRD,
+        PRODUCTIVITY_PRO,
+        GOAL_COMPLETED
     }
 }

@@ -1,10 +1,10 @@
 package com.climbup.dto.response;
 
 public class HeatmapDTO {
-    private String date;           // formatted as "yyyy-MM-dd"
-    private int taskCount;
-    private int focusMinutes;
-    private boolean isStreakDay;
+    private final String date;       // formatted as "yyyy-MM-dd"
+    private final int taskCount;
+    private final int focusMinutes;
+    private final boolean isStreakDay;
 
     public HeatmapDTO(String date, int taskCount, int focusMinutes, boolean isStreakDay) {
         this.date = date;
@@ -13,37 +13,8 @@ public class HeatmapDTO {
         this.isStreakDay = isStreakDay;
     }
 
-    // Getters
-    public String getDate() {
-        return date;
-    }
-
-    public int getTaskCount() {
-        return taskCount;
-    }
-
-    public int getFocusMinutes() {
-        return focusMinutes;
-    }
-
-    public boolean isStreakDay() {
-        return isStreakDay;
-    }
-
-    // Setters
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public void setTaskCount(int taskCount) {
-        this.taskCount = taskCount;
-    }
-
-    public void setFocusMinutes(int focusMinutes) {
-        this.focusMinutes = focusMinutes;
-    }
-
-    public void setStreakDay(boolean streakDay) {
-        isStreakDay = streakDay;
-    }
+    public String getDate() { return date; }
+    public int getTaskCount() { return taskCount; }
+    public int getFocusMinutes() { return focusMinutes; }
+    public boolean isStreakDay() { return isStreakDay; }
 }

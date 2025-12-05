@@ -2,8 +2,14 @@ package com.climbup.controller.user;
 
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.response.ProfileResponseDTO;
+import com.climbup.model.User;
 import com.climbup.service.user.ProfileService;
+import com.climbup.service.user.UserService;
+
 import jakarta.validation.Valid;
+
+import java.security.Principal;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +29,7 @@ public class ProfileController {
             @PathVariable Long userId,
             @Valid @RequestBody ProfileRequestDTO profileRequestDTO) {
 
-        ProfileResponseDTO response = profileService.updateProfile(userId, profileRequestDTO);
+        ProfileResponseDTO response = profileService.createProfile(userId, profileRequestDTO);
         return ResponseEntity.ok(response);
     }
 

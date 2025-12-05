@@ -86,14 +86,12 @@ public class UserService implements UserDetailsService {
     }
 
 
-
-
-    // ---------- Register User (Using DTO) ----------
+    // ---------------- Registration ----------------
     public User registerUser(UserRequestDTO dto) {
-        if (emailExists(dto.getEmail())) {
+        if(userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
-        if (usernameExists(dto.getUsername())) {
+        if(userRepository.existsByUsername(dto.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
 
@@ -101,7 +99,6 @@ public class UserService implements UserDetailsService {
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
-
         return userRepository.save(user);
     }
 
@@ -190,7 +187,10 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username or email: " + login));
     }
 
-    
+    public void updatePassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
     
     
 }

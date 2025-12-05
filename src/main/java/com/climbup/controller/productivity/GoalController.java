@@ -96,20 +96,21 @@ public class GoalController {
     @PutMapping("/{goalId}/complete")
     public ResponseEntity<GoalResponseDTO> completeGoal(@PathVariable Long goalId) {
         User user = getCurrentUser();
-        Goal goal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
 
+        // Validate ownership
+        Goal goal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
         if (goal == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
+        // This already updates + triggers achievement check
         Goal completedGoal = goalService.completeGoal(goalId);
 
-     // 🏅 Add this line:
-     achievementService.checkForNewAchievements(getCurrentUser());
-
-     return ResponseEntity.ok(GoalMapper.toDTO(completedGoal));
-
+        // Return updated goal
+        return ResponseEntity.ok(GoalMapper.toDTO(completedGoal));
     }
+
+
 
 
     // ✅ PUT /goals/{goalId}/drop — Drop a goal

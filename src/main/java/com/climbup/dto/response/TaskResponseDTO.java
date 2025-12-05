@@ -25,8 +25,7 @@ public class TaskResponseDTO {
 
     private String iconUrl; // Optional icon for visual representation in UI
 
-    private LocalDate completionDate; // Date-only stamp for streaks or calendar
-
+ 
     private LocalDateTime completedDateTime; // Precise timestamp for analytics/logs
 
     // --- Constructors ---
@@ -36,7 +35,7 @@ public class TaskResponseDTO {
     public TaskResponseDTO(Long id, String title, String description,
                            LocalDate dueDate, boolean completed,
                            String priority, String category, String iconUrl,
-                           LocalDate completionDate, LocalDateTime completedDateTime) {
+                           LocalDateTime completedDateTime) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -45,14 +44,14 @@ public class TaskResponseDTO {
         this.priority = priority;
         this.category = category;
         this.iconUrl = iconUrl;
-        this.completionDate = completionDate;
+       
         this.completedDateTime = completedDateTime;
     }
 
     public TaskResponseDTO(Long id, String title, String description,
                            LocalDate dueDate, boolean completed,
                            String priority, String category, String iconUrl) {
-        this(id, title, description, dueDate, completed, priority, category, iconUrl, null, null);
+        this(id, title, description, dueDate, completed, priority, category, iconUrl,  null);
     }
 
     // --- Getters & Setters ---
@@ -81,9 +80,7 @@ public class TaskResponseDTO {
     public String getIconUrl() { return iconUrl; }
     public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
 
-    public LocalDate getCompletionDate() { return completionDate; }
-    public void setCompletionDate(LocalDate completionDate) { this.completionDate = completionDate; }
-
+  
     public LocalDateTime getCompletedDateTime() { return completedDateTime; }
     public void setCompletedDateTime(LocalDateTime completedDateTime) { this.completedDateTime = completedDateTime; }
 }

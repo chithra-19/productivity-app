@@ -2,7 +2,6 @@ package com.climbup.service.user;
 
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.response.ProfileResponseDTO;
-import com.climbup.mapper.ProfileMapper;
 import com.climbup.model.Profile;
 import com.climbup.model.User;
 import com.climbup.repository.ProfileRepository;
@@ -10,11 +9,9 @@ import com.climbup.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.ArrayList;
 
-/**
- * Implementation of ProfileService interface.
- */
 @Service
 @Transactional
 public class ProfileServiceImpl implements ProfileService {
@@ -32,17 +29,26 @@ public class ProfileServiceImpl implements ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Prevent duplicate profile
-        Optional<Profile> existingProfile = profileRepository.findByUser(user);
-        if (existingProfile.isPresent()) {
+        if (profileRepository.findByUser(user).isPresent()) {
             throw new RuntimeException("Profile already exists for this user");
         }
 
-        Profile profile = ProfileMapper.toEntity(dto);
+        Profile profile = new Profile();
+        profile.setFirstName(dto.getFirstName());
+        profile.setLastName(dto.getLastName());
+        profile.setEmail(dto.getEmail());
+        profile.setBio(dto.getBio());
         profile.setUser(user);
 
-        Profile savedProfile = profileRepository.save(profile);
-        return ProfileMapper.toDTO(savedProfile);
+        // Initialize stats
+        profile.setStreak(0);
+        profile.setCompletedTasks(0);
+        profile.setProductivityScore(0);
+        profile.setLastActiveDate(LocalDate.now());
+        profile.setNewAchievement(false);
+        profile.setAchievementList(new ArrayList<>());
+
+        return toDTO(profileRepository.save(profile));
     }
 
     @Override
@@ -53,7 +59,7 @@ public class ProfileServiceImpl implements ProfileService {
         Profile profile = profileRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
 
-        return ProfileMapper.toDTO(profile);
+        return toDTO(profile);
     }
 
     @Override
@@ -69,7 +75,51 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setEmail(dto.getEmail());
         profile.setBio(dto.getBio());
 
-        Profile updatedProfile = profileRepository.save(profile);
-        return ProfileMapper.toDTO(updatedProfile);
+        return toDTO(profileRepository.save(profile));
+    }
+
+    @Override
+    public Profile findByUser(User user) {
+        return profileRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+    }
+
+    @Override
+    public Profile getOrCreateProfile(User user) {
+        return profileRepository.findByUser(user).orElseGet(() -> {
+            Profile profile = new Profile();
+            profile.setUser(user);
+            profile.setFirstName(user.getUsername());
+            profile.setEmail(user.getEmail());
+            profile.setBio("No bio yet.");
+            profile.setProfilePictureUrl(null);
+            profile.setStreak(0);
+            profile.setCompletedTasks(0);
+            profile.setProductivityScore(0);
+            profile.setLastActiveDate(LocalDate.now());
+            profile.setNewAchievement(false);
+            profile.setAchievementList(new ArrayList<>());
+            return profileRepository.save(profile);
+        });
+    }
+
+    // Mapper
+    private ProfileResponseDTO toDTO(Profile profile) {
+        ProfileResponseDTO dto = new ProfileResponseDTO();
+        dto.setId(profile.getId());
+        dto.setFirstName(profile.getFirstName());
+        dto.setLastName(profile.getLastName());
+        dto.setEmail(profile.getEmail());
+        dto.setBio(profile.getBio());
+        dto.setUserId(profile.getUser().getId());
+
+        dto.setStreak(profile.getStreak());
+        dto.setCompletedTasks(profile.getCompletedTasks());
+        dto.setProductivityScore(profile.getProductivityScore());
+        dto.setLastActiveDate(profile.getLastActiveDate());
+        dto.setNewAchievement(profile.isNewAchievement());
+        dto.setAchievementList(profile.getAchievementList() != null ? profile.getAchievementList() : new ArrayList<>());
+
+        return dto;
     }
 }

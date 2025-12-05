@@ -1,63 +1,110 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>User Profile | ClimbUp</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   
+    <title>User Profile | ClimbUp</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f4f6f8; padding: 2rem; }
+        .profile-card { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        .profile-header { display: flex; align-items: center; gap: 1.5rem; }
+        .profile-header img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+        .profile-header h2 { margin: 0; }
+        .stats-container { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+        .stat-card { background: #e3f2fd; flex: 1; min-width: 120px; padding: 1rem; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #1565c0; }
+        .achievements { margin-top: 1.5rem; }
+        .achievements ul { padding-left: 1.2rem; }
+        .achievements p { font-style: italic; color: #555; }
+        .edit-form { margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1.5rem; }
+        .error { color: red; font-size: 0.9rem; }
+    </style>
 </head>
+
 <body>
+<div class="container">
+    <div class="profile-card">
 
-	
-    <header>
-        <h1>Welcome back, <span th:text="${user.displayName ?: user.username}">User</span>! 👋</h1>
-        <a href="/logout" class="logout">Logout</a>
-    </header>
+        <!-- HEADER -->
+        <div class="profile-header">
+            <div>
+                <img th:if="${profile.profilePictureUrl != null}" th:src="${profile.profilePictureUrl}" alt="Profile Picture"/>
+                <img th:unless="${profile.profilePictureUrl != null}" th:src="@{/images/default-profile.png}" alt="Profile Picture"/>
+            </div>
 
-    <main>
-        <div class="profile-card">
-            <h2>Your Productivity Dashboard</h2>
-            
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3>Current Streak</h3>
-                    <div class="stat-value" th:text="${streak}">0</div>
-                    <p>days of consistent productivity</p>
-                </div>
-                
-                <div class="stat-card">
-                    <h3>Productivity Score</h3>
-                    <div class="stat-value" th:text="${score} + '%'">0%</div>
-                    <p>of your weekly goal</p>
-                </div>
-                
-                <div class="stat-card">
-                    <h3>Tasks Completed</h3>
-                    <div class="stat-value" th:text="${completedTasks}">0</div>
-                    <p>this week</p>
-                </div>
+            <div>
+                <h2 th:text="${#strings.defaultString(profile.firstName,'')} + ' ' + ${#strings.defaultString(profile.lastName,'')}">User Name</h2>
+                <p th:text="${#strings.defaultString(profile.bio,'No bio yet.')}">Bio here</p>
+                <p><strong>Email:</strong> <span th:text="${profile.email}">user@example.com</span></p>
             </div>
         </div>
-        
-        <div id="achievement-toast" style="display: none;" class="toast">
-    🎉 New achievement unlocked!
-</div>
 
-<script>
-    const hasNewAchievement = /*[[${newAchievementUnlocked}]]*/ false;
-    if (hasNewAchievement) {
-        const toast = document.getElementById("achievement-toast");
-        toast.style.display = "block";
-        setTimeout(() => toast.style.display = "none", 5000);
-    }
-</script>
-        
-
-        <div style="text-align: center; margin-top: 2rem;">
-            <a href="/dashboard" class="btn">Go to Task Dashboard →</a>
+        <!-- STATS -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <h4>Streak</h4>
+                <div class="stat-value" th:text="${profile.streak}">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Completed Tasks</h4>
+                <div class="stat-value" th:text="${profile.completedTasks}">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Productivity</h4>
+                <div class="stat-value" th:text="${profile.productivityScore + '%'}">0%</div>
+            </div>
         </div>
-    </main>
+
+        <!-- ACHIEVEMENTS -->
+        <div class="achievements">
+            <h5>Achievements</h5>
+            <ul th:if="${profile.achievementList != null and !#lists.isEmpty(profile.achievementList)}">
+                <li th:each="ach : ${profile.achievementList}" th:text="${ach}">Achievement</li>
+            </ul>
+            <p th:if="${profile.achievementList == null or #lists.isEmpty(profile.achievementList)}">No achievements yet. Keep going! 🎯</p>
+        </div>
+
+        <!-- EDIT FORM -->
+        <div class="edit-form">
+            <h5>Edit Profile</h5>
+            <form th:action="@{/dashboard/profile/update}" th:object="${profileRequestDTO}" method="post">
+
+                <div class="mb-3">
+                    <label for="firstName">First Name</label>
+                    <input id="firstName" type="text" th:field="*{firstName}" class="form-control"/>
+                    <div th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}" class="error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="lastName">Last Name</label>
+                    <input id="lastName" type="text" th:field="*{lastName}" class="form-control"/>
+                    <div th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}" class="error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" th:field="*{email}" class="form-control"/>
+                    <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" th:field="*{bio}" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="profilePictureUrl">Profile Picture URL</label>
+                    <input id="profilePictureUrl" type="text" th:field="*{profilePictureUrl}" class="form-control"/>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+
+    </div>
+</div>
 </body>
 </html>

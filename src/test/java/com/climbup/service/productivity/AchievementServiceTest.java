@@ -69,7 +69,7 @@ public class AchievementServiceTest {
 
     private Task createTask(LocalDate completionDate, boolean completed) {
         Task task = new Task();
-        task.setCompletionDate(completionDate);
+        task.markCompleted(); 
         task.setCompleted(completed);
         return task;
     }

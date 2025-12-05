@@ -1,5 +1,6 @@
 package com.climbup.controller.task;
 
+import com.climbup.model.Activity;
 import com.climbup.model.User;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.HeatmapDTO;
@@ -8,6 +9,7 @@ import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.ActivityLogService;
 import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.task.HeatmapService;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,19 +35,23 @@ public class DashboardController {
     private final AchievementService achievementService;
     private final StreakTrackerService streakTrackerService;
     private final TaskService taskService;
+    private final HeatmapService heatmapService;
 
     @Autowired
     public DashboardController(ActivityLogService activityLogService,
                                UserService userService,
                                AchievementService achievementService,
                                StreakTrackerService streakTrackerService,
-                               TaskService taskService) {
+                               TaskService taskService,
+                               HeatmapService heatmapService) {
         this.activityLogService = activityLogService;
         this.userService = userService;
         this.achievementService = achievementService;
         this.streakTrackerService = streakTrackerService;
         this.taskService = taskService;
+        this.heatmapService = heatmapService;
     }
+
 
     // 🔹 Helper: fetch current logged-in user safely
     private User getCurrentUser(Principal principal) {
@@ -98,8 +104,7 @@ public class DashboardController {
     @ResponseBody
     public ResponseEntity<HeatmapResponse> getActivityDates(
             @PathVariable String category,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "30") int days, // optional: default to 30 days
             Principal principal) {
 
         if (principal == null) {
@@ -107,35 +112,20 @@ public class DashboardController {
         }
 
         User user = getCurrentUser(principal);
-        List<HeatmapDTO> heatmapData = activityLogService.getHeatmapData(user, category);
 
-        heatmapData.sort(Comparator.comparing(HeatmapDTO::getDate));
+        // Map category string to ActivityType enum if needed
+        Activity.ActivityType type = null;
+        try {
+            type = Activity.ActivityType.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // fallback: treat unknown category as null (all types)
+        }
 
-        List<String> activeDates = heatmapData.stream()
-                .filter(d -> d.getTaskCount() > 0)
-                .map(HeatmapDTO::getDate)
-                .collect(Collectors.toList());
-
-        int currentStreak = activityLogService.getCurrentStreak(user, category);
-
-        HeatmapResponse response = new HeatmapResponse();
-        response.setActiveDates(activeDates);
-        response.setTotalDays(activeDates.size());
-        response.setCurrentStreak(currentStreak);
-        response.setHeatmapData(heatmapData);
+        HeatmapResponse response = heatmapService.buildHeatmapResponse(user.getId(), type, days);
 
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * ✅ Standalone heatmap page.
-     */
-    @GetMapping("/heatmap")
-    public String showHeatmapPage(Model model, Principal principal) {
-        User user = getCurrentUser(principal);
-        model.addAttribute("user", user);
-        return "heatmap";
-    }
+   
 
     /**
      * ✅ All tasks page.
@@ -145,7 +135,7 @@ public class DashboardController {
         User user = getCurrentUser(principal);
         List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
         model.addAttribute("tasks", tasks);
-        return "task/task-all";
+        return "tasks/task-all";
     }
 
     /**
@@ -160,7 +150,7 @@ public class DashboardController {
                 .collect(Collectors.toList());
 
         model.addAttribute("tasks", todayTasks);
-        return "task/task-today";
+        return "tasks/task-today";
     }
 
     /**
@@ -169,6 +159,8 @@ public class DashboardController {
     @GetMapping("/add-task")
     public String getAddTaskPage(Model model) {
         model.addAttribute("task", new TaskRequestDTO());
-        return "task/add-task";
+        return "tasks/add-task";
     }
+    
+   
 }

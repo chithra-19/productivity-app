@@ -49,9 +49,6 @@ public class Task {
     @Column(name = "completed", nullable = false)
     private boolean completed = false;
 
-    @Column(name = "completion_date")
-    private LocalDate completionDate;
-
     @Column(name = "completed_date_time")
     private LocalDateTime completedDateTime;
 
@@ -91,13 +88,13 @@ public class Task {
     // ✅ Business Logic
     public void markCompleted() {
         this.completed = true;
-        this.completionDate = LocalDate.now();
+        
         this.completedDateTime = LocalDateTime.now();
     }
 
     public void markUncompleted() {
         this.completed = false;
-        this.completionDate = null;
+     
         this.completedDateTime = null;
     }
 
@@ -125,9 +122,6 @@ public class Task {
 
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
-
-    public LocalDate getCompletionDate() { return completionDate; }
-    public void setCompletionDate(LocalDate completionDate) { this.completionDate = completionDate; }
 
     public LocalDateTime getCompletedDateTime() { return completedDateTime; }
     public void setCompletedDateTime(LocalDateTime completedDateTime) { this.completedDateTime = completedDateTime; }

@@ -46,4 +46,26 @@ public class AchievementMapper {
         // For now, simple placeholder: 100 if unlocked, 0 if locked
         return achievement.isUnlocked() ? 100 : 0;
     }
+
+    public static AchievementResponseDTO toResponseDTO(Achievement achievement, boolean newlyUnlocked) {
+        AchievementResponseDTO dto = new AchievementResponseDTO();
+        dto.setId(achievement.getId());
+        dto.setTitle(achievement.getTitle());
+        dto.setDescription(achievement.getDescription());
+        dto.setType(achievement.getType() != null ? achievement.getType().name() : null);
+        dto.setCategory(achievement.getCategory());
+        dto.setIcon(achievement.getIcon() != null ? achievement.getIcon() : "bi-trophy");
+        dto.setUnlocked(achievement.isUnlocked());
+        dto.setNewlyUnlocked(newlyUnlocked); // use the parameter
+        dto.setSeen(achievement.isSeen());
+        dto.setUnlockedDate(achievement.getUnlockedDate());
+        dto.setCreatedAt(achievement.getCreatedAt());
+        dto.setUserId(achievement.getUser() != null ? achievement.getUser().getId() : null);
+
+        // Optional: Calculate progressPercent here if needed
+        dto.setProgressPercent(calculateProgressPercent(achievement));
+
+        return dto;
+    }
+
 }

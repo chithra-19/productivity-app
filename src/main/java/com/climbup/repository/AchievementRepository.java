@@ -20,15 +20,20 @@ public interface AchievementRepository extends JpaRepository<Achievement, Long> 
     boolean existsByUserAndUnlockedTrue(User user);
 
     boolean existsByUserAndTitle(User user, String title);
- 
-    Optional<Achievement> findByUserAndTitle(User user, String title);  // ✅ Add this line
+
+    Optional<Achievement> findByUserAndTitle(User user, String title);
 
     List<Achievement> findByUserAndNewlyUnlockedTrue(User user);
 
-    Optional<Achievement> findByCode(String code);
-    
-    Optional<Achievement> findByUserIdAndCode(Long userId, String code);
+    // ENUM FIXES 🚀
+    Optional<Achievement> findByCode(Achievement.AchievementCode code);
 
-	Optional<Achievement> findByTitleAndUser(String title, User user);
+    Optional<Achievement> findByUserIdAndCode(Long userId, Achievement.AchievementCode code);
 
+    Optional<Achievement> findByTitleAndUser(String title, User user);
+
+    boolean existsByCode(Achievement.AchievementCode code);
+
+    // NEW – fetch all achievements linked to a goal
+    List<Achievement> findByGoalId(Long goalId);
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.climbup.model.Goal;
 import com.climbup.model.User;
@@ -30,4 +32,8 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
 
     // Find a specific goal by ID and username (ownership check)
     Optional<Goal> findByIdAndUser_Username(Long id, String username);
+    
+    @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.achievements WHERE g.user.id = :userId")
+    List<Goal> findAllByUserWithAchievements(@Param("userId") Long userId);
+
 }

@@ -1,86 +1,158 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login – ClimbUp</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            background-color: #f4f4f4;
-            font-family: Arial, sans-serif;
-            padding: 50px;
-        }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px #ccc;
-        }
-        .password-wrapper {
-            position: relative;
-            margin-bottom: 15px;
-        }
-        .toggle-password {
-            position: absolute;
-            top: 50%;
-            right: 12px;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #6c757d;
-            user-select: none;
-            font-size: 18px;
-        }
-        .error {
-            color: red;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .link {
-            text-align: center;
-            margin-top: 15px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – ClimbUp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+	.container {
+	  width: 90%;              /* take most of the screen on small devices */
+	  max-width: 500px;        /* cap it so it doesn’t get too wide */
+	  padding: 40px;
+	  background: rgba(255, 255, 255, 0.85);
+	  border-radius: 20px;
+	  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+	  backdrop-filter: blur(10px);
+	  border: 1px solid rgba(255,255,255,0.3);
+	  animation: fadeIn 1s ease-in-out;
+	  color: #333;
+	}
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+    .quote {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 30px;
+      font-style: italic;
+      min-height: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #f0f0f0;
+      color: #333;
+      font-size: 16px;
+    }
+    input::placeholder { color: #666; }
+    .password-group {
+      position: relative;
+    }
+    #togglePassword {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: #5c6bc0;
+      cursor: pointer;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #5c6bc0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover { background: #3f51b5; }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #333;
+    }
+    .link a {
+      color: #5c6bc0;
+      text-decoration: none;
+    }
+    .link a:hover {
+      text-decoration: underline;
+    }
+	@media (min-width: 768px) {
+	  .container {
+	    max-width: 600px;   /* bigger card on tablets/desktops */
+	    padding: 50px;
+	  }
+	}
+
+	@media (min-width: 1200px) {
+	  .container {
+	    max-width: 700px;   /* even larger on wide screens */
+	    padding: 60px;
+	  }
+	}
+  </style>
 </head>
 <body>
-<div class="container">
-    <h2 class="text-center mb-4">Login to ClimbUp</h2>
-
-    <!-- Spring Security error messages -->
-    <div class="error">
-        <span th:if="${param.error}">Invalid username or password</span>
-        <span th:if="${param.logout}">You have been logged out</span>
-    </div>
-
-    <!-- Login form -->
-    <form th:action="@{/auth/login}" method="post" autocomplete="off">
-        <div class="mb-3">
-            <input type="text" name="username" placeholder="Email" class="form-control" required />
-        </div>
-
-        <div class="password-wrapper">
-            <input type="password" name="password" id="password" placeholder="Password" class="form-control" required />
-            <span class="toggle-password" onclick="togglePassword()">👁️</span>
-        </div>
-
-        <button type="submit" class="btn btn-success w-100">Login</button>
+  <div class="container">
+    <h2>Welcome Back 👋</h2>
+    <div class="quote">Loading inspiration...</div>
+    <form action="/perform_login" method="post">
+      <input type="email" name="username" placeholder="Email" required />
+      <div class="password-group">
+        <input type="password" name="password" placeholder="Password" required />
+        <span id="togglePassword">Show</span>
+      </div>
+      <button type="submit">Sign In</button>
     </form>
+    <div class="link">Forgot your password? <a href="/auth/forgot-password">Reset here</a></div>
+    <div class="link">New to ClimbUp? <a href="/auth/register">Create account</a></div>
+  </div>
 
-    <div class="link">
-        <p>Don't have an account? <a th:href="@{/auth/register}">Register here</a></p>
-    </div>
-</div>
+  <script>
+    // Toggle password visibility
+    const toggleBtn = document.getElementById("togglePassword");
+    const passwordInput = document.querySelector("input[name='password']");
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.textContent = isPassword ? "Hide" : "Show";
+    });
 
-<!-- Password toggle script -->
-<script>
-    function togglePassword() {
-        const passwordInput = document.getElementById("password");
-        const toggleIcon = document.querySelector(".toggle-password");
-        const isPassword = passwordInput.type === "password";
-        passwordInput.type = isPassword ? "text" : "password";
-        toggleIcon.textContent = isPassword ? "🙈" : "👁️";
-    }
-</script>
+    // Add loading effect on submit
+    const form = document.querySelector("form");
+    form.addEventListener("submit", (e) => {
+      const btn = form.querySelector("button");
+      btn.textContent = "Signing in...";
+      btn.disabled = true;
+    });
+
+    // Rotate motivational quotes
+    const quotes = [
+      "Small steps every day lead to big change.",
+      "Discipline beats motivation every time.",
+      "Your future self will thank you.",
+      "Consistency is the key to success.",
+      "Climb higher, one habit at a time."
+    ];
+    const quoteEl = document.querySelector(".quote");
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    quoteEl.textContent = `“${randomQuote}”`;
+  </script>
 </body>
 </html>

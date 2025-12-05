@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/motivation")
 public class MotivationController {
 
+	@Autowired
     private final MotivationService motivationService;
 
     @Autowired

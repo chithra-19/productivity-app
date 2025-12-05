@@ -83,14 +83,18 @@ public class TaskService {
         Optional.ofNullable(dto.getCategory()).ifPresent(task::setCategory);
 
         if (dto.getCompleted() != null) {
-            task.setCompleted(dto.getCompleted());
-            if (dto.getCompleted() && task.getCompletionDate() == null) {
-                task.setCompletionDate(LocalDate.now());
+
+            if (dto.getCompleted() && !task.isCompleted()) {
+
+                task.setCompleted(true);
                 task.setCompletedDateTime(LocalDateTime.now());
+
+                // streak + achievements
                 streakTrackerService.updateStreak(user);
                 achievementService.checkForNewAchievements(user);
+
             } else if (!dto.getCompleted()) {
-                task.setCompletionDate(null);
+                task.setCompleted(false);
                 task.setCompletedDateTime(null);
             }
         }
@@ -112,24 +116,23 @@ public class TaskService {
 
     // ✅ Complete Task
     public TaskResponseDTO completeTask(Long taskId, User user) {
+
         Task task = taskRepository.findByIdAndUser(taskId, user)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
 
         if (!task.isCompleted()) {
             task.setCompleted(true);
-            task.setCompletionDate(LocalDate.now());
             task.setCompletedDateTime(LocalDateTime.now());
+            taskRepository.save(task);
 
-            Task savedTask = taskRepository.save(task);
-            activityService.log("Completed Task: " + savedTask.getTitle(), ActivityType.TASK, user);
+            activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
             streakTrackerService.updateStreak(user);
             achievementService.checkForNewAchievements(user);
-
-            return TaskMapper.toResponse(savedTask);
         }
 
         return TaskMapper.toResponse(task);
     }
+
 
     // 🔹 Completed task count
     public long getCompletedTaskCount(User user) {
@@ -140,32 +143,45 @@ public class TaskService {
     public Map<LocalDate, Double> getFocusHoursByDate(List<Task> tasks) {
         return tasks.stream()
                 .filter(Task::isCompleted)
-                .filter(task -> task.getCompletionDate() != null)
+                .filter(task -> task.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
-                        Task::getCompletionDate,
-                        Collectors.summingDouble(task -> task.getFocusHours() != null ? task.getFocusHours() : 0.0)
+                        task -> task.getCompletedDateTime().toLocalDate(),   // FIXED 🔥
+                        Collectors.summingDouble(
+                                task -> task.getFocusHours() != null ? task.getFocusHours() : 0.0
+                        )
                 ));
     }
 
-    // 🔹 Heatmap Data
+
     public List<HeatmapDTO> getHeatmapData(User user) {
+
         List<Task> tasks = taskRepository.findByUserAndCompletedTrue(user);
 
         Map<LocalDate, List<Task>> grouped = tasks.stream()
-                .filter(t -> t.getCompletionDate() != null)
-                .collect(Collectors.groupingBy(Task::getCompletionDate));
+                .filter(t -> t.getCompletedDateTime() != null)
+                .collect(Collectors.groupingBy(
+                        t -> t.getCompletedDateTime().toLocalDate()
+                ));
 
         List<HeatmapDTO> result = new ArrayList<>();
-        for (Map.Entry<LocalDate, List<Task>> entry : grouped.entrySet()) {
+
+        for (var entry : grouped.entrySet()) {
+
             LocalDate date = entry.getKey();
             List<Task> dayTasks = entry.getValue();
 
             int taskCount = dayTasks.size();
+
             int focusMinutes = dayTasks.stream()
-                    .mapToInt(t -> t.getFocusHours() != null ? (int) (t.getFocusHours() * 60) : 0)
+                    .mapToInt(t -> t.getFocusHours() != null ? (int)(t.getFocusHours() * 60) : 0)
                     .sum();
 
-            result.add(new HeatmapDTO(date.toString(), taskCount, focusMinutes, true));
+            result.add(new HeatmapDTO(
+                    date.toString(),
+                    taskCount,
+                    focusMinutes,
+                    true
+            ));
         }
 
         return result;
@@ -179,10 +195,10 @@ public class TaskService {
     }
 
     // 🔹 Get today’s tasks
-    public List<TaskResponseDTO> getTodayTasks() {
+    public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
         return taskRepository.findByUserAndDueDateBetween(
-                        null, today, today) // Replace null with actual User when calling
+                        user, today, today) // Replace null with actual User when calling
                 .stream()
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());
@@ -214,12 +230,17 @@ public class TaskService {
             Task task = optionalTask.get();
 
             if (task.getUser().getId().equals(user.getId())) {
-                task.setCompleted(true);
+                task.markCompleted();
                 taskRepository.save(task);
                 return true;
             }
         }
         return false;
+    }
+
+ // 🔹 Get today’s tasks for a user
+    public List<Task> getTasksDueOn(User user, LocalDate date) {
+        return taskRepository.findByUserAndDueDate(user, date);
     }
 
 }

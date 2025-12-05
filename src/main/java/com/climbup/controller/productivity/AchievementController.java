@@ -100,4 +100,36 @@ public class AchievementController {
         model.addAttribute("newAchievements", newAchievements);
         return "achievements"; // Thymeleaf template
     }
+    
+    @PostMapping("/{achievementId}/lock")
+    public ResponseEntity<String> lockAchievement(@PathVariable Long achievementId) {
+        User currentUser = userService.getCurrentUser();
+
+        achievementService.lockAchievement(currentUser, achievementId);
+
+        return ResponseEntity.ok("Achievement locked successfully");
+    }
+    
+    @GetMapping("/all")
+    public ResponseEntity<List<AchievementResponseDTO>> getAllAchievements() {
+        User currentUser = userService.getCurrentUser();
+        List<AchievementResponseDTO> achievements =
+                achievementService.getUserAchievements(currentUser);
+
+        return ResponseEntity.ok(achievements);
+    }
+
+    // -------------------------------------------------------------------------
+    // IMPORTANT: Refresh achievements after goal completion
+    // Frontend calls: GET /api/achievements/refresh
+    // -------------------------------------------------------------------------
+    @GetMapping("/refresh")
+    public ResponseEntity<List<AchievementResponseDTO>> refreshAchievements() {
+        User currentUser = userService.getCurrentUser();
+
+        List<AchievementResponseDTO> updated =
+                achievementService.refreshAchievements(currentUser);
+
+        return ResponseEntity.ok(updated);
+    }
 }

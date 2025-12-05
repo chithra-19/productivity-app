@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.climbup.controller.productivity.GoalControllerTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 7, Skipped: 0, Time elapsed: 1.316 s <<< FAILURE! -- in com.climbup.controller.productivity.GoalControllerTest
-com.climbup.controller.productivity.GoalControllerTest.saveGoal_ShouldReturnSavedGoal -- Time elapsed: 1.088 s <<< ERROR!
+Tests run: 7, Failures: 0, Errors: 7, Skipped: 0, Time elapsed: 1.412 s <<< FAILURE! -- in com.climbup.controller.productivity.GoalControllerTest
+com.climbup.controller.productivity.GoalControllerTest.saveGoal_ShouldReturnSavedGoal -- Time elapsed: 1.100 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
@@ -105,7 +105,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.dropGoal_ShouldMarkGoalDropped -- Time elapsed: 0.019 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.dropGoal_ShouldMarkGoalDropped -- Time elapsed: 0.025 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doPut(FrameworkServlet.java:925)
@@ -192,7 +192,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at com.climbup.controller.productivity.GoalController.lambda$getCurrentUser$0(GoalController.java:39)
 	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
 	at com.climbup.controller.productivity.GoalController.getCurrentUser(GoalController.java:39)
-	at com.climbup.controller.productivity.GoalController.dropGoal(GoalController.java:118)
+	at com.climbup.controller.productivity.GoalController.dropGoal(GoalController.java:119)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -208,7 +208,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.deleteGoal_ShouldReturnNoContent -- Time elapsed: 0.021 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.deleteGoal_ShouldReturnNoContent -- Time elapsed: 0.029 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doDelete(FrameworkServlet.java:936)
@@ -295,7 +295,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at com.climbup.controller.productivity.GoalController.lambda$getCurrentUser$0(GoalController.java:39)
 	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
 	at com.climbup.controller.productivity.GoalController.getCurrentUser(GoalController.java:39)
-	at com.climbup.controller.productivity.GoalController.deleteGoal(GoalController.java:133)
+	at com.climbup.controller.productivity.GoalController.deleteGoal(GoalController.java:134)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -311,7 +311,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.getGoals_ShouldReturnGoalList -- Time elapsed: 0.024 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.getGoals_ShouldReturnGoalList -- Time elapsed: 0.033 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:903)
@@ -414,7 +414,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.completeGoal_ShouldMarkGoalCompleted -- Time elapsed: 0.018 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.completeGoal_ShouldMarkGoalCompleted -- Time elapsed: 0.024 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doPut(FrameworkServlet.java:925)
@@ -517,7 +517,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.updateGoal_NotFound_ShouldReturn404 -- Time elapsed: 0.083 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.updateGoal_NotFound_ShouldReturn404 -- Time elapsed: 0.102 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doPut(FrameworkServlet.java:925)
@@ -620,7 +620,7 @@ Caused by: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	... 80 more
 
-com.climbup.controller.productivity.GoalControllerTest.updateGoal_ShouldReturnUpdatedGoal -- Time elapsed: 0.034 s <<< ERROR!
+com.climbup.controller.productivity.GoalControllerTest.updateGoal_ShouldReturnUpdatedGoal -- Time elapsed: 0.036 s <<< ERROR!
 jakarta.servlet.ServletException: Request processing failed: java.lang.RuntimeException: User not found
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1019)
 	at org.springframework.web.servlet.FrameworkServlet.doPut(FrameworkServlet.java:925)

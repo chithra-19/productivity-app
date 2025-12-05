@@ -3,6 +3,7 @@ package com.climbup.service.productivity;
 import com.climbup.exception.NotFoundException;
 import com.climbup.exception.ResourceNotFoundException;
 import com.climbup.model.Achievement;
+import com.climbup.model.Achievement.AchievementCode;
 import com.climbup.model.Goal;
 import com.climbup.model.User;
 import com.climbup.repository.AchievementRepository;
@@ -55,9 +56,18 @@ public class GoalService {
                 .orElseThrow(() -> new NotFoundException("Goal not found with ID: " + id));
     }
 
-    // ===== Save a new goal =====
+    @Transactional
     public Goal saveGoal(Goal goal) {
-        return goalRepository.save(goal);
+        Goal saved = goalRepository.save(goal);
+
+        // Optionally trigger achievements for creating a goal
+        // e.g., unlock “First Goal” achievement
+        achievementService.unlockGoalAchievement(saved, AchievementCode.FIRST_STEP);
+
+        // Refresh other achievements if needed
+        achievementService.checkForNewAchievements(saved.getUser());
+
+        return saved;
     }
 
     // ===== Update an existing goal =====
@@ -99,56 +109,20 @@ public class GoalService {
         goal.setCompleted(true);
         goal.setStatus(Goal.GoalStatus.COMPLETED);
         goal.setProgress(100);
+        goal.setCompletedDate(LocalDate.now());
 
         goalRepository.save(goal);
 
-        // ✅ Centralized check
-        achievementService.checkForNewAchievements(goal.getUser());
+        achievementService.unlockGoalAchievement(goal, AchievementCode.GOAL_COMPLETED);
 
+     // Then check other achievements
+     achievementService.checkForNewAchievements(goal.getUser());
         return goal;
     }
 
-    // ===== Unlock achievement for first goal completion =====
-    @Transactional
-    public void unlockAchievementForGoalCompletion(User user, Goal goal) {
-        // Skip if not completed
-        if (!goal.isCompleted()) return;
-
-        boolean alreadyUnlocked = achievementRepository
-        	    .existsByUserAndTitle(user, goal.getTitle());
-
-        	if (!alreadyUnlocked) {
-        	    Achievement achievement = new Achievement();
-        	    achievement.setTitle(goal.getTitle());
-        	    achievement.setDescription("Unlocked by completing goal: " + goal.getTitle());
-        	    achievement.setUser(user);
-        	    achievement.setUnlocked(true);
-        	    achievement.setNewlyUnlocked(true);
-        	    achievement.setUnlockedAt(LocalDateTime.now());
-        	    achievementRepository.save(achievement);
-        	}
-    }
+   
     
-    @Transactional
-    public void markGoalAsCompleted(Long goalId, User user) {
-        Goal goal = goalRepository.findById(goalId)
-                .orElseThrow(() -> new NotFoundException("Goal not found"));
-
-        if (!goal.getUser().equals(user)) {
-            throw new SecurityException("Goal does not belong to user");
-        }
-
-        // mark as completed
-        goal.setCompleted(true);
-        goal.setDropped(false);
-        goal.setStatus(Goal.GoalStatus.COMPLETED);
-        goal.setProgress(100);
-
-        goalRepository.save(goal); // ✅ make sure this is here
-
-        // 🔥 trigger achievement check
-        achievementService.checkForNewAchievements(user);
-    }
+    
 
 
 }

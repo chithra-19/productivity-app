@@ -2,6 +2,7 @@ package com.climbup.controller.task;
 
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
@@ -75,6 +76,13 @@ public class TaskViewController {
             redirectAttributes.addFlashAttribute("error", "Failed to add task.");
             e.printStackTrace(); // Optional: log for debugging
         }
-        return "redirect:/dashboard";
+        return "redirect:/tasks/today";
+    }
+    
+    @GetMapping("/add-task")
+    public String showAddTaskPage(Model model) {
+        // You can add any attributes here for form binding
+        model.addAttribute("task", new Task()); 
+        return "tasks/add-task"; // matches add-task.html in templates
     }
 }

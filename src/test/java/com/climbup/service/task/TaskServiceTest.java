@@ -74,7 +74,7 @@ public class TaskServiceTest {
         TaskResponseDTO response = taskService.completeTask(1L, testUser);
 
         assertTrue(response.isCompleted());
-        assertNotNull(response.getCompletionDate());
+
         assertNotNull(response.getCompletedDateTime());
 
         verify(streakTrackerService).updateStreak(testUser);
@@ -85,7 +85,9 @@ public class TaskServiceTest {
     @Test
     void completeTask_AlreadyCompleted_ShouldReturnSameTaskResponse() {
         testTask.setCompleted(true);
-        testTask.setCompletionDate(LocalDate.now().minusDays(1));
+        testTask.setCompletedDateTime(LocalDate.now().atStartOfDay());
+
+
         testTask.setCompletedDateTime(LocalDateTime.now().minusDays(1));
 
         when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(taskOptional());
@@ -93,7 +95,7 @@ public class TaskServiceTest {
         TaskResponseDTO response = taskService.completeTask(1L, testUser);
 
         assertTrue(response.isCompleted());
-        assertEquals(testTask.getCompletionDate(), response.getCompletionDate());
+        
         assertEquals(testTask.getCompletedDateTime(), response.getCompletedDateTime());
 
         verify(streakTrackerService, never()).updateStreak(any());

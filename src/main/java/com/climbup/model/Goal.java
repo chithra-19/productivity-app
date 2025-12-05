@@ -7,6 +7,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "goals")
@@ -46,6 +48,8 @@ public class Goal {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    
+    private LocalDate completedDate;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
@@ -57,6 +61,14 @@ public class Goal {
     // ==== ENUMS ====
     public enum GoalStatus { ACTIVE, COMPLETED, DROPPED }
     public enum Priority { LOW, MEDIUM, HIGH }
+    
+    
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Achievement> achievements = new ArrayList<>();
+
+    public List<Achievement> getAchievements() { return achievements; }
+    public void setAchievements(List<Achievement> achievements) { this.achievements = achievements; }
+
 
     // ==== CONSTRUCTORS ====
     public Goal() {}
@@ -133,4 +145,12 @@ public class Goal {
                 ", dueDate=" + dueDate +
                 '}';
     }
+
+	public LocalDate getCompletedDate() {
+		return completedDate;
+	}
+
+	public void setCompletedDate(LocalDate completedDate) {
+		this.completedDate = completedDate;
+	}
 }

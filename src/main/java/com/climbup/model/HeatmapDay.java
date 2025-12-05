@@ -3,32 +3,20 @@ package com.climbup.model;
 import java.time.LocalDate;
 
 public class HeatmapDay {
-	
-	private String date;
-    private int taskCount;
-    
-    public String getDate() {
-		return date;
-	}
 
-	public void setDate(String date) {
-		this.date = date;
-	}
+    private final String date;
+    private final int taskCount;
 
-	public int getTaskCount() {
-		return taskCount;
-	}
-
-	public void setTaskCount(int taskCount) {
-		this.taskCount = taskCount;
-	}
-
-	
-
-    public HeatmapDay(LocalDate date, int count) {
-        this.date = date.toString();
-        this.taskCount = count;
+    public HeatmapDay(LocalDate date, int taskCount) {
+        this.date = date.toString(); // ISO format: yyyy-MM-dd
+        this.taskCount = taskCount;
     }
 
-    // getters and setters
+    public String getDate() {
+        return date;
+    }
+
+    public int getTaskCount() {
+        return taskCount;
+    }
 }

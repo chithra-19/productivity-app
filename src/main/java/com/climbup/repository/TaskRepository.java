@@ -90,4 +90,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "(LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<Task> searchTasks(@Param("user") User user, @Param("query") String query);
+    
+    List<Task> findByUserAndCompletedDateTimeIsNotNull(User user);
+
+
 }

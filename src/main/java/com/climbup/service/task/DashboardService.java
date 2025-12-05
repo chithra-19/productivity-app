@@ -1,6 +1,7 @@
 package com.climbup.service.task;
 
 import com.climbup.model.User;
+import com.climbup.model.Activity;
 import com.climbup.model.ActivityLog;
 import com.climbup.dto.response.HeatmapResponse;
 import com.climbup.service.productivity.AchievementService;
@@ -16,29 +17,27 @@ public class DashboardService {
 
     private final ActivityLogService activityLogService;
     private final AchievementService achievementService;
+    private final HeatmapService heatmapService;
 
-    public DashboardService(ActivityLogService activityLogService, AchievementService achievementService) {
+    public DashboardService(ActivityLogService activityLogService,
+                            AchievementService achievementService,
+                            HeatmapService heatmapService) {
         this.activityLogService = activityLogService;
         this.achievementService = achievementService;
+        this.heatmapService = heatmapService;
     }
 
     public HeatmapResponse getUserHeatmap(User user, String category, LocalDate from, LocalDate to) {
-        List<ActivityLog> logs = activityLogService.getLogs(user, category, from, to);
+        Activity.ActivityType type = null;
+        try {
+            type = Activity.ActivityType.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // fallback: treat unknown category as null (all types)
+        }
 
-        List<String> activeDates = logs.stream()
-                .map(ActivityLog::getActivityDate)
-                .map(LocalDate::toString)
-                .distinct()
-                .collect(Collectors.toList());
+        int days = (int) (to.toEpochDay() - from.toEpochDay()) + 1;
 
-        int currentStreak = activityLogService.getCurrentStreak(user, category);
-
-        HeatmapResponse response = new HeatmapResponse();
-        response.setActiveDates(activeDates);
-        response.setTotalDays(activeDates.size());
-        response.setCurrentStreak(currentStreak);
-
-        return response;
+        return heatmapService.buildHeatmapResponse(user.getId(), type, days);
     }
 
     public Object getUserAchievements(User user) {

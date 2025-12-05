@@ -1,5 +1,7 @@
 package com.climbup.service.task;
 
+import com.climbup.dto.response.HeatmapDTO;
+import com.climbup.dto.response.HeatmapResponse;
 import com.climbup.model.Activity;
 import com.climbup.model.Activity.ActivityType;
 import com.climbup.model.User;
@@ -26,10 +28,31 @@ public class HeatmapService {
     }
 
     /**
-     * Core heatmap logic including streaks and focus minutes.
-     * Returns a map with streak metadata and daily activity breakdown.
+     * Simple level calculation: every 100 XP = +1 level.
+     * Returns a map with level, nextLevelXP and progressPercent.
      */
-    public Map<String, Object> getHeatmapDataForUser(User user, ActivityType type, int days) {
+    private Map<String, Object> computeLevelAndProgress(int xp) {
+        int level = xp / 100;
+        int prevLevelXP = level * 100;
+        int nextLevelXP = (level + 1) * 100;
+        double progress = 0.0;
+        if (nextLevelXP - prevLevelXP > 0) {
+            progress = ((double)(xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100.0;
+        }
+        Map<String, Object> out = new HashMap<>();
+        out.put("level", level);
+        out.put("nextLevelXP", nextLevelXP);
+        out.put("progress", progress);
+        return out;
+    }
+
+    /**
+     * Build canonical HeatmapResponse for a userId, optional category, and days window.
+     * Uses ActivityRepository.findByUserAndTimestampBetween(User, start, end)
+     */
+    public HeatmapResponse buildHeatmapResponse(Long userId, ActivityType type, int days) {
+        User user = userService.getUserById(userId);
+
         LocalDate startDate = LocalDate.now().minusDays(days - 1);
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = LocalDate.now().atTime(23, 59, 59);
@@ -42,54 +65,67 @@ public class HeatmapService {
                     .collect(Collectors.toList());
         }
 
-        Map<LocalDate, List<Activity>> groupedByDate = activities.stream()
+        // Group by date
+        Map<LocalDate, List<Activity>> grouped = activities.stream()
                 .collect(Collectors.groupingBy(a -> a.getTimestamp().toLocalDate()));
 
-        List<Map<String, Object>> heatmapData = new ArrayList<>();
+        List<HeatmapDTO> heatmapData = new ArrayList<>(days);
         List<String> activeDates = new ArrayList<>();
-        LocalDate previousDay = null;
+
         int currentStreak = 0;
         int maxStreak = 0;
+        LocalDate prev = null;
+        int totalXP = 0;
 
-        for (LocalDate date : startDate.datesUntil(LocalDate.now().plusDays(1)).toList()) {
-            List<Activity> dayActivities = groupedByDate.getOrDefault(date, Collections.emptyList());
-            int taskCount = dayActivities.size();
-            int focusMinutes = dayActivities.stream().mapToInt(Activity::getFocusMinutes).sum();
+        for (LocalDate date = startDate; !date.isAfter(LocalDate.now()); date = date.plusDays(1)) {
+            List<Activity> dayActs = grouped.getOrDefault(date, Collections.emptyList());
+            int taskCount = dayActs.size();
+            int focusMinutes = dayActs.stream().mapToInt(Activity::getFocusMinutes).sum();
             boolean isStreakDay = taskCount > 0;
 
             if (isStreakDay) {
                 activeDates.add(date.toString());
-                currentStreak = (previousDay != null && previousDay.plusDays(1).equals(date)) ? currentStreak + 1 : 1;
+                currentStreak = (prev != null && prev.plusDays(1).equals(date)) ? currentStreak + 1 : 1;
                 maxStreak = Math.max(maxStreak, currentStreak);
             } else {
                 currentStreak = 0;
             }
 
-            Map<String, Object> dayMap = new HashMap<>();
-            dayMap.put("date", date.toString());
-            dayMap.put("taskCount", taskCount);
-            dayMap.put("focusMinutes", focusMinutes);
-            dayMap.put("isStreakDay", isStreakDay);
+            // XP rules (same as your DTO logic)
+            totalXP += taskCount * 10;               // 10 XP per task
+            totalXP += focusMinutes / 5;            // 1 XP per 5 focus minutes
+            if (isStreakDay) totalXP += 5;          // small daily streak bonus
 
-            heatmapData.add(dayMap);
-            previousDay = date;
+            heatmapData.add(new HeatmapDTO(date.toString(), taskCount, focusMinutes, isStreakDay));
+            prev = date;
         }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("activeDates", activeDates);
-        response.put("days", days);
-        response.put("maxStreak", maxStreak);
-        response.put("heatmapData", heatmapData);
+        int totalDaysActive = (int) heatmapData.stream().filter(d -> d.getTaskCount() > 0).count();
 
-        return response;
+        Map<String, Object> levelInfo = computeLevelAndProgress(totalXP);
+        int level = (int) levelInfo.get("level");
+        int nextLevelXP = (int) levelInfo.get("nextLevelXP");
+        double progress = (double) levelInfo.get("progress");
+
+        return new HeatmapResponse(
+                activeDates,
+                totalDaysActive,
+                currentStreak,
+                maxStreak,
+                totalXP,
+                level,
+                nextLevelXP,
+                progress,
+                heatmapData
+        );
     }
 
     /**
-     * Public method called by controller.
-     * Wraps the response in a list for compatibility with frontend expectations.
+     * Convenience: return list of HeatmapDTO days (useful for other consumers)
      */
-    public List<Map<String, Object>> getHeatmapData(Long userId, ActivityType type, int days) {
-        User user = userService.getUserById(userId);
-        return List.of(getHeatmapDataForUser(user, type, days));
+    public List<HeatmapDTO> getHeatmapDTOs(Long userId, ActivityType type, int days) {
+        HeatmapResponse resp = buildHeatmapResponse(userId, type, days);
+        return resp.getHeatmapData();
     }
+
 }

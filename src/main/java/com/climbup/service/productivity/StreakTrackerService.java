@@ -92,7 +92,7 @@ public class StreakTrackerService {
         LocalDate current = LocalDate.now();
 
         for (Task task : completedTasks) {
-            LocalDate completedDate = task.getCompletionDate();
+            LocalDate completedDate = task.getCompletedDateTime().toLocalDate();
             if (completedDate == null) continue;
 
             if (completedDate.equals(current)) {
@@ -129,15 +129,16 @@ public class StreakTrackerService {
         return badges;
     }
 
-    public Map<String, Integer> getHeatmapData(List<Task> tasks) {
+    public Map<LocalDate, Integer> getHeatmapData(List<Task> tasks) {
         return tasks.stream()
                 .filter(Task::isCompleted)
-                .filter(task -> task.getCompletionDate() != null)
+                .filter(t -> t.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
-                        task -> task.getCompletionDate().toString(),
+                        t -> t.getCompletedDateTime().toLocalDate(),
                         Collectors.summingInt(t -> 1)
                 ));
     }
+
 
     // 🏅 Best streak calculated from DB
     public int getBestStreak(Long userId) {

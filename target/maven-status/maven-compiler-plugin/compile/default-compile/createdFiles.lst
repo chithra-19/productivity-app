@@ -1,8 +1,10 @@
 com\climbup\dto\response\StreakChallengeResponseDTO.class
+com\climbup\config\AchievementSeeder.class
 com\climbup\dto\request\HeatmapRequestDTO.class
 com\climbup\dto\response\HeatmapDTO.class
 com\climbup\dto\response\UserResponseDTO.class
 com\climbup\repository\StreakTrackerRepository.class
+com\climbup\service\productivity\AchievementService$1.class
 com\climbup\dto\request\ProfileRequestDTO.class
 com\climbup\mapper\FocusSessionMapper.class
 com\climbup\controller\task\TaskController.class
@@ -11,6 +13,7 @@ com\climbup\exception\ResourceNotFoundException.class
 com\climbup\controller\user\UserController.class
 com\climbup\service\user\ProfileServiceImpl.class
 com\climbup\mapper\ProfileMapper.class
+com\climbup\service\task\EmailService.class
 com\climbup\dto\request\ProfileUpdateDTO.class
 com\climbup\dto\response\LoginResponseDTO.class
 com\climbup\repository\ProfileRepository.class
@@ -44,6 +47,7 @@ com\climbup\exception\NotFoundException.class
 com\climbup\model\Activity.class
 com\climbup\repository\UserAchievementRepository.class
 com\climbup\service\user\CustomUserDetailsService.class
+com\climbup\model\Achievement$AchievementCode.class
 com\climbup\model\Goal$Priority.class
 com\climbup\service\user\UserService.class
 com\climbup\repository\ActivityLogRepository.class
@@ -58,11 +62,13 @@ com\climbup\model\Task.class
 com\climbup\security\SecurityConfig.class
 com\climbup\dto\response\AchievementResponseDTO.class
 com\climbup\repository\ChallengeRepository.class
+com\climbup\controller\user\ProfileViewController.class
 com\climbup\model\HeatmapDay.class
 com\climbup\mapper\TaskMapper.class
 com\climbup\mapper\AchievementMapper.class
 com\climbup\service\task\DashboardService.class
 com\climbup\dto\response\GoalResponseDTO.class
+com\climbup\model\PasswordResetToken.class
 com\climbup\service\task\HeatmapService.class
 com\climbup\dto\request\StreakTrackerRequestDTO.class
 com\climbup\repository\AchievementRepository.class
@@ -81,6 +87,7 @@ com\climbup\model\FocusSession.class
 com\climbup\controller\task\TaskViewController.class
 com\climbup\dto\response\FocusDTO.class
 com\climbup\service\productivity\GoalService.class
+com\climbup\repository\TokenRepository.class
 com\climbup\GlobalExceptionHandler.class
 com\climbup\controller\task\ActivityController.class
 com\climbup\service\productivity\MotivationService.class
@@ -96,6 +103,7 @@ com\climbup\dto\response\TaskResponseDTO.class
 com\climbup\model\User.class
 com\climbup\repository\TaskRepository.class
 com\climbup\service\user\AuthService.class
+com\climbup\config\AchievementSeeder$1.class
 com\climbup\dto\request\TaskUpdateDTO.class
 com\climbup\exception\TaskNotFoundException.class
 com\climbup\dto\request\UserRequestDTO.class

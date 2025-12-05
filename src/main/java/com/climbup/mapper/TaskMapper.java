@@ -50,16 +50,25 @@ public class TaskMapper {
         if (dto.getPriority() != null) task.setPriority(dto.getPriority());
         if (dto.getCategory() != null) task.setCategory(dto.getCategory()); // optional tag
 
-        // Handle completion toggle
+     // Handle completion toggle
         if (dto.getCompleted() != null) {
+
+            // Mark completed
             if (dto.getCompleted()) {
-                task.markCompleted(); // sets completed + timestamps
+
+                // If task was NOT previously completed → set timestamps now
+                if (!task.isCompleted() || task.getCompletedDateTime() == null) {
+                    task.markCompleted();
+                }
+
             } else {
+                // Unmark completion
                 task.setCompleted(false);
-                task.setCompletionDate(null);
+        
                 task.setCompletedDateTime(null);
             }
         }
+
     }
 
     /**
@@ -81,7 +90,6 @@ public class TaskMapper {
                 task.getPriority() != null ? task.getPriority().name() : null,
                 task.getCategory(),
                 task.getIconUrl(),
-                task.getCompletionDate(),
                 task.getCompletedDateTime()
         );
     }
