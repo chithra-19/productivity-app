@@ -1,0 +1,206 @@
+/* ================== Base Styling ================== */
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f4f6f8;
+    color: #222;
+    padding: 2rem 1rem;
+}
+
+.container {
+    max-width: 1250px;
+}
+
+/* ================== Left & Right Layout ================== */
+.profile-left,
+.profile-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Make sure stats row wraps clean */
+.stats-section .row {
+    row-gap: 1.5rem;
+}
+
+/* ================== Profile Card ================== */
+.profile-card {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    width: 100%;
+}
+
+/* ================== Profile Photo ================== */
+.profile-photo-wrapper {
+    position: relative;
+    width: 165px;
+    height: 165px;
+    margin: auto;
+}
+
+.profile-photo-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 5px;
+    background: linear-gradient(135deg, #6a9bff, #9f7bff);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+.profile-photo {
+    width: 165px;
+    height: 165px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid #fff;
+    transition: 0.25s ease;
+}
+
+.profile-photo:hover {
+    transform: scale(1.05);
+}
+
+.edit-photo-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #4d8cff;
+    color: #fff;
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+}
+
+/* ================== Stat Cards ================== */
+.stat-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 1.5rem 1rem;
+    height: 100%;
+    transition: 0.2s ease;
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+}
+
+.stat-card i {
+    margin-bottom: 10px;
+}
+
+/* ================== Badges ================== */
+.badge-img {
+    width: 35px;
+    height: 35px;
+    transition: 0.2s;
+}
+
+.badge-img:hover {
+    transform: scale(1.2);
+}
+
+/* ================== Timeline ================== */
+.timeline li {
+    padding: 12px 0;
+    border-left: 2px solid #4d8cff;
+    margin-left: 15px;
+    position: relative;
+}
+
+.timeline li::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #4d8cff;
+    position: absolute;
+    left: -7px;
+    top: 10px;
+}
+
+.timeline .time {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.timeline .event {
+    font-size: 0.95rem;
+}
+
+/* ================== Responsive Behavior ================== */
+
+/* 🔥 For Large Tablets & Small Laptops */
+@media (max-width: 1200px) {
+    .stat-card {
+        padding: 1.25rem 0.75rem;
+    }
+}
+
+/* 🔥 For Tablets (<992px) */
+@media (max-width: 992px) {
+    body {
+        padding: 1rem;
+    }
+
+    .profile-photo-wrapper {
+        width: 140px;
+        height: 140px;
+    }
+
+    .profile-photo {
+        width: 140px;
+        height: 140px;
+    }
+
+    .profile-card {
+        padding: 1.5rem;
+    }
+}
+
+/* 🔥 For Small Tablets (<768px) */
+@media (max-width: 768px) {
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .profile-photo-wrapper {
+        width: 120px;
+        height: 120px;
+    }
+
+    .profile-photo {
+        width: 120px;
+        height: 120px;
+    }
+
+    .timeline li {
+        margin-left: 10px;
+    }
+}
+
+/* 🔥 Mobile (<576px) */
+@media (max-width: 576px) {
+    .stat-card h5 {
+        font-size: 1.1rem;
+    }
+
+    .stat-card i {
+        font-size: 1.6rem;
+    }
+
+    .profile-card {
+        padding: 1.25rem;
+    }
+
+    .timeline li {
+        padding-left: 5px;
+    }
+}

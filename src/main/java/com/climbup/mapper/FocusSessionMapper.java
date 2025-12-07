@@ -20,16 +20,17 @@ public class FocusSessionMapper {
     // 🔹 Entity → ResponseDTO
     public static FocusSessionResponseDTO toResponse(FocusSession session) {
         FocusSessionResponseDTO dto = new FocusSessionResponseDTO();
-        dto.setId(session.getId());
+        dto.setId(session.getId()); // session ID
         dto.setDurationMinutes(session.getDurationMinutes());
         dto.setSessionType(session.getSessionType());
         dto.setSuccessful(session.isSuccessful());
         dto.setNotes(session.getNotes());
         dto.setStartTime(session.getStartTime());
         dto.setEndTime(session.getEndTime());
-        dto.setUserId(session.getUser() != null ? session.getUser().getId() : null);
+        dto.setId(session.getUser() != null ? session.getUser().getId() : null); // userId field
         return dto;
     }
+
 
     // 🔹 Update existing entity from DTO
     public static void updateEntity(FocusSession session, FocusSessionRequestDTO dto) {

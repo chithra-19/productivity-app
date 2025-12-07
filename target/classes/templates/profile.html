@@ -1,110 +1,164 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile | ClimbUp</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile | ClimbUp</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-    <style>
-        body { font-family: 'Inter', sans-serif; background: #f4f6f8; padding: 2rem; }
-        .profile-card { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
-        .profile-header { display: flex; align-items: center; gap: 1.5rem; }
-        .profile-header img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
-        .profile-header h2 { margin: 0; }
-        .stats-container { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
-        .stat-card { background: #e3f2fd; flex: 1; min-width: 120px; padding: 1rem; border-radius: 8px; text-align: center; }
-        .stat-value { font-size: 2rem; font-weight: 700; color: #1565c0; }
-        .achievements { margin-top: 1.5rem; }
-        .achievements ul { padding-left: 1.2rem; }
-        .achievements p { font-style: italic; color: #555; }
-        .edit-form { margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1.5rem; }
-        .error { color: red; font-size: 0.9rem; }
-    </style>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/profile.css">
 </head>
-
 <body>
+
 <div class="container">
-    <div class="profile-card">
+  <div class="row g-4">
+    
+    <!-- ===== Left Column: Profile Info & Theme ===== -->
+    <div class="col-lg-4 col-md-12 profile-left">
+      <div class="profile-card">
+        <h3 class="mb-3">Your Profile</h3>
 
-        <!-- HEADER -->
-        <div class="profile-header">
-            <div>
-                <img th:if="${profile.profilePictureUrl != null}" th:src="${profile.profilePictureUrl}" alt="Profile Picture"/>
-                <img th:unless="${profile.profilePictureUrl != null}" th:src="@{/images/default-profile.png}" alt="Profile Picture"/>
-            </div>
-
-            <div>
-                <h2 th:text="${#strings.defaultString(profile.firstName,'')} + ' ' + ${#strings.defaultString(profile.lastName,'')}">User Name</h2>
-                <p th:text="${#strings.defaultString(profile.bio,'No bio yet.')}">Bio here</p>
-                <p><strong>Email:</strong> <span th:text="${profile.email}">user@example.com</span></p>
-            </div>
+        <!-- Theme Toggle -->
+        <div class="theme-toggle mb-3">
+          <label class="form-check-label me-2" for="themeSwitch">Dark Mode</label>
+          <input class="form-check-input" type="checkbox" id="themeSwitch">
         </div>
 
-        <!-- STATS -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <h4>Streak</h4>
-                <div class="stat-value" th:text="${profile.streak}">0</div>
-            </div>
-            <div class="stat-card">
-                <h4>Completed Tasks</h4>
-                <div class="stat-value" th:text="${profile.completedTasks}">0</div>
-            </div>
-            <div class="stat-card">
-                <h4>Productivity</h4>
-                <div class="stat-value" th:text="${profile.productivityScore + '%'}">0%</div>
-            </div>
+        <!-- Edit Button -->
+        <button id="editBtn" class="btn btn-primary mb-3 w-100" onclick="enableEdit()">Edit</button>
+
+        <!-- Profile Picture -->
+        <div class="text-center mb-4">
+          <div class="profile-pic-container" onclick="document.getElementById('profilePictureFile').click();">
+              <img id="profilePreview"
+                   th:src="${profile.profilePictureUrl != null ? profile.profilePictureUrl : '/images/default-avatar.png'}"
+                   alt="Profile Picture"
+                   class="profile-pic">
+              <div class="overlay">Change</div>
+          </div>
         </div>
 
-        <!-- ACHIEVEMENTS -->
-        <div class="achievements">
-            <h5>Achievements</h5>
-            <ul th:if="${profile.achievementList != null and !#lists.isEmpty(profile.achievementList)}">
-                <li th:each="ach : ${profile.achievementList}" th:text="${ach}">Achievement</li>
-            </ul>
-            <p th:if="${profile.achievementList == null or #lists.isEmpty(profile.achievementList)}">No achievements yet. Keep going! 🎯</p>
+        <form id="profileForm"
+              th:action="@{/dashboard/profile/{id}/update(id=${profile.id})}"
+              th:object="${profileRequestDTO}"
+              method="post"
+              enctype="multipart/form-data">
+
+          <input type="file"
+                 id="profilePictureFile"
+                 name="profilePictureFile"
+                 accept="image/*"
+                 style="display:none;"
+                 onchange="previewImage(this)">
+
+          <div class="mb-3">
+            <label class="form-label">First Name</label>
+            <input type="text" th:field="*{firstName}" class="form-control" disabled>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Last Name</label>
+            <input type="text" th:field="*{lastName}" class="form-control" disabled>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" th:field="*{email}" class="form-control" disabled>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Bio</label>
+            <textarea th:field="*{bio}" class="form-control" rows="3" disabled></textarea>
+          </div>
+
+          <!-- Save & Cancel Buttons -->
+          <button id="saveBtn" type="submit" class="btn btn-success w-100 mb-2" style="display:none;">Save Changes</button>
+          <button id="cancelBtn" type="button" class="btn btn-secondary w-100" style="display:none;" onclick="cancelEdit()">Cancel</button>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== Right Column: Stats, Timeline ===== -->
+    <div class="col-lg-8 col-md-12 profile-right">
+
+      <!-- Stats Section -->
+      <div class="stats-section mb-4">
+        <h4 class="mb-3">Your Progress</h4>
+        <div class="row text-center g-3">
+
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-fire-fill text-danger fs-2"></i>
+              <h5 th:text="${streak}">0</h5>
+              <small>Days Streak</small>
+            </div>
+          </div>
+
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-check2-circle text-success fs-2"></i>
+              <h5 th:text="${completedTasks != null ? completedTasks : 0}">0</h5>
+              <small>Tasks Completed</small>
+              <div class="progress mt-2" style="height:6px;">
+                <div class="progress-bar bg-success" 
+                     role="progressbar" 
+                     th:style="'width:' + (${completedTasks != null ? completedTasks : 0}) + '%'" 
+                     aria-valuenow="0" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-bar-chart-fill text-primary fs-2"></i>
+              <h5 th:text="${productivityScore}">0</h5>
+              <small>Productivity</small>
+            </div>
+          </div>
+
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-award-fill text-warning fs-2"></i>
+              <h5 th:text="${badgesCount}">0</h5>
+              <small>Achievements</small>
+              <div class="badges mt-2 d-flex justify-content-center flex-wrap gap-2">
+                <img th:each="badge : ${badges}" 
+                     th:src="${badge.imageUrl}" 
+                     th:alt="${badge.name}" 
+                     th:title="${badge.name}" 
+                     class="badge-img">
+              </div>
+            </div>
+          </div>
+
         </div>
+      </div>
 
-        <!-- EDIT FORM -->
-        <div class="edit-form">
-            <h5>Edit Profile</h5>
-            <form th:action="@{/dashboard/profile/update}" th:object="${profileRequestDTO}" method="post">
-
-                <div class="mb-3">
-                    <label for="firstName">First Name</label>
-                    <input id="firstName" type="text" th:field="*{firstName}" class="form-control"/>
-                    <div th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}" class="error"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="lastName">Last Name</label>
-                    <input id="lastName" type="text" th:field="*{lastName}" class="form-control"/>
-                    <div th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}" class="error"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="email">Email</label>
-                    <input id="email" type="email" th:field="*{email}" class="form-control"/>
-                    <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="bio">Bio</label>
-                    <textarea id="bio" th:field="*{bio}" class="form-control" rows="3"></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label for="profilePictureUrl">Profile Picture URL</label>
-                    <input id="profilePictureUrl" type="text" th:field="*{profilePictureUrl}" class="form-control"/>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-            </form>
-        </div>
+      <!-- Timeline Section -->
+      <div class="timeline-section mb-4">
+        <h4 class="mb-3">Recent Activity</h4>
+        <ul class="timeline list-unstyled">
+          <li th:each="activity : ${recentActivities}">
+            <span class="time" th:text="${activity.activityDate}">Date</span>
+            <span class="event" th:text="${activity.description}">Event description</span>
+          </li>
+        </ul>
+      </div>
 
     </div>
+  </div>
 </div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/profile.js"></script>
+
 </body>
 </html>

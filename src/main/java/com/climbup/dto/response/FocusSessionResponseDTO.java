@@ -13,13 +13,17 @@ public class FocusSessionResponseDTO {
     private String notes;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Long userId;
+
+    // Live info
+    private long elapsedMinutes;
+    private long remainingMinutes;
 
     // Constructors
     public FocusSessionResponseDTO() {}
 
-    public FocusSessionResponseDTO(Long id, int durationMinutes, SessionType sessionType, boolean successful,
-                                   String notes, LocalDateTime startTime, LocalDateTime endTime, Long userId) {
+    public FocusSessionResponseDTO(Long id, int durationMinutes, SessionType sessionType,
+                                   boolean successful, String notes, LocalDateTime startTime,
+                                   LocalDateTime endTime, long elapsedMinutes, long remainingMinutes) {
         this.id = id;
         this.durationMinutes = durationMinutes;
         this.sessionType = sessionType;
@@ -27,7 +31,23 @@ public class FocusSessionResponseDTO {
         this.notes = notes;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.userId = userId;
+        this.elapsedMinutes = elapsedMinutes;
+        this.remainingMinutes = remainingMinutes;
+    }
+
+    // Factory method for mapping from entity
+    public static FocusSessionResponseDTO fromEntity(com.climbup.model.FocusSession session) {
+        return new FocusSessionResponseDTO(
+                session.getId(),
+                session.getDurationMinutes(),
+                session.getSessionType(),
+                session.isSuccessful(),
+                session.getNotes(),
+                session.getStartTime(),
+                session.getEndTime(),
+                session.getElapsedMinutes(),
+                session.getRemainingMinutes()
+        );
     }
 
     // Getters & Setters
@@ -52,6 +72,9 @@ public class FocusSessionResponseDTO {
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public long getElapsedMinutes() { return elapsedMinutes; }
+    public void setElapsedMinutes(long elapsedMinutes) { this.elapsedMinutes = elapsedMinutes; }
+
+    public long getRemainingMinutes() { return remainingMinutes; }
+    public void setRemainingMinutes(long remainingMinutes) { this.remainingMinutes = remainingMinutes; }
 }

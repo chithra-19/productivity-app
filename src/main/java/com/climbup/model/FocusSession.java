@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -19,7 +20,7 @@ public class FocusSession {
     @Min(1)
     @Max(180)
     @Column(name = "duration_minutes", nullable = false)
-    private int durationMinutes;
+    private int durationMinutes = 25;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "session_type", nullable = false)
@@ -52,16 +53,12 @@ public class FocusSession {
 
         private final String label;
 
-        SessionType(String label) {
-            this.label = label;
-        }
+        SessionType(String label) { this.label = label; }
 
-        public String getLabel() {
-            return label;
-        }
+        public String getLabel() { return label; }
     }
 
-    // 🛠️ Constructors
+    // Constructors
     public FocusSession() {}
 
     public FocusSession(int durationMinutes, SessionType sessionType, User user) {
@@ -70,13 +67,37 @@ public class FocusSession {
         this.user = user;
     }
 
-    // ✅ Business Logic
+    // 🔥 Session Control
+    public void startSession() {
+        this.startTime = LocalDateTime.now();
+        this.endTime = null;
+        this.successful = false;
+    }
+
     public void markSuccessful() {
         this.successful = true;
         this.endTime = LocalDateTime.now();
     }
 
-    // ✅ Getters and Setters
+    public void endSession() {
+        this.endTime = LocalDateTime.now();
+    }
+
+    // ✅ State Helpers
+    public boolean isActive() {
+        return startTime != null && endTime == null;
+    }
+
+    public long getElapsedMinutes() {
+        if (startTime == null) return 0;
+        return Duration.between(startTime, endTime != null ? endTime : LocalDateTime.now()).toMinutes();
+    }
+
+    public long getRemainingMinutes() {
+        return Math.max(durationMinutes - getElapsedMinutes(), 0);
+    }
+
+    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -104,7 +125,7 @@ public class FocusSession {
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    // 🔁 equals and hashCode
+    // Equals & HashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -114,11 +135,8 @@ public class FocusSession {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
+    public int hashCode() { return Objects.hash(id); }
 
-    // 🧾 toString
     @Override
     public String toString() {
         return "FocusSession{" +

@@ -8,7 +8,14 @@ import com.climbup.repository.ProfileRepository;
 import com.climbup.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
@@ -56,27 +63,31 @@ public class ProfileServiceImpl implements ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Profile profile = profileRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+        // Use getOrCreateProfile instead of strict find
+        Profile profile = getOrCreateProfile(user);
 
         return toDTO(profile);
     }
 
+
     @Override
     public ProfileResponseDTO updateProfile(Long userId, ProfileRequestDTO dto) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Profile profile = profileRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+        Profile profile = getOrCreateProfile(user); // <-- safe now
 
         profile.setFirstName(dto.getFirstName());
         profile.setLastName(dto.getLastName());
         profile.setEmail(dto.getEmail());
         profile.setBio(dto.getBio());
+        profile.setProfilePictureUrl(dto.getProfilePictureUrl());
 
-        return toDTO(profileRepository.save(profile));
+        profileRepository.save(profile);
+
+        return toDTO(profile);
     }
+
 
     @Override
     public Profile findByUser(User user) {
@@ -122,4 +133,31 @@ public class ProfileServiceImpl implements ProfileService {
 
         return dto;
     }
+    
+    @Override
+    public String saveProfileImage(MultipartFile file) {
+        if (file.isEmpty()) return null;
+
+        try {
+            // Generate a unique filename
+            String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+
+            // Folder to store images (create it if it doesn't exist)
+            String uploadDir = "uploads/profile-images/";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            // Save the file locally
+            Path filePath = Paths.get(uploadDir + filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Return the relative or absolute URL/path to store in DB
+            return "/" + uploadDir + filename; // Example: "/uploads/profile-images/12345_pic.png"
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }

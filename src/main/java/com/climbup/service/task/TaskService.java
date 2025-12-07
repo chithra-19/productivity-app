@@ -224,23 +224,42 @@ public class TaskService {
             ));
     }
 
-    public boolean markTaskAsCompleted(Long taskId, User user) {
-        Optional<Task> optionalTask = taskRepository.findById(taskId);
-        if (optionalTask.isPresent()) {
-            Task task = optionalTask.get();
+    
 
-            if (task.getUser().getId().equals(user.getId())) {
-                task.markCompleted();
-                taskRepository.save(task);
-                return true;
-            }
-        }
-        return false;
+    public int countCompletedTasks(Long userId) {
+        User user = new User();
+        user.setId(userId);
+        return (int) taskRepository.countByUserAndCompleted(user, true);
     }
 
- // 🔹 Get today’s tasks for a user
-    public List<Task> getTasksDueOn(User user, LocalDate date) {
-        return taskRepository.findByUserAndDueDate(user, date);
-    }
+	
+	
+	public List<Task> getPendingTasks(User user) {
+	    return taskRepository.findByUserAndCompletedFalse(user);
+	}
+
+	public List<Task> getTasksDueOn(User user, LocalDate date) {
+	    return taskRepository.findByUserAndDueDate(user, date);
+	}
+
+	public boolean markTaskAsCompleted(Long taskId, User user) {
+	    Optional<Task> optionalTask = taskRepository.findByIdAndUser(taskId, user);
+	    if (optionalTask.isPresent()) {
+	        Task task = optionalTask.get();
+	        if (!task.isCompleted()) {
+	            task.setCompleted(true);
+	            task.setCompletedDateTime(LocalDateTime.now());
+	            taskRepository.save(task);
+	            activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
+	            streakTrackerService.updateStreak(user);
+	            achievementService.checkForNewAchievements(user);
+	        }
+	        return true;
+	    }
+	    return false;
+	}
+
+	
+
 
 }

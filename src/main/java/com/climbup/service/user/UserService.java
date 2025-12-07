@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -84,7 +85,7 @@ public class UserService implements UserDetailsService {
                 .or(() -> userRepository.findByUsername(login))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
-
+    
 
     // ---------------- Registration ----------------
     public User registerUser(UserRequestDTO dto) {
@@ -191,6 +192,15 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public void updateUser(User user) {
+        userRepository.save(user);
+    }
+
     
     
 }

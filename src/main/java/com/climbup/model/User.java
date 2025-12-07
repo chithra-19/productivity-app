@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,12 +17,13 @@ import java.util.*;
         @UniqueConstraint(columnNames = "username"),
         @UniqueConstraint(columnNames = "email")
 })
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Basic Info
     @NotBlank
     @Size(min = 3, max = 50)
     @Column(unique = true, nullable = false)
@@ -48,7 +52,7 @@ public class User {
     @Column(name = "last_active_date")
     private LocalDate lastActiveDate;
 
-    // Security flags
+    // Security Flags
     private boolean enabled = true;
     private boolean accountNonExpired = true;
     private boolean credentialsNonExpired = true;
@@ -80,6 +84,7 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Achievement> achievements = new HashSet<>();
 
+
     // Constructors
     public User() {}
 
@@ -88,6 +93,7 @@ public class User {
         this.email = email;
         this.password = password;
     }
+
 
     // Relationship helpers
     public void setProfile(Profile profile) {
@@ -109,6 +115,7 @@ public class User {
         achievements.add(achievement);
         achievement.setUser(this);
     }
+
 
     // Getters & Setters
     public Long getId() { return id; }
@@ -135,16 +142,16 @@ public class User {
     public LocalDate getLastActiveDate() { return lastActiveDate; }
     public void setLastActiveDate(LocalDate lastActiveDate) { this.lastActiveDate = lastActiveDate; }
 
-    public boolean isEnabled() { return enabled; }
+    public boolean isEnabledFlag() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    public boolean isAccountNonExpired() { return accountNonExpired; }
+    public boolean isAccountNonExpiredFlag() { return accountNonExpired; }
     public void setAccountNonExpired(boolean accountNonExpired) { this.accountNonExpired = accountNonExpired; }
 
-    public boolean isCredentialsNonExpired() { return credentialsNonExpired; }
+    public boolean isCredentialsNonExpiredFlag() { return credentialsNonExpired; }
     public void setCredentialsNonExpired(boolean credentialsNonExpired) { this.credentialsNonExpired = credentialsNonExpired; }
 
-    public boolean isAccountNonLocked() { return accountNonLocked; }
+    public boolean isAccountNonLockedFlag() { return accountNonLocked; }
     public void setAccountNonLocked(boolean accountNonLocked) { this.accountNonLocked = accountNonLocked; }
 
     public String getVerificationToken() { return verificationToken; }
@@ -169,6 +176,35 @@ public class User {
     public void setGoals(Set<Goal> goals) { this.goals = goals; }
     public void setAchievements(Set<Achievement> achievements) { this.achievements = achievements; }
 
+
+
+    // ========= SPRING SECURITY REQUIRED METHODS ========= //
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return this.accountNonExpired;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return this.accountNonLocked;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return this.credentialsNonExpired;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+
     // equals & hashCode
     @Override
     public boolean equals(Object o) {
@@ -188,7 +224,6 @@ public class User {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", productivityScore=" + productivityScore +
                 '}';
     }
 }

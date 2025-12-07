@@ -17,28 +17,56 @@ public class ActivityLogService {
 
     @Autowired
     private ActivityLogRepository repository;
+    
 
-    // Log activity
-    public void logActivity(User user, String category, LocalDate date, int focusMinutes) {
-        ActivityLog log = repository.findByUserAndCategoryAndActivityDate(user, category, date)
-                .orElseGet(() -> {
-                    ActivityLog newLog = new ActivityLog();
-                    newLog.setUser(user);
-                    newLog.setCategory(category);
-                    newLog.setActivityDate(date);
-                    newLog.setTaskCount(0);
-                    newLog.setFocusMinutes(0);
-                    return newLog;
-                });
-
-        log.setTaskCount(log.getTaskCount() + 1);
-        log.setFocusMinutes(log.getFocusMinutes() + focusMinutes);
+    // 🔹 Log a simple event (type + description)
+    public void log(User user, String type, String description) {
+        ActivityLog log = new ActivityLog();
+        log.setUser(user);
+        log.setType(type);
+        log.setDescription(description);
+        log.setActivityDate(LocalDate.now());
         repository.save(log);
     }
 
-    // Get current streak
+    // 🔹 Fetch latest 10 activities
+    public List<ActivityLog> getRecentActivities(User user) {
+        return repository.findTop10ByUserOrderByLoggedAtDesc(user);
+    }
+
+    // 🔹 Overloaded: Fetch latest N activities
+    public List<ActivityLog> getRecentActivities(User user, int limit) {
+        return repository.findByUserOrderByLoggedAtDesc(user)
+                .stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    // 🔹 Fetch logs for heatmap
+    public List<ActivityLog> getLogs(User user, LocalDate from, LocalDate to) {
+        return repository.findByUserAndActivityDateBetweenOrderByActivityDateDesc(user, from, to);
+    }
+
+    // 🔹 Generate heatmap data
+    public List<HeatmapDTO> getHeatmapData(User user, String category) {
+        return repository.findByUserAndActivityDateBetweenOrderByActivityDateDesc(
+                        user,
+                        LocalDate.now().minusYears(1),
+                        LocalDate.now()
+                )
+                .stream()
+                .map(log -> new HeatmapDTO(
+                        log.getActivityDate().toString(),
+                        log.getTaskCount(),
+                        log.getFocusMinutes(),
+                        false // streak logic if needed
+                ))
+                .collect(Collectors.toList());
+    }
+
     public int getCurrentStreak(User user, String category) {
-        List<LocalDate> dates = getLogs(user, category, LocalDate.now().minusDays(30), LocalDate.now())
+        List<LocalDate> dates = repository
+                .findByUserOrderByActivityDateDesc(user)
                 .stream()
                 .map(ActivityLog::getActivityDate)
                 .distinct()
@@ -47,36 +75,17 @@ public class ActivityLogService {
 
         int streak = 0;
         LocalDate today = LocalDate.now();
+
         for (LocalDate date : dates) {
             if (date.equals(today.minusDays(streak))) {
                 streak++;
-            } else {
-                break;
-            }
+            } else break;
         }
         return streak;
     }
 
-    // Fetch logs between dates
-    public List<ActivityLog> getLogs(User user, String category, LocalDate from, LocalDate to) {
-        return repository.findByUserAndCategoryAndActivityDateBetween(user, category, from, to);
-    }
-
-    // 🔹 Original method with category
-    public List<HeatmapDTO> getHeatmapData(User user, String category) {
-        return repository.findByUserAndCategoryAndActivityDateBetween(user, category, LocalDate.now().minusYears(1), LocalDate.now())
-                .stream()
-                .map(log -> new HeatmapDTO(
-                        log.getActivityDate().toString(),
-                        log.getTaskCount(),
-                        log.getFocusMinutes(),
-                        false // or implement streak logic per day if needed
-                ))
-                .collect(Collectors.toList());
-    }
-
-    // 🔹 Overloaded method without category (for backward compatibility)
-    public List<HeatmapDTO> getHeatmapData(User user) {
-        return getHeatmapData(user, "all"); // default category
-    }
+	public Object getRecentActivities(Long userId, int limit) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

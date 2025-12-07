@@ -7,6 +7,7 @@ import com.climbup.model.Activity.ActivityType;
 import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.repository.TaskRepository;
 import com.climbup.service.task.ActivityService;
+import com.climbup.service.user.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,14 +23,19 @@ public class StreakTrackerService {
     private final StreakTrackerRepository repository;
     private final ActivityService activityService;
     private final TaskRepository taskRepository;
+    
+    @Autowired
+    private UserService userService;
 
     @Autowired
     public StreakTrackerService(StreakTrackerRepository repository,
                                 ActivityService activityService,
-                                TaskRepository taskRepository) {
+                                TaskRepository taskRepository,
+                                UserService  userService) {
         this.repository = repository;
         this.activityService = activityService;
         this.taskRepository = taskRepository;
+        this.userService = userService;
     }
 
     // 🔄 Update streak for a given category
@@ -169,6 +175,15 @@ public class StreakTrackerService {
 
         return streak;
     }
+
+    
+
+    public int getCurrentStreak(Long userId) {
+    	User user = userService.findById(userId);
+
+    	return getCurrentStreak(user);
+    }
+
 
 
 }

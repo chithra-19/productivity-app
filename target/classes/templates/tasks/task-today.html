@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Today's Tasks – ClimbUp</title>
     <!-- Bootstrap 5.3.2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
@@ -57,14 +58,10 @@ h2 {
 }
 
 .actions {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
     margin-bottom: 1rem;
-    gap: 1rem;
 }
 
-.actions a.btn {
+.actions .btn {
     background: #0284c7;
     color: white;
     padding: 0.5rem 1rem;
@@ -74,7 +71,7 @@ h2 {
     transition: background 0.2s;
 }
 
-.actions a.btn:hover {
+.actions .btn:hover {
     background: #0369a1;
 }
 
@@ -103,6 +100,7 @@ td {
     padding: 0.8rem 1rem;
     border-bottom: 1px solid #e2e8f0;
     vertical-align: middle;
+    position: relative;
 }
 
 tr:hover td {
@@ -127,10 +125,13 @@ tr:hover td {
     font-size: 0.9rem;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
     background: #16a34a;
     color: white;
     text-decoration: none;
+    text-align: center;
+    min-width: 80px;
 }
 
 .btn-complete:hover {
@@ -146,69 +147,113 @@ tr:hover td {
 </style>
 
 <body>
-	
-	<!-- Back to Dashboard (Top-left) -->
-	    <a href="/dashboard" class="back-arrow">
-	        <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
-	    </a>
-	
-	
-<div class="container">
 
-    <!-- Page Title -->
-    <h2>🌤️ Today's Tasks</h2>
+    <!-- Back to Dashboard -->
+    <a href="/dashboard" class="back-arrow">
+        <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+    </a>
 
-    <!-- Add Task button + motivational message -->
-    <div class="actions">
-        <a href="/tasks/add" class="btn">+ Add Task</a>
-        <i class="message">Stay consistent. Regret is more painful than consistency 💪</i>
+    <div class="container">
+
+        <!-- Page Title -->
+        <h2>🌤️ Today's Tasks</h2>
+
+        <!-- Actions -->
+        <div class="row actions">
+            <div class="col-md-auto mb-2 mb-md-0">
+                <a href="/tasks/add" class="btn">+ Add Task</a>
+            </div>
+            <div class="col">
+                <i class="message">Stay consistent. Regret is more painful than consistency 💪</i>
+            </div>
+        </div>
+
+        <!-- Task Table -->
+        <div class="table-responsive">
+            <table class="table" th:if="${tasks != null and !tasks.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th><i class="fa-solid fa-list-check"></i> Title</th>
+                        <th><i class="fa-regular fa-file-lines"></i> Description</th>
+                        <th><i class="fa-solid fa-tags"></i> Category</th>
+                        <th><i class="fa-solid fa-signal"></i> Status</th>
+                        <th><i class="fa-regular fa-calendar-days"></i> Due</th>
+                        <th><i class="fa-solid fa-gears"></i> Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="task : ${tasks}">
+                        <td th:text="${task.title}">Task Title</td>
+                        <td th:text="${task.description}">Task Description</td>
+                        <td th:text="${task.category}">Task Category</td>
+                        <td>
+                            <span th:if="${task.completed}" class="status-done">
+                                <i class="fa-solid fa-circle-check icon"></i> Done
+                            </span>
+                            <span th:if="${!task.completed}" class="status-pending">
+                                <i class="fa-solid fa-hourglass-half icon"></i> Pending
+                            </span>
+                        </td>
+                        <td>
+                            <i class="fa-regular fa-calendar-days icon"></i>
+                            <span th:text="${task.dueDate} ?: '-'">Due Date</span>
+                        </td>
+                        <td>
+                            <button th:if="!${task.completed}"
+                                    class="btn-complete mark-done"
+                                    th:data-id="${task.id}">
+                                <i class="fa-solid fa-check"></i> Mark Done
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${tasks == null or tasks.isEmpty()}" class="empty-state">
+            <i class="fa-regular fa-face-smile-beam fa-2x"></i>
+            <p>No tasks for today! Enjoy your day 🎉</p>
+        </div>
     </div>
-
-    <!-- Task Table -->
-    <table th:if="${tasks != null and !tasks.isEmpty()}">
-        <thead>
-            <tr>
-                <th><i class="fa-solid fa-list-check"></i> Title</th>
-                <th><i class="fa-regular fa-file-lines"></i> Description</th>
-                <th><i class="fa-solid fa-tags"></i> Category</th>
-                <th><i class="fa-solid fa-signal"></i> Status</th>
-                <th><i class="fa-regular fa-calendar-days"></i> Due</th>
-                <th><i class="fa-solid fa-gears"></i> Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="task : ${tasks}">
-                <td th:text="${task.title}">Task Title</td>
-                <td th:text="${task.description}">Task Description</td>
-                <td th:text="${task.category}">Task Category</td>
-                <td>
-                    <span th:if="${task.completed}" class="status-done">
-                        <i class="fa-solid fa-circle-check icon"></i> Done
-                    </span>
-                    <span th:if="${!task.completed}" class="status-pending">
-                        <i class="fa-solid fa-hourglass-half icon"></i> Pending
-                    </span>
-                </td>
-                <td>
-                    <i class="fa-regular fa-calendar-days icon"></i>
-                    <span th:text="${task.dueDate} ?: '-'">Due Date</span>
-                </td>
-                <td>
-                    <form th:if="!${task.completed}" th:action="@{/tasks/complete/{id}(id=${task.id})}" method="post" style="display:inline">
-                        <button type="submit" class="btn-complete">
-                            <i class="fa-solid fa-check"></i> Mark Done
-                        </button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Empty State -->
-    <div th:if="${tasks == null or tasks.isEmpty()}" class="empty-state">
-        <i class="fa-regular fa-face-smile-beam fa-2x"></i>
-        <p>No tasks for today! Enjoy your day 🎉</p>
-    </div>
-</div>
 </body>
+
+<script>
+document.querySelectorAll('.mark-done').forEach(btn => {
+    btn.addEventListener('click', async function () {
+        const taskId = this.dataset.id;
+
+        try {
+            const res = await fetch(`/tasks/complete/${taskId}`, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            const scoreEl = document.getElementById("score");
+            const streakEl = document.getElementById("streak");
+            const pendingEl = document.getElementById("pending");
+            if (scoreEl) scoreEl.innerText = data.score;
+            if (streakEl) streakEl.innerText = data.streak;
+            if (pendingEl) pendingEl.innerText = data.pendingCount;
+
+            const row = btn.closest('tr');
+            row.style.transition = "opacity 0.5s";
+            row.style.opacity = 0;
+            setTimeout(() => row.remove(), 500);
+
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong!");
+        }
+    });
+});
+</script>
+
 </html>
