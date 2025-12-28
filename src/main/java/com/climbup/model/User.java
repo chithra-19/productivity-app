@@ -67,7 +67,10 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     // Tokens
+    @Column(unique = true)
     private String verificationToken;
+    
+    @Column(unique = true)
     private String resetToken;
     private LocalDateTime resetTokenExpiry;
 
@@ -114,6 +117,15 @@ public class User implements UserDetails {
     public void addAchievement(Achievement achievement) {
         achievements.add(achievement);
         achievement.setUser(this);
+    }
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FocusSession> focusSessions = new ArrayList<>();
+
+
+    public void addFocusSession(FocusSession session) {
+        focusSessions.add(session);
+        session.setUser(this);
     }
 
 

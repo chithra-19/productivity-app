@@ -32,7 +32,7 @@ public class FocusSessionController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        FocusSessionResponseDTO response = focusSessionService.createSession(dto, user);
+        FocusSessionResponseDTO response = focusSessionService.startSession(dto, user);
         return ResponseEntity.ok(response);
     }
 

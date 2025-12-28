@@ -162,7 +162,7 @@ public class DashboardViewController {
 
         User user = userService.getUserWithAllData(springUser.getUsername());
 
-        return focusSessionService.createSession(
+        return focusSessionService.startSession(
                 new FocusSessionRequestDTO(25, FocusSession.SessionType.POMODORO, ""),
                 user
         );

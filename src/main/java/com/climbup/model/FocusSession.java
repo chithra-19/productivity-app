@@ -32,9 +32,10 @@ public class FocusSession {
     @Column(name = "notes")
     private String notes;
 
-    @CreationTimestamp
-    @Column(name = "start_time", updatable = false)
+    
+    @Column(name = "start_time", nullable = true, updatable = false)
     private LocalDateTime startTime;
+
 
     @Column(name = "end_time")
     private LocalDateTime endTime;
@@ -46,6 +47,11 @@ public class FocusSession {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+    
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
 
     public enum SessionType {
         POMODORO("Pomodoro"),
@@ -67,19 +73,19 @@ public class FocusSession {
         this.user = user;
     }
 
-    // 🔥 Session Control
+    
     public void startSession() {
+        if (this.startTime != null) {
+            throw new IllegalStateException("Session already started");
+        }
         this.startTime = LocalDateTime.now();
-        this.endTime = null;
-        this.successful = false;
     }
 
-    public void markSuccessful() {
+    public void completeSession() {
+        if (this.endTime != null) {
+            throw new IllegalStateException("Session already ended");
+        }
         this.successful = true;
-        this.endTime = LocalDateTime.now();
-    }
-
-    public void endSession() {
         this.endTime = LocalDateTime.now();
     }
 
@@ -96,6 +102,20 @@ public class FocusSession {
     public long getRemainingMinutes() {
         return Math.max(durationMinutes - getElapsedMinutes(), 0);
     }
+    
+ // Returns elapsed seconds for live countdown
+    public long getElapsedSeconds() {
+        if (startTime == null) return 0;
+        return Duration.between(startTime, endTime != null ? endTime : LocalDateTime.now()).getSeconds();
+    }
+
+    // Reset session if user wants to restart
+    public void resetSession() {
+        this.startTime = null;
+        this.endTime = null;
+        this.successful = false;
+    }
+
 
     // Getters & Setters
     public Long getId() { return id; }

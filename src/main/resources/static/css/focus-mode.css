@@ -1,0 +1,65 @@
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins', sans-serif; }
+
+body {
+  height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  transition: all 0.3s ease; padding:20px;
+}
+
+/* Light & Dark themes */
+body.light { background: #f0f4ff; color: #333; }
+body.dark { background: radial-gradient(circle at top, #2b1055, #0a0218); color: white; }
+
+/* Top stats bar */
+.stats-bar { display:flex; gap:30px; margin-bottom:20px; }
+.stat { text-align:center; }
+.stat h2 { font-size:32px; margin-bottom:5px; }
+.stat p { font-size:14px; opacity:0.8; }
+
+h1 { margin-bottom:20px; font-weight:600; }
+
+/* Timer + circular progress */
+.timer-wrapper {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 20px 0;
+}
+
+.progress-ring { transform: rotate(-90deg); }
+.progress-ring__circle { transition: stroke-dashoffset 1s linear; transform-origin: 50% 50%; }
+
+.timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.5rem;
+  font-weight: 600;
+}
+
+.controls { display:flex; gap:15px; margin-bottom:20px; }
+button { padding:12px 32px; border:none; border-radius:30px; cursor:pointer; font-size:16px; transition: all 0.3s; }
+body.light button { background: linear-gradient(135deg,#7b7bf7,#9f9cff); color:#fff; }
+body.dark button { background: linear-gradient(135deg,#7b2ff7,#9f6cff); color:#fff; }
+
+.session-types { display:flex; gap:20px; margin-top:20px; flex-wrap:wrap; }
+.session-type { padding:10px 20px; border-radius:16px; border:1px solid; cursor:pointer; opacity:0.7; text-align:center; transition: all 0.3s; }
+.session-type.active { opacity:1; }
+
+/* Light/Dark toggle buttons */
+.theme-toggle { display:flex; gap:10px; margin-bottom:20px; }
+.theme-toggle button { padding:8px 20px; border-radius:12px; border:1px solid #aaa; cursor:pointer; }
+.theme-toggle button.active { border-color:#7b2ff7; font-weight:600; }
+
+/* History log */
+.history-container { margin-top:30px; width:300px; max-height:250px; overflow-y:auto; border:1px solid #ccc; border-radius:12px; padding:10px; }
+.history-container h3 { margin-bottom:10px; text-align:center; }
+.history-item { padding:6px 8px; border-bottom:1px solid #ccc; border-radius:6px; margin-bottom:4px; font-size:14px; }
+.history-focus { background: #d1c4ff; }
+.history-short { background: #c8f7dc; }
+.history-long { background: #ffe0b2; }
+.history-custom { background: #f8d7da; }
+
+/* Streak */
+.streak { margin-top:10px; font-size:16px; font-weight:600; }
+
