@@ -6,76 +6,96 @@
 
 <link rel="stylesheet" href="/css/focus-mode.css">
 </head>
+
 <body class="light">
 
-<h1>Focus Mode</h1>
+	<div class="app-container">
+	  <h1>Focus Mode</h1>
+	  <div class="theme-toggle">
+	    <button id="lightBtn" class="active">Light Mode</button>
+	    <button id="darkBtn">Dark Mode</button>
+	  </div>
 
-<!-- Theme toggle -->
-<div class="theme-toggle">
-  <button id="lightBtn" class="active">Light Mode</button>
-  <button id="darkBtn">Dark Mode</button>
-</div>
+	  <div class="main-content">
 
-<div style="margin-bottom:20px; text-align:center;">
-  <label>Daily Focus Goal: </label>
-  <input type="number" id="dailyGoal" min="1" max="24" value="5"> hours
-  <div>Remaining Today: <span id="remainingGoal">5</span> hrs</div>
-</div>
+	    <!-- Left Column -->
+	    <div class="left-column">
+	      <div class="card timer-card">
+	        <!-- Timer + ring -->
+	        <div class="timer-wrapper">
+	          <svg class="progress-ring" width="180" height="180">
+	            <circle class="progress-ring__circle" stroke="#9f6cff" stroke-width="8" fill="transparent" r="84" cx="90" cy="90"/>
+	          </svg>
+	          <div class="timer" id="timer">25:00</div>
+	        </div>
+	        <!-- Controls -->
+	        <div class="controls">
+	          <button id="startBtn">Start</button>
+	          <button id="pauseBtn">Pause</button>
+	          <button id="resetBtn">Reset</button>
+	        </div>
+	      </div>
 
+	      <div class="card session-card">
+	        <!-- Session Types -->
+	        <div class="session-types">
+	          <div class="session-type active" data-minutes="25">Focus<br>25 min</div>
+	          <div class="session-type" data-minutes="5">Short Break<br>5 min</div>
+	          <div class="session-type" data-minutes="30">Long Break<br>30 min</div>
+	          <div>
+	            Custom<br>
+	            <input type="number" id="customDuration" min="1" max="180" value="25"> min
+	          </div>
+	        </div>
+	      </div>
+	    </div>
 
-<!-- Stats Bar -->
-<div class="stats-bar">
-  <div class="stat">
-    <h2 id="totalHours">0</h2>
-    <p>Total Hours Focused Today</p>
-  </div>
-  <div class="stat">
-    <h2 id="sessionsCompleted">0</h2>
-    <p>Sessions Completed Today</p>
-  </div>
-</div>
+	    <!-- Right Column -->
+	    <div class="right-column">
+	      <div class="card goal-card">
+	        <!-- Daily Goal -->
+	        <label>Daily Focus Goal: </label>
+	        <input type="number" id="dailyGoal" min="1" max="24" value="5"> hours
+	        <div>Remaining Today: <span id="remainingGoal">5</span> hrs</div>
+	      </div>
 
-<!-- Timer + circular progress -->
-<div class="timer-wrapper">
-  <svg class="progress-ring" width="180" height="180">
-    <circle class="progress-ring__circle" stroke="#9f6cff" stroke-width="8" fill="transparent" r="84" cx="90" cy="90"/>
-  </svg>
-  <div class="timer" id="timer">25:00</div>
-</div>
+	      <div class="card stats-card">
+	        <!-- Stats -->
+	        <div class="stats-bar">
+	          <div class="stat">
+	            <h2 id="totalHours">0</h2>
+	            <p>Total Hours Focused Today</p>
+	          </div>
+	          <div class="stat">
+	            <h2 id="sessionsCompleted">0</h2>
+	            <p>Sessions Completed Today</p>
+	          </div>
+	        </div>
+	      </div>
 
-<div class="controls">
-  <button id="startBtn">Start</button>
-  <button id="pauseBtn">Pause</button>
-  <button id="resetBtn">Reset</button>
-</div>
+		  <div class="progress-bar">
+		    <div class="progress-fill" id="goalProgress"></div>
+		  </div>
 
-<div class="session-types">
-  <div class="session-type active" data-minutes="25">Focus<br>25 min</div>
-  <div class="session-type" data-minutes="5">Short Break<br>5 min</div>
-  <div class="session-type" data-minutes="30">Long Break<br>30 min</div>
-  <div>
-    Custom<br>
-    <input type="number" id="customDuration" min="1" max="180" value="25"> min
-  </div>
-</div>
+	      <div class="card history-card">
+	        <!-- History -->
+	        <h3>Session History</h3>
+	        <ul id="historyList"></ul>
+	        <div class="streak">Current Streak: <span id="streakCount">0 🔥</span></div>
+	      </div>
 
-<!-- Session history + streak -->
-<div class="history-container">
-  <h3>Session History</h3>
-  <ul id="historyList"></ul>
-  <div class="streak">Current Streak: <span id="streakCount">0 🔥</span></div>
-</div>
-<div style="width:90%; max-width:600px; margin:10px auto; text-align:center;">
-  <button id="barBtn">Bar Chart</button>
-  <button id="lineBtn">Line Chart</button>
-</div>
+	      <div class="card chart-card">
+	        <!-- Charts -->
+	        <div class="chart-buttons">
+	          <button id="barBtn">Bar Chart</button>
+	          <button id="lineBtn">Line Chart</button>
+	        </div>
+	        <canvas id="focusChart"></canvas>
+	      </div>
+	    </div>
 
-
-<!-- Chart container -->
-<div style="width:90%; max-width:600px; margin:20px auto;">
-  <canvas id="focusChart"></canvas>
-</div>
-
+	  </div>
+	</div>
 
 
 <!-- Include Chart.js library -->

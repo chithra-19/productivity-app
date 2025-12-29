@@ -256,6 +256,11 @@ function startTimer() {
 		if(remainingGoalHours < 0) remainingGoalHours = 0;
 		remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
 
+		// Update progress bar
+		const goalProgress = document.getElementById('goalProgress');
+		const percent = ((dailyGoalHours - remainingGoalHours)/dailyGoalHours) * 100;
+		goalProgress.style.width = percent + '%';
+		
 		localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, totalFocusedMinutes);
 		localStorage.setItem(STORAGE_KEYS.SESSIONS, completedSessions);
 		localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
@@ -355,14 +360,16 @@ if (savedTheme === "dark") {
 dailyGoalInput.addEventListener("change", () => {
   const newGoal = Number(dailyGoalInput.value) || 0;
 
-  remainingGoalHours = Math.max(
-    newGoal - totalFocusedMinutes / 60,
-    0
-  );
+  remainingGoalHours = Math.max(newGoal - totalFocusedMinutes / 60, 0);
+  remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+
+  // Update progress bar
+  const goalProgress = document.getElementById('goalProgress');
+  const percent = ((newGoal - remainingGoalHours)/newGoal) * 100;
+  goalProgress.style.width = percent + '%';
 
   localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, newGoal);
   localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
 
-  remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
   updateStats();
 });
