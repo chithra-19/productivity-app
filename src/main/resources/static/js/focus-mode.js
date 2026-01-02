@@ -242,7 +242,8 @@ function startTimer() {
       if(timerMinutes === 0) {
         clearInterval(interval);
         running = false;
-        alert("Session Complete! ✅");
+		showToast("Session Complete! ✅");
+
 
         const sessionMinutes = Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
         totalFocusedMinutes += sessionMinutes;
@@ -373,3 +374,11 @@ dailyGoalInput.addEventListener("change", () => {
 
   updateStats();
 });
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500); // hide after 2.5s
+}
+

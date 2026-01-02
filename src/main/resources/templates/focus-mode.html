@@ -1,105 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Focus Mode</title>
+  <meta charset="UTF-8">
+  <title>Focus Mode</title>
 
-<link rel="stylesheet" href="/css/focus-mode.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/focus-mode.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="light">
 
-	<div class="app-container">
-	  <h1>Focus Mode</h1>
-	  <div class="theme-toggle">
-	    <button id="lightBtn" class="active">Light Mode</button>
-	    <button id="darkBtn">Dark Mode</button>
-	  </div>
+  <div class="app-container">
 
-	  <div class="main-content">
+    <!-- Header -->
+    <h1>Focus Mode</h1>
 
-	    <!-- Left Column -->
-	    <div class="left-column">
-	      <div class="card timer-card">
-	        <!-- Timer + ring -->
-	        <div class="timer-wrapper">
-	          <svg class="progress-ring" width="180" height="180">
-	            <circle class="progress-ring__circle" stroke="#9f6cff" stroke-width="8" fill="transparent" r="84" cx="90" cy="90"/>
-	          </svg>
-	          <div class="timer" id="timer">25:00</div>
-	        </div>
-	        <!-- Controls -->
-	        <div class="controls">
-	          <button id="startBtn">Start</button>
-	          <button id="pauseBtn">Pause</button>
-	          <button id="resetBtn">Reset</button>
-	        </div>
-	      </div>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+      <button id="lightBtn" class="active">Light Mode</button>
+      <button id="darkBtn">Dark Mode</button>
+    </div>
 
-	      <div class="card session-card">
-	        <!-- Session Types -->
-	        <div class="session-types">
-	          <div class="session-type active" data-minutes="25">Focus<br>25 min</div>
-	          <div class="session-type" data-minutes="5">Short Break<br>5 min</div>
-	          <div class="session-type" data-minutes="30">Long Break<br>30 min</div>
-	          <div>
-	            Custom<br>
-	            <input type="number" id="customDuration" min="1" max="180" value="25"> min
-	          </div>
-	        </div>
-	      </div>
-	    </div>
+    <!-- Main Content -->
+    <div class="main-content">
 
-	    <!-- Right Column -->
-	    <div class="right-column">
-	      <div class="card goal-card">
-	        <!-- Daily Goal -->
-	        <label>Daily Focus Goal: </label>
-	        <input type="number" id="dailyGoal" min="1" max="24" value="5"> hours
-	        <div>Remaining Today: <span id="remainingGoal">5</span> hrs</div>
-	      </div>
+      <!-- ================= LEFT COLUMN ================= -->
+      <div class="left-column">
 
-	      <div class="card stats-card">
-	        <!-- Stats -->
-	        <div class="stats-bar">
-	          <div class="stat">
-	            <h2 id="totalHours">0</h2>
-	            <p>Total Hours Focused Today</p>
-	          </div>
-	          <div class="stat">
-	            <h2 id="sessionsCompleted">0</h2>
-	            <p>Sessions Completed Today</p>
-	          </div>
-	        </div>
-	      </div>
+        <!-- Timer Card -->
+        <div class="card timer-card">
+          <div class="timer-wrapper">
 
-		  <div class="progress-bar">
-		    <div class="progress-fill" id="goalProgress"></div>
+            <svg class="progress-ring" width="180" height="180">
+              <circle
+                class="progress-ring__circle"
+                stroke="#9f6cff"
+                stroke-width="8"
+                fill="transparent"
+                r="84"
+                cx="90"
+                cy="90"
+              />
+            </svg>
+
+            <div class="timer" id="timer">25:00</div>
+          </div>
+
+          <!-- Controls -->
+          <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn">Pause</button>
+            <button id="resetBtn">Reset</button>
+          </div>
+        </div>
+
+        <!-- Session Type Card -->
+        <div class="card session-card">
+          <div class="session-types">
+
+            <div class="session-type active" data-minutes="25">
+              Focus<br>25 min
+            </div>
+
+            <div class="session-type" data-minutes="5">
+              Short Break<br>5 min
+            </div>
+
+            <div class="session-type" data-minutes="30">
+              Long Break<br>30 min
+            </div>
+
+            <div class="session-custom">
+              Custom<br>
+              <input
+                type="number"
+                id="customDuration"
+                min="1"
+                max="180"
+                value="25"
+              > min
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= RIGHT COLUMN ================= -->
+      <div class="right-column">
+
+        <!-- Daily Goal Analytics -->
+        <div class="card goal-card">
+
+          <label>Daily Focus Goal:</label>
+          <input
+            type="number"
+            id="dailyGoal"
+            min="1"
+            max="24"
+            value="5"
+          > hours
+
+          <div class="goal-text">
+            <span id="goalDone">0h</span> /
+            <span id="goalTotal">5h</span>
+          </div>
+
+          <div class="progress-bar">
+            <div class="progress-fill" id="goalProgress"></div>
+          </div>
+
+          <div class="goal-status" id="goalStatus">
+            Let’s get started 🚀
+          </div>
+
+        </div>
+
+        <!-- Stats Card -->
+        <div class="card stats-card">
+          <div class="stats-bar">
+
+            <div class="stat">
+              <h2 id="totalHours">0.00</h2>
+              <p>Total Hours Focused Today</p>
+            </div>
+
+            <div class="stat">
+              <h2 id="sessionsCompleted">0</h2>
+              <p>Sessions Completed Today</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="card history-card">
+          <h3>Session History</h3>
+          <ul id="historyList"></ul>
+
+          <div class="streak">
+            Current Streak:
+            <span id="streakCount">0 🔥</span>
+          </div>
+        </div>
+
+		<div class="card chart-card">
+
+		  <h3>Focus Analytics</h3>
+
+		  <!-- Chart Meta -->
+		  <div class="chart-meta">
+		    <span id="chartTitle">Today’s Focus</span>
+
+		    <select id="chartRange">
+		      <option value="today">Today</option>
+		      <option value="week">Last 7 Days</option>
+		    </select>
 		  </div>
 
-	      <div class="card history-card">
-	        <!-- History -->
-	        <h3>Session History</h3>
-	        <ul id="historyList"></ul>
-	        <div class="streak">Current Streak: <span id="streakCount">0 🔥</span></div>
-	      </div>
+		  <!-- Chart Type Buttons -->
+		  <div class="chart-buttons">
+		    <button id="barBtn" class="active">Sessions</button>
+		    <button id="lineBtn">Focus Hours</button>
+		  </div>
 
-	      <div class="card chart-card">
-	        <!-- Charts -->
-	        <div class="chart-buttons">
-	          <button id="barBtn">Bar Chart</button>
-	          <button id="lineBtn">Line Chart</button>
-	        </div>
-	        <canvas id="focusChart"></canvas>
-	      </div>
-	    </div>
+		  <!-- Chart Canvas -->
+		  <div class="chart-wrapper">
+		    <canvas id="focusChart"></canvas>
+		  </div>
 
-	  </div>
-	</div>
+		  <!-- Empty State -->
+		  <div id="chartEmptyState">
+		    No focus data yet 📉<br>
+		    Start a session to see insights.
+		  </div>
+
+		</div>
 
 
-<!-- Include Chart.js library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/js/focus-mode.js"></script>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast">Session Complete! ✅</div>
+
+
+  <!-- JS -->
+  <script src="/js/focus-mode.js"></script>
+
 </body>
 </html>

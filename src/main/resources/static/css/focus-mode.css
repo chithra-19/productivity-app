@@ -3,8 +3,61 @@
 body { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px; transition: all 0.3s ease; }
 
 /* ===== Light & Dark Themes ===== */
-body.light { background: #f0f4ff; color: #333; }
-body.dark { background: radial-gradient(circle at top, #2b1055, #0a0218); color: #fff; }
+body.light {
+  background: linear-gradient(
+    rgba(240,244,255,0.85),
+    rgba(240,244,255,0.85)
+  );
+  color: #333;
+}
+
+
+body.dark {
+  background:
+    linear-gradient(
+      rgba(10,2,24,0.9),
+      rgba(10,2,24,0.9)
+    ),
+    url("/images/darkmode.jpg") center/cover no-repeat;
+  color: #ffffff;
+}
+
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark p,
+body.dark span,
+body.dark label,
+body.dark li {
+  color: #ffffff;
+}
+body.dark .card,
+body.dark .stat,
+body.dark .goal-card,
+body.dark .history-container {
+  color: #ffffff;
+}
+
+body.dark .history-focus {
+  background: rgba(123,47,247,0.25);
+  color: #fff;
+}
+
+body.dark .history-short {
+  background: rgba(0,230,118,0.25);
+  color: #fff;
+}
+
+body.dark .history-long {
+  background: rgba(255,167,38,0.25);
+  color: #fff;
+}
+
+body.dark .history-custom {
+  background: rgba(244,67,54,0.25);
+  color: #fff;
+}
+
 
 /* ===== App Container ===== */
 .app-container {
@@ -39,6 +92,15 @@ h1 {
   cursor: pointer;
   background: transparent;
   transition: all 0.3s ease;
+}
+/* ===== Theme Toggle Button Text Fix ===== */
+body.light .theme-toggle button {
+  color: #333;
+}
+
+body.dark .theme-toggle button {
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.4);
 }
 
 .theme-toggle button.active {
@@ -98,6 +160,27 @@ h1 {
   width: 100%;
   transition: all 0.3s ease;
 }
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg,#7b2ff7,#9f6cff);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  font-weight: 600;
+}
+.toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 
 /* Light/Dark card tweaks */
 body.light .card { background: rgba(255,255,255,0.12); }
@@ -167,10 +250,17 @@ body.dark .card { background: rgba(255,255,255,0.05); }
 .progress-fill {
   height: 100%;
   border-radius: 8px;
-  background: linear-gradient(135deg,#7b2ff7,#9f6cff);
+  background: linear-gradient(
+    90deg,
+    #7b2ff7,
+    #9f6cff,
+    #00e5ff
+  );
+  box-shadow: 0 0 12px rgba(159,108,255,0.6);
   width: 0%;
-  transition: width 0.5s ease;
+  transition: width 0.6s ease;
 }
+
 
 /* ===== Stats Bar ===== */
 .stats-bar {
@@ -214,14 +304,15 @@ body.dark .card { background: rgba(255,255,255,0.05); }
 .timer {
   position: absolute;
   top: 50%;
-  left: 75%;
-  transform: translate(-50%, -70%);
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 4rem;
   font-weight: 600;
   letter-spacing: 2px;
   text-align: center;
-  text-shadow: 0 0 8px rgba(159,108,255,0.5);
+  text-shadow: 0 0 10px rgba(159,108,255,0.6);
 }
+
 
 /* ===== Controls ===== */
 .controls {
