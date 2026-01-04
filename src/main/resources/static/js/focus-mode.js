@@ -1,12 +1,16 @@
-
 const STORAGE_KEYS = {
   DAILY_GOAL: "focus_daily_goal",
   REMAINING_GOAL: "focus_remaining_goal",
   TOTAL_MINUTES: "focus_total_minutes",
   SESSIONS: "focus_sessions_today",
   THEME: "focus_theme",
-  LAST_DATE: "focus_last_date"
+  LAST_DATE: "focus_last_date",
+
+  SESSION_HISTORY: "focus_session_history",
+  STREAK: "focus_streak",
+  LAST_SESSION_DATE: "focus_last_session_date"
 };
+
 
 function checkNewDay() {
   const today = new Date().toDateString();
@@ -34,8 +38,7 @@ let completedSessions = 0;
 
 // Session history & streak
 let sessionHistory = [];
-let currentStreak = 0;
-let lastSessionDate = null;
+
 
 const timerEl = document.getElementById("timer");
 const startBtn = document.getElementById("startBtn");
@@ -82,6 +85,28 @@ function updateStats() {
   totalHoursEl.textContent = (totalFocusedMinutes / 60).toFixed(2);
   sessionsCompletedEl.textContent = completedSessions;
 }
+function updateStreak(today) {
+  const lastDateStr = localStorage.getItem(STORAGE_KEYS.LAST_SESSION_DATE);
+  let streak = Number(localStorage.getItem(STORAGE_KEYS.STREAK)) || 0;
+
+  if (!lastDateStr) {
+    streak = 1;
+  } else {
+    const lastDate = new Date(lastDateStr);
+    const diffDays =
+      (today.setHours(0,0,0,0) - lastDate.setHours(0,0,0,0)) /
+      (1000 * 60 * 60 * 24);
+
+    if (diffDays === 1) streak++;
+    else if (diffDays > 1) streak = 1;
+  }
+
+  localStorage.setItem(STORAGE_KEYS.STREAK, streak);
+  localStorage.setItem(STORAGE_KEYS.LAST_SESSION_DATE, new Date().toISOString());
+
+  streakEl.textContent = `${streak} 🔥`;
+}
+
 
 // Chart setup
 const ctx = document.getElementById('focusChart').getContext('2d');
@@ -174,37 +199,39 @@ function updateChart() {
 }
 
 
-// Call updateChart whenever a session is added
 function addSessionToHistory(type, minutes) {
   const now = new Date();
-  const dateStr = now.toLocaleString();
 
-  // Update streak logic
-  if(lastSessionDate) {
-    const last = new Date(lastSessionDate);
-    const diff = now.setHours(0,0,0,0) - last.setHours(0,0,0,0);
-    if(diff === 24*60*60*1000) currentStreak++;
-    else if(diff > 24*60*60*1000) currentStreak = 1;
-  } else { currentStreak = 1; }
-  lastSessionDate = now;
+  // ✅ store ISO date (important for streak & analytics)
+  const sessionObj = {
+    type,
+    minutes,
+    date: now.toISOString()
+  };
 
-  streakEl.textContent = `${currentStreak} 🔥`;
-
-  const sessionObj = { type, minutes, date: dateStr };
+  // update memory + storage
   sessionHistory.unshift(sessionObj);
+  localStorage.setItem(
+    STORAGE_KEYS.SESSION_HISTORY,
+    JSON.stringify(sessionHistory)
+  );
 
+  // update UI history (only ONE entry)
   const li = document.createElement("li");
   li.className = "history-item";
+
   const typeLower = type.toLowerCase();
-  if(typeLower.includes("focus")) li.classList.add("history-focus");
-  else if(typeLower.includes("short")) li.classList.add("history-short");
-  else if(typeLower.includes("long")) li.classList.add("history-long");
+  if (typeLower.includes("focus")) li.classList.add("history-focus");
+  else if (typeLower.includes("short")) li.classList.add("history-short");
+  else if (typeLower.includes("long")) li.classList.add("history-long");
   else li.classList.add("history-custom");
-  li.textContent = `${dateStr} — ${type} (${minutes} min)`;
+
+  li.textContent = `${now.toLocaleString()} — ${type} (${minutes} min)`;
   historyEl.prepend(li);
 
-  // Update chart
+  // ✅ analytics + streak (ONLY ONCE)
   updateChart();
+  updateStreak(new Date());
 }
 
 
@@ -321,6 +348,16 @@ updateStats();
 
 // 🔁 Check if a new day started and reset daily stats if needed
 checkNewDay();
+const savedHistory = localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY);
+if (savedHistory) {
+  sessionHistory = JSON.parse(savedHistory);
+  sessionHistory.forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = `${s.date} — ${s.type} (${s.minutes} min)`;
+    historyEl.appendChild(li);
+  });
+}
+
 
 // ===== Restore saved values =====
 const savedGoal = localStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
