@@ -11,6 +11,13 @@ const STORAGE_KEYS = {
   LAST_SESSION_DATE: "focus_last_session_date"
 };
 
+const TIMER_KEYS = {
+  START: "focus_timer_start",
+  DURATION: "focus_timer_duration",
+  RUNNING: "focus_timer_running"
+};
+
+
 
 function checkNewDay() {
   const today = new Date().toDateString();
@@ -260,60 +267,110 @@ function setupDailyReset() {
 setupDailyReset();
 
 
-// Timer functions
 function startTimer() {
-  if(running) return;
+  if (running) return;
+
   running = true;
+
+  // If starting fresh, store start time
+  if (!localStorage.getItem(TIMER_KEYS.RUNNING)) {
+    const sessionTotal =
+      Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
+
+    localStorage.setItem(TIMER_KEYS.START, Date.now());
+    localStorage.setItem(TIMER_KEYS.DURATION, sessionTotal * 60 * 1000);
+    localStorage.setItem(TIMER_KEYS.RUNNING, "true");
+  }
+
   interval = setInterval(() => {
-    if(timerSeconds === 0) {
-      if(timerMinutes === 0) {
-        clearInterval(interval);
-        running = false;
-		showToast("Session Complete! ✅");
+    const start = Number(localStorage.getItem(TIMER_KEYS.START));
+    const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
+    const elapsed = Date.now() - start;
+    const remaining = duration - elapsed;
 
+    if (remaining <= 0) {
+      clearInterval(interval);
+      running = false;
 
-        const sessionMinutes = Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
-        totalFocusedMinutes += sessionMinutes;
-        completedSessions++;
-        updateStats();
-        addSessionToHistory(document.querySelector(".session-type.active")?.textContent || "Custom", sessionMinutes);
+      localStorage.removeItem(TIMER_KEYS.RUNNING);
 
+      timerMinutes = 0;
+      timerSeconds = 0;
+      updateDisplay();
+      progressCircle.style.strokeDashoffset = 0;
 
-		// Reduce remaining goal
-		remainingGoalHours -= sessionMinutes / 60;
-		if(remainingGoalHours < 0) remainingGoalHours = 0;
-		remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+      showToast("Session Complete! ✅");
 
-		// Update progress bar
-		const goalProgress = document.getElementById('goalProgress');
-		const percent = ((dailyGoalHours - remainingGoalHours)/dailyGoalHours) * 100;
-		goalProgress.style.width = percent + '%';
-		
-		localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, totalFocusedMinutes);
-		localStorage.setItem(STORAGE_KEYS.SESSIONS, completedSessions);
-		localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
+      const sessionMinutes = duration / 60000;
+      totalFocusedMinutes += sessionMinutes;
+      completedSessions++;
 
-        // fill progress circle
-        progressCircle.style.strokeDashoffset = 0;
-        return;
-      }
-      timerMinutes--;
-      timerSeconds = 59;
-    } else {
-      timerSeconds--;
+      updateStats();
+      addSessionToHistory(
+        document.querySelector(".session-type.active")?.textContent || "Custom",
+        sessionMinutes
+      );
+
+      // goal logic
+      remainingGoalHours -= sessionMinutes / 60;
+      if (remainingGoalHours < 0) remainingGoalHours = 0;
+      remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+
+      const percent =
+        ((dailyGoalHours - remainingGoalHours) / dailyGoalHours) * 100;
+      document.getElementById("goalProgress").style.width = percent + "%";
+
+      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, totalFocusedMinutes);
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, completedSessions);
+      localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
+
+      return;
     }
+
+    const totalSeconds = Math.floor(remaining / 1000);
+    timerMinutes = Math.floor(totalSeconds / 60);
+    timerSeconds = totalSeconds % 60;
+
     updateDisplay();
 
-    // Update progress circle
-    const sessionTotal = Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
-    const elapsed = sessionTotal*60 - (timerMinutes*60 + timerSeconds);
-    const offset = circumference - (elapsed / (sessionTotal*60)) * circumference;
-    progressCircle.style.strokeDashoffset = offset;
-  },1000);
+    const offset =
+      circumference - (elapsed / duration) * circumference;
+    progressCircle.style.strokeDashoffset = Math.max(0, offset);
+
+  }, 1000);
 }
 
-function pauseTimer() { running=false; clearInterval(interval); }
-function resetTimer() { pauseTimer(); timerMinutes=Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value); timerSeconds=0; updateDisplay(); progressCircle.style.strokeDashoffset = circumference; }
+function pauseTimer() {
+  running = false;
+  clearInterval(interval);
+
+  // 🧠 preserve remaining time
+  const remaining =
+    (timerMinutes * 60 + timerSeconds) * 1000;
+
+  localStorage.setItem(TIMER_KEYS.START, Date.now());
+  localStorage.setItem(TIMER_KEYS.DURATION, remaining);
+}
+
+
+function resetTimer() {
+  pauseTimer();
+
+  const sessionTotal =
+    Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
+
+  timerMinutes = sessionTotal;
+  timerSeconds = 0;
+  updateDisplay();
+
+  progressCircle.style.strokeDashoffset = circumference;
+
+  localStorage.removeItem(TIMER_KEYS.START);
+  localStorage.removeItem(TIMER_KEYS.DURATION);
+  localStorage.removeItem(TIMER_KEYS.RUNNING); // ✅ ADD THIS
+}
+
+
 
 
 // Session type selection
@@ -332,6 +389,26 @@ customInput.addEventListener("change", () => { timerMinutes=Number(customInput.v
 startBtn.addEventListener("click", startTimer);
 pauseBtn.addEventListener("click", pauseTimer);
 resetBtn.addEventListener("click", resetTimer);
+
+(function restoreRunningTimer() {
+  if (!localStorage.getItem(TIMER_KEYS.RUNNING)) return;
+
+  const start = Number(localStorage.getItem(TIMER_KEYS.START));
+  const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
+  const remaining = duration - (Date.now() - start);
+
+  if (remaining <= 0) {
+    localStorage.removeItem(TIMER_KEYS.RUNNING);
+    return;
+  }
+
+  const totalSeconds = Math.floor(remaining / 1000);
+  timerMinutes = Math.floor(totalSeconds / 60);
+  timerSeconds = totalSeconds % 60;
+
+  updateDisplay();
+  startTimer(); // auto resume
+})();
 
 // Theme toggle
 lightBtn.addEventListener("click", () => {

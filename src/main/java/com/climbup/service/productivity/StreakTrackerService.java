@@ -8,7 +8,6 @@ import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.repository.TaskRepository;
 import com.climbup.service.task.ActivityService;
 import com.climbup.service.user.UserService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,22 +22,20 @@ public class StreakTrackerService {
     private final StreakTrackerRepository repository;
     private final ActivityService activityService;
     private final TaskRepository taskRepository;
-    
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @Autowired
     public StreakTrackerService(StreakTrackerRepository repository,
                                 ActivityService activityService,
                                 TaskRepository taskRepository,
-                                UserService  userService) {
+                                UserService userService) {
         this.repository = repository;
         this.activityService = activityService;
         this.taskRepository = taskRepository;
         this.userService = userService;
     }
 
-    // 🔄 Update streak for a given category
+    // 🔄 Update streak for a given category (legacy/simple)
     public StreakTracker updateStreak(User user, String category) {
         LocalDate today = LocalDate.now();
 
@@ -83,8 +80,21 @@ public class StreakTrackerService {
         return repository.save(tracker);
     }
 
-    public void updateStreak(User user) {
-        updateStreak(user, "GENERAL");
+    // 🔹 Update streak using qualifiedToday (modern/used by TaskService)
+    public void updateStreak(User user, String category, boolean qualifiedToday) {
+        StreakTracker streak = repository.findByUserIdAndCategory(user.getId(), category)
+                .orElseGet(() -> {
+                    StreakTracker newTracker = new StreakTracker();
+                    newTracker.setUser(user);
+                    newTracker.setCategory(category);
+                    newTracker.setCurrentStreak(0);
+                    newTracker.setLongestStreak(0);
+                    newTracker.setLastActiveDate(null);
+                    return newTracker;
+                });
+
+        streak.updateForDay(LocalDate.now(), qualifiedToday);
+        repository.save(streak);
     }
 
     // 📊 Get current streak based on completed tasks
@@ -145,12 +155,10 @@ public class StreakTrackerService {
                 ));
     }
 
-
-    // 🏅 Best streak calculated from DB
     public int getBestStreak(Long userId) {
         return repository.getUserBestStreak(userId).orElse(0);
     }
-    
+
     public int calculateCurrentStreak(Long userId) {
         List<StreakTracker> streaks = repository.findByUserIdOrderByLastActiveDateAsc(userId);
 
@@ -176,14 +184,9 @@ public class StreakTrackerService {
         return streak;
     }
 
-    
-
     public int getCurrentStreak(Long userId) {
-    	User user = userService.findById(userId);
-
-    	return getCurrentStreak(user);
+        User user = userService.findById(userId);
+        return getCurrentStreak(user);
     }
-
-
 
 }
