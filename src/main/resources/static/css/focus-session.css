@@ -1,0 +1,145 @@
+/* ===== Base Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ===== Page Layout ===== */
+body {
+  min-height: 100vh;
+  background: #f0f4ff;
+  color: #333;
+}
+
+.app-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* ===== Headings ===== */
+h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+/* ===== Navigation Link ===== */
+.view-sessions-btn {
+  text-decoration: none;
+  color: #5b7cfa;
+  font-weight: 600;
+}
+
+.view-sessions-btn:hover {
+  text-decoration: underline;
+}
+
+/* ===== Card Wrapper ===== */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Session List ===== */
+.history-container {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== Single Session Item ===== */
+.session-item {
+  background: #f8faff;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 4px solid #5b7cfa;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.session-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Session Text ===== */
+.session-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.session-time {
+  font-size: 14px;
+  color: #666;
+}
+
+.session-status {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ===== Status Colors ===== */
+.status-completed {
+  color: #2e7d32;
+}
+
+.status-aborted {
+  color: #d32f2f;
+}
+
+/* ===== Pagination ===== */
+.pagination-controls {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== Buttons ===== */
+.controls-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: #5b7cfa;
+  color: #fff;
+  font-weight: 500;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.controls-btn:hover {
+  background: #4a6bf0;
+}
+
+.controls-btn:disabled {
+  background: #c5c9e6;
+  cursor: not-allowed;
+}
+
+/* ===== Page Info ===== */
+#pageInfo {
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #777;
+  font-size: 15px;
+}

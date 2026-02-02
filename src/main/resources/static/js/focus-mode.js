@@ -371,8 +371,6 @@ function resetTimer() {
 }
 
 
-
-
 // Session type selection
 sessionTypes.forEach(type => {
   type.addEventListener("click", () => {

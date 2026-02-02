@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/dashboard")
@@ -79,7 +81,7 @@ public class DashboardViewController {
         model.addAttribute("currentStreak", streakTrackerService.calculateCurrentStreak(user.getId()));
         model.addAttribute("bestStreak", streakTrackerService.getBestStreak(user.getId()));
 
-        // Productivity score
+        // Productivity score (optional, can remove)
         model.addAttribute("score", achievementService.getProductivityScore(user));
 
         // Tasks for today
@@ -89,8 +91,14 @@ public class DashboardViewController {
         model.addAttribute("todaysCount", today.size());
         model.addAttribute("pendingTasks", taskService.getPendingTasks(user));
 
-        // Heatmap
-        model.addAttribute("heatmapData", taskService.getHeatmapData(user));
+        // Heatmap: convert LocalDate → String, Long → Integer
+        Map<String, Integer> heatmapData = taskService.getTaskCountsByDate(user)
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> e.getKey() != null ? e.getKey().toString() : "",
+                        e -> e.getValue() != null ? e.getValue().intValue() : 0
+                ));
+        model.addAttribute("heatmapData", heatmapData);
 
         // Focus session
         FocusSession currentSession = focusSessionService.getCurrentSession(user);
@@ -101,6 +109,7 @@ public class DashboardViewController {
 
         return "dashboard";
     }
+
 
     @GetMapping("/goals")
     public String showGoalsPage(HttpServletRequest request, Model model) {
@@ -167,4 +176,9 @@ public class DashboardViewController {
                 user
         );
     }
+    @GetMapping("/focus-sessions")
+    public String focusSessionsPage() {
+        return "focus-sessions";
+    }
+
 }

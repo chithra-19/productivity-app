@@ -29,11 +29,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     long countByUserAndCompletedTrue(User user);
     long countByUserAndCompletedFalse(User user);
 
-    @Query("SELECT COUNT(t) FROM Task t WHERE t.user = :user AND t.completed = true")
-    long countCompletedTasksByUser(@Param("user") User user);
+    // ================= Streak / Heatmap =================
+    long countByUserAndCategoryAndDueDate(User user, String category, LocalDate dueDate);
+    long countByUserAndCategoryAndDueDateAndCompletedTrue(User user, String category, LocalDate dueDate);
 
-    @Query("SELECT COUNT(t) FROM Task t WHERE t.user = :user AND t.completed = false")
-    long countPendingTasksByUser(@Param("user") User user);
+    List<Task> findByUserIdAndCategory(Long userId, String category);
 
     // ================= Basic Queries =================
     List<Task> findByUser(User user);
@@ -43,17 +43,20 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     Optional<Task> findByIdAndUser(Long id, User user);
     boolean existsByIdAndUser(Long id, User user);
 
-    // ================= Date-based Queries =================
+    // ================= Date-based =================
     List<Task> findByUserAndDueDate(User user, LocalDate dueDate);
     List<Task> findByUserAndDueDateBetween(User user, LocalDate start, LocalDate end);
     List<Task> findByUserAndDueDateAfter(User user, LocalDate date);
     List<Task> findByUserAndDueDateBefore(User user, LocalDate date);
 
-    // ✅ FIXED: Removed @Param to allow Spring to derive query
+    // ================= Priority =================
     List<Task> findByPriority(Priority priority);
+    List<Task> findByUserAndPriority(User user, Priority priority);
+    List<Task> findByUserAndPriorityIn(User user, List<Priority> priorities);
 
-    // ================= Completed Tasks =================
+    // ================= Completed =================
     List<Task> findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(User user);
+    List<Task> findByUserAndCompletedDateTimeIsNotNull(User user);
 
     // ================= Time-based =================
     List<Task> findByUserAndStartTimeBetween(User user, LocalTime start, LocalTime end);
@@ -62,36 +65,50 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByUserAndMissedTrue(User user);
 
     @Query("SELECT t FROM Task t WHERE t.user = :user AND t.dueDate < :today AND t.completed = false")
-    List<Task> findOverdueTasks(@Param("user") User user, @Param("today") LocalDate today);
-
-    // ================= Priority =================
-    List<Task> findByUserAndPriority(User user, Priority priority);
-    List<Task> findByUserAndPriorityIn(User user, List<Priority> priorities);
+    List<Task> findOverdueTasks(@Param("user") User user,
+                                @Param("today") LocalDate today);
 
     // ================= Productivity =================
-    @Query("SELECT t FROM Task t WHERE t.user = :user AND t.completed = true AND t.completedDateTime BETWEEN :start AND :end")
+    @Query("""
+        SELECT t FROM Task t
+        WHERE t.user = :user
+          AND t.completed = true
+          AND t.completedDateTime BETWEEN :start AND :end
+    """)
     List<Task> findCompletedTasksBetweenDates(@Param("user") User user,
                                               @Param("start") LocalDateTime start,
                                               @Param("end") LocalDateTime end);
 
-    // ================= Bulk Operations =================
+    // ================= Bulk Ops =================
     @Modifying
-    @Query("UPDATE Task t SET t.completed = true, t.completedDateTime = :completionDate WHERE t.id = :id AND t.user = :user")
+    @Query("""
+        UPDATE Task t
+        SET t.completed = true,
+            t.completedDateTime = :completionDate
+        WHERE t.id = :id AND t.user = :user
+    """)
     int markTaskAsCompleted(@Param("id") Long id,
                             @Param("user") User user,
                             @Param("completionDate") LocalDateTime completionDate);
 
     @Modifying
-    @Query("UPDATE Task t SET t.missed = true WHERE t.user = :user AND t.dueDate < :today AND t.completed = false")
-    int markOverdueTasks(@Param("user") User user, @Param("today") LocalDate today);
+    @Query("""
+        UPDATE Task t
+        SET t.missed = true
+        WHERE t.user = :user
+          AND t.dueDate < :today
+          AND t.completed = false
+    """)
+    int markOverdueTasks(@Param("user") User user,
+                         @Param("today") LocalDate today);
 
     // ================= Search =================
-    @Query("SELECT t FROM Task t WHERE t.user = :user AND " +
-           "(LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%')))")
-    List<Task> searchTasks(@Param("user") User user, @Param("query") String query);
-    
-    List<Task> findByUserAndCompletedDateTimeIsNotNull(User user);
-
-
+    @Query("""
+        SELECT t FROM Task t
+        WHERE t.user = :user AND
+        (LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%')))
+    """)
+    List<Task> searchTasks(@Param("user") User user,
+                           @Param("query") String query);
 }

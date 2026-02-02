@@ -7,12 +7,16 @@ import com.climbup.model.User;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
@@ -33,13 +37,25 @@ public class TaskViewController {
         this.userService = userService;
     }
 
-    // Show all tasks for logged-in user
+  
+    
     @GetMapping("/all")
-    public String showAllTasks(Model model, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
-        List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
-        model.addAttribute("tasks", tasks);
-        return "tasks/task-all"; // Thymeleaf view
+    public String showAllTasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userService.findByEmail(userDetails.getUsername());
+
+        Page<TaskResponseDTO> taskPage =
+                taskService.getTasksForUserPaginated(user, page, size);
+
+        model.addAttribute("tasks", taskPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", taskPage.getTotalPages());
+
+        return "tasks/task-all";
     }
 
     // Show today's tasks for logged-in user

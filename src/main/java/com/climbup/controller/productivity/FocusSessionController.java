@@ -5,6 +5,11 @@ import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.User;
 import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.FocusSessionService;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,11 +43,22 @@ public class FocusSessionController {
 
     // 📋 Get all focus sessions for a user
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<FocusSessionResponseDTO>> getUserSessions(@PathVariable Long userId) {
+    public ResponseEntity<Page<FocusSessionResponseDTO>> getUserSessions(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy
+    ) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<FocusSessionResponseDTO> sessions = focusSessionService.getUserSessions(user);
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(sortBy != null ? sortBy : "startTime").descending()
+        );
+
+        Page<FocusSessionResponseDTO> sessions = focusSessionService.getUserSessions(user, pageable);
         return ResponseEntity.ok(sessions);
     }
 

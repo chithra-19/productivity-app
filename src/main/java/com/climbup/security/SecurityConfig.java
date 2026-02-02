@@ -22,9 +22,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
     	http
-        .csrf(csrf -> csrf
-            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-        )
+    	.csrf(csrf -> csrf
+    		    .ignoringRequestMatchers(
+    		        new AntPathRequestMatcher("/goals/**"),
+    		        new AntPathRequestMatcher("/tasks/**"),
+    		        new AntPathRequestMatcher("/api/**")
+    		    )
+    		)
 
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth

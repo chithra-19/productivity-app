@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Focus Sessions</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS (reuse your focus styles for consistency) -->
+  <link rel="stylesheet" href="/css/focus-mode.css">
+
+</head>
+
+<body class="light">
+
+  <div class="app-container">
+
+    <!-- Header -->
+    <h1>Focus Sessions</h1>
+
+    <!-- Back Navigation -->
+    <div style="margin-bottom: 20px;">
+      <a href="/dashboard/focus-mode" class="view-sessions-btn">
+        ← Back to Focus Mode
+      </a>
+    </div>
+
+    <!-- Sessions Card -->
+    <div class="card">
+
+      <h3>Session History</h3>
+
+      <!-- Session List -->
+      <ul id="sessionList" class="history-container">
+        <!-- JS will inject sessions here -->
+      </ul>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-controls" style="margin-top: 20px; display:flex; justify-content:center; gap:12px;">
+        <button id="prevBtn" class="controls-btn">Prev</button>
+        <span id="pageInfo">Page 1</span>
+        <button id="nextBtn" class="controls-btn">Next</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- JS -->
+  <script src="/js/focus-session.js"></script>
+
+</body>
+</html>

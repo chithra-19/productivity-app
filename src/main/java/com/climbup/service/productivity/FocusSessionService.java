@@ -5,6 +5,8 @@ import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.FocusSession;
 import com.climbup.model.User;
 import com.climbup.repository.FocusSessionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import jakarta.transaction.Transactional;
 
@@ -183,12 +185,12 @@ public class FocusSessionService {
         focusSessionRepository.delete(session);
     }
     
-    public List<FocusSessionResponseDTO> getUserSessions(User user) {
-        return focusSessionRepository.findByUser(user)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
 
+public Page<FocusSessionResponseDTO> getUserSessions(User user, Pageable pageable) {
+    return focusSessionRepository.findByUser(user, pageable)
+                                 .map(this::mapToResponse);
+
+
+}
 
 }

@@ -1,6 +1,9 @@
 package com.climbup.repository;
 
 import com.climbup.model.FocusSession;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.climbup.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,6 +40,7 @@ public interface FocusSessionRepository extends JpaRepository<FocusSession, Long
     	""")
     	Optional<FocusSession> findActiveSession(@Param("user") User user);
 
+    Page<FocusSession> findByUser(User user, Pageable pageable);
     
     
 

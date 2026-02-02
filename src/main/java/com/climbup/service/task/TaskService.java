@@ -15,6 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -240,4 +244,27 @@ public class TaskService {
         }
         return false;
     }
+    
+    public Map<LocalDate, Long> getTaskCountsByDate(User user) {
+        List<Task> tasks = taskRepository.findByUser(user);
+        return tasks.stream()
+                    .collect(Collectors.groupingBy(Task::getDueDate, Collectors.counting()));
+    }
+    
+    public Page<TaskResponseDTO> getTasksForUserPaginated(
+            User user,
+            int page,
+            int size
+    ) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("createdAt").descending()
+        );
+
+        return taskRepository
+                .findByUser(user, pageable)
+                .map(TaskMapper::toResponse);
+    }
+
 }

@@ -1,138 +1,139 @@
 package com.climbup.service.productivity;
 
-import com.climbup.model.User;
 import com.climbup.model.StreakTracker;
 import com.climbup.model.Task;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.User;
 import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.repository.TaskRepository;
-import com.climbup.service.task.ActivityService;
-import com.climbup.service.user.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class StreakTrackerService {
 
-    private final StreakTrackerRepository repository;
-    private final ActivityService activityService;
+    private final StreakTrackerRepository streakTrackerRepository;
     private final TaskRepository taskRepository;
-    private final UserService userService;
 
-    @Autowired
-    public StreakTrackerService(StreakTrackerRepository repository,
-                                ActivityService activityService,
-                                TaskRepository taskRepository,
-                                UserService userService) {
-        this.repository = repository;
-        this.activityService = activityService;
+    public StreakTrackerService(StreakTrackerRepository streakTrackerRepository,
+                                TaskRepository taskRepository) {
+        this.streakTrackerRepository = streakTrackerRepository;
         this.taskRepository = taskRepository;
-        this.userService = userService;
     }
 
-    // 🔄 Update streak for a given category (legacy/simple)
-    public StreakTracker updateStreak(User user, String category) {
+    // 🔹 Evaluate streak for TODAY (call after task completion)
+    @Transactional
+    public void evaluateToday(User user, String category) {
+
         LocalDate today = LocalDate.now();
 
-        StreakTracker tracker = repository.findByUserIdAndCategory(user.getId(), category)
-                .orElseGet(() -> {
-                    StreakTracker newTracker = new StreakTracker();
-                    newTracker.setUser(user);
-                    newTracker.setCategory(category);
-                    newTracker.setCurrentStreak(1);
-                    newTracker.setLongestStreak(1);
-                    newTracker.setLastActiveDate(today);
-                    log(user, category, "Started first streak 🔥");
-                    return newTracker;
-                });
+        long totalTasks =
+                taskRepository.countByUserAndCategoryAndDueDate(user, category, today);
 
-        if (tracker.hasUpdatedToday(today)) {
-            log(user, category, "Streak already updated today 📅");
-            return tracker;
-        }
+        // ❌ No tasks today → streak unchanged
+        if (totalTasks == 0) return;
 
-        long daysBetween = tracker.getLastActiveDate() != null
-                ? ChronoUnit.DAYS.between(tracker.getLastActiveDate(), today)
-                : 0;
+        long completedTasks =
+                taskRepository.countByUserAndCategoryAndDueDateAndCompletedTrue(
+                        user, category, today
+                );
 
-        if (daysBetween == 1) {
-            tracker.setCurrentStreak(tracker.getCurrentStreak() + 1);
-            tracker.setLastActiveDate(today);
+        boolean qualifiedToday = (totalTasks == completedTasks);
 
-            if (tracker.getCurrentStreak() > tracker.getLongestStreak()) {
-                tracker.setLongestStreak(tracker.getCurrentStreak());
-                log(user, category, "New longest streak: " + tracker.getCurrentStreak() + " days 🏆");
-            } else {
-                log(user, category, "Streak continued: " + tracker.getCurrentStreak() + " days ✅");
-            }
+        StreakTracker tracker = streakTrackerRepository
+                .findByUserAndCategory(user, category)
+                .orElseGet(() -> createTracker(user, category));
 
-        } else if (daysBetween > 1) {
-            tracker.setCurrentStreak(1);
-            tracker.setLastActiveDate(today);
-            log(user, category, "Streak reset after " + daysBetween + " days 😢");
-        }
+        // 🧠 ENTITY handles streak rules
+        tracker.updateForDay(today, qualifiedToday);
 
-        return repository.save(tracker);
+        streakTrackerRepository.save(tracker);
     }
 
-    // 🔹 Update streak using qualifiedToday (modern/used by TaskService)
-    public void updateStreak(User user, String category, boolean qualifiedToday) {
-        StreakTracker streak = repository.findByUserIdAndCategory(user.getId(), category)
-                .orElseGet(() -> {
-                    StreakTracker newTracker = new StreakTracker();
-                    newTracker.setUser(user);
-                    newTracker.setCategory(category);
-                    newTracker.setCurrentStreak(0);
-                    newTracker.setLongestStreak(0);
-                    newTracker.setLastActiveDate(null);
-                    return newTracker;
-                });
-
-        streak.updateForDay(LocalDate.now(), qualifiedToday);
-        repository.save(streak);
+    private StreakTracker createTracker(User user, String category) {
+        StreakTracker tracker = new StreakTracker();
+        tracker.setUser(user);
+        tracker.setCategory(category);
+        return tracker;
     }
 
-    // 📊 Get current streak based on completed tasks
-    public int getCurrentStreak(User user) {
-        List<Task> completedTasks = taskRepository
-                .findByUserAndCompletedTrueOrderByCompletedDateTimeDesc(user);
-
-        if (completedTasks.isEmpty()) return 0;
-
-        int streak = 0;
-        LocalDate current = LocalDate.now();
-
-        for (Task task : completedTasks) {
-            LocalDate completedDate = task.getCompletedDateTime().toLocalDate();
-            if (completedDate == null) continue;
-
-            if (completedDate.equals(current)) {
-                streak++;
-                current = current.minusDays(1);
-            } else if (completedDate.isBefore(current)) {
-                break;
-            }
-        }
-        return streak;
+    // 🔹 Get current streak
+    public int getCurrentStreak(User user, String category) {
+        return streakTrackerRepository.findByUserAndCategory(user, category)
+                .map(StreakTracker::getCurrentStreak)
+                .orElse(0);
     }
 
-    public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
-        return repository.findByUserIdAndCategory(userId, category)
-                .orElseThrow(() -> new IllegalArgumentException("Streak not found for user and category: " + category));
-    }
-
+    // 🔹 Get all streaks for a user
     public List<StreakTracker> getAllStreaksForUser(Long userId) {
-        return repository.findAllByUserId(userId);
+        return streakTrackerRepository.findAllByUserId(userId);
+    }
+    
+ 
+
+
+    // 🔹 Heatmap data (completed tasks per day)
+    public Map<LocalDate, Integer> getHeatmapData(User user, String category) {
+        List<Task> tasks =
+                taskRepository.findByUserIdAndCategory(user.getId(), category);
+
+        return tasks.stream()
+                .filter(Task::isCompleted)
+                .filter(t -> t.getCompletedDateTime() != null)
+                .collect(Collectors.groupingBy(
+                        t -> t.getCompletedDateTime().toLocalDate(),
+                        Collectors.summingInt(t -> 1)
+                ));
     }
 
-    private void log(User user, String category, String message) {
-        activityService.log("[" + category + "] " + message, ActivityType.STREAK, user);
+    // 🔹 Best (longest) streak
+    public int getBestStreak(Long userId) {
+        return streakTrackerRepository.getUserBestStreak(userId).orElse(0);
     }
+    
+    public StreakTracker updateStreak(User user, String category, boolean qualifiedToday) {
+        LocalDate today = LocalDate.now();
+
+        StreakTracker tracker = streakTrackerRepository
+                .findByUserAndCategory(user, category)
+                .orElseGet(() -> {
+                    StreakTracker st = new StreakTracker();
+                    st.setUser(user);
+                    st.setCategory(category);
+                    return st;
+                });
+
+        tracker.updateForDay(today, qualifiedToday);
+        streakTrackerRepository.save(tracker);
+        return tracker;  // <-- return the updated entity
+    }
+
+    // Overload for default qualifiedToday = true
+    public StreakTracker updateStreak(User user, String category) {
+        return updateStreak(user, category, true);
+    }
+
+    public void updateStreak(User user) {
+        updateStreak(user, "TASK", true);
+    }
+
+
+    
+    public int calculateCurrentStreak(Long userId) {
+        return streakTrackerRepository.findByUserIdAndCategory(userId, "TASK")
+                .map(StreakTracker::getCurrentStreak)
+                .orElse(0);
+    }
+    
+    public int getCurrentStreak(User user) {
+        return getCurrentStreak(user, "TASK");
+    }
+
 
     public List<String> getBadgeLabels(StreakTracker tracker) {
         int longest = tracker.getLongestStreak();
@@ -144,7 +145,8 @@ public class StreakTrackerService {
 
         return badges;
     }
-
+    
+    
     public Map<LocalDate, Integer> getHeatmapData(List<Task> tasks) {
         return tasks.stream()
                 .filter(Task::isCompleted)
@@ -155,38 +157,12 @@ public class StreakTrackerService {
                 ));
     }
 
-    public int getBestStreak(Long userId) {
-        return repository.getUserBestStreak(userId).orElse(0);
+
+    public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
+        return streakTrackerRepository.findByUserIdAndCategory(userId, category)
+                .orElse(null); // or throw exception if preferred
     }
 
-    public int calculateCurrentStreak(Long userId) {
-        List<StreakTracker> streaks = repository.findByUserIdOrderByLastActiveDateAsc(userId);
 
-        if (streaks.isEmpty()) return 0;
-
-        int streak = 1;
-        StreakTracker last = streaks.get(0);
-
-        for (int i = 1; i < streaks.size(); i++) {
-            StreakTracker current = streaks.get(i);
-
-            long diff = ChronoUnit.DAYS.between(last.getLastActiveDate(), current.getLastActiveDate());
-
-            if (diff == 1) {
-                streak++;
-            } else if (diff > 1) {
-                streak = 1;
-            }
-
-            last = current;
-        }
-
-        return streak;
-    }
-
-    public int getCurrentStreak(Long userId) {
-        User user = userService.findById(userId);
-        return getCurrentStreak(user);
-    }
-
+   
 }

@@ -262,6 +262,23 @@ body.dark .card { background: rgba(255,255,255,0.05); }
 }
 
 
+.view-sessions-btn {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(123,47,247,0.7);
+  transition: all 0.3s ease;
+}
+
+.view-sessions-btn:hover {
+  background: linear-gradient(135deg,#7b2ff7,#9f6cff);
+  transform: scale(1.05);
+}
+
+
 /* ===== Stats Bar ===== */
 .stats-bar {
   display: flex;
@@ -412,6 +429,8 @@ body.dark .card { background: rgba(255,255,255,0.05); }
   font-weight: 500;
   transition: all 0.3s ease;
 }
+
+
 
 .chart-buttons button:hover { transform: scale(1.05); }
 

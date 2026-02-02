@@ -51,8 +51,12 @@ public class Task {
 
     @Column(name = "completed_date_time")
     private LocalDateTime completedDateTime;
+    
+    @NotNull
+    @Column(name = "task_date", nullable = false)
+    private LocalDate taskDate;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -148,6 +152,14 @@ public class Task {
     public void setFocusHours(Double focusHours) {
         this.focusHours = focusHours;
     }
+    
+    public LocalDate getTaskDate() {
+		return taskDate;
+	}
+
+	public void setTaskDate(LocalDate taskDate) {
+		this.taskDate = taskDate;
+	}
 
     // 🔁 equals and hashCode
     @Override
