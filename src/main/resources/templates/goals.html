@@ -306,15 +306,18 @@
 
   // Delete goal (keeps confirmation)
   async function deleteGoal(id) {
+
     try {
       await axios.delete(`/goals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchGoals();
     } catch (err) {
-      console.error('Error deleting goal:', err);
+      alert("Delete failed. Please refresh and try again.");
+      console.error(err);
     }
   }
+
 
 
   // Filter listener

@@ -41,12 +41,9 @@ public class AchievementSeeder {
             case GOAL_1 -> "First Goal Completed";
             case GOAL_5 -> "5 Goals Completed";
             case GOAL_10 -> "10 Goals Completed";
-            case BEFORE_DEADLINE -> "Goal Completed Before Deadline";
             case STREAK_3 -> "3-Day Streak";
             case STREAK_7 -> "7-Day Streak";
-            case HEATMAP_50 -> "50 Days of Productivity";
             case FIRST_STEP -> "First Task Completed";
-            case STREAK_STARTER -> "3-Day Task Streak";
             case TASK_MASTER -> "10 Tasks Completed";
             case EARLY_BIRD -> "Early Bird";
             case PRODUCTIVITY_PRO -> "Productivity Pro";
@@ -59,12 +56,9 @@ public class AchievementSeeder {
             case GOAL_1 -> "Complete your first goal.";
             case GOAL_5 -> "Complete 5 goals.";
             case GOAL_10 -> "Complete 10 goals.";
-            case BEFORE_DEADLINE -> "Finish a goal before its deadline.";
             case STREAK_3 -> "Maintain a 3-day streak.";
             case STREAK_7 -> "Maintain a 7-day streak.";
-            case HEATMAP_50 -> "Achieve 50 productive days.";
             case FIRST_STEP -> "Complete your first task.";
-            case STREAK_STARTER -> "Achieve a 3-day task streak.";
             case TASK_MASTER -> "Complete 10 tasks.";
             case EARLY_BIRD -> "Complete a task before 8 AM.";
             case PRODUCTIVITY_PRO -> "Reach a productivity score of 80.";

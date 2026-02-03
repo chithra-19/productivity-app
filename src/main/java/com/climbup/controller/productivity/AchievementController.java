@@ -1,8 +1,6 @@
 package com.climbup.controller.productivity;
 
-import com.climbup.dto.request.AchievementRequestDTO;
 import com.climbup.dto.response.AchievementResponseDTO;
-import com.climbup.exception.NotFoundException;
 import com.climbup.mapper.AchievementMapper;
 import com.climbup.model.Achievement;
 import com.climbup.model.User;
@@ -10,14 +8,12 @@ import com.climbup.repository.AchievementRepository;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.user.UserService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,12 +21,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/achievements")
 public class AchievementController {
 
-	@Autowired
     private final AchievementService achievementService;
     private final UserService userService;
     private final AchievementRepository achievementRepository;
 
-    @Autowired
     public AchievementController(AchievementService achievementService,
                                  UserService userService,
                                  AchievementRepository achievementRepository) {
@@ -39,44 +33,30 @@ public class AchievementController {
         this.achievementRepository = achievementRepository;
     }
 
-    // ---------------- Create a new achievement (admin/system) ----------------
-    @PostMapping("/create")
-    public ResponseEntity<AchievementResponseDTO> createAchievement(
-            @Valid @RequestBody AchievementRequestDTO dto) {
-        User currentUser = userService.getCurrentUser();
-        AchievementResponseDTO response = achievementService.createAchievement(dto, currentUser);
-        return ResponseEntity.ok(response);
-    }
-
     // ---------------- Get all achievements for current user ----------------
     @GetMapping
     public ResponseEntity<List<AchievementResponseDTO>> getUserAchievements() {
         User currentUser = userService.getCurrentUser();
 
-        // ✅ Fetch ALL achievements for the user
-        List<Achievement> all = achievementRepository.findByUser(currentUser);
+        List<Achievement> achievements =
+                achievementRepository.findByUser(currentUser);
 
-        List<AchievementResponseDTO> dtoList = all.stream()
+        List<AchievementResponseDTO> dtoList = achievements.stream()
                 .map(AchievementMapper::toResponseDTO)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtoList);
     }
 
-
-    // ---------------- Unlock an achievement manually ----------------
-    @PostMapping("/{achievementId}/unlock")
-    public ResponseEntity<AchievementResponseDTO> unlockAchievement(@PathVariable Long achievementId) {
-        User currentUser = userService.getCurrentUser();
-        AchievementResponseDTO unlocked = achievementService.unlockAchievement(achievementId, currentUser);
-        return ResponseEntity.ok(unlocked);
-    }
-
-    // ---------------- Check if user has new achievements ----------------
+    // ---------------- Check if user has newly unlocked achievements ----------------
     @GetMapping("/new")
     public ResponseEntity<Boolean> hasNewAchievements() {
         User currentUser = userService.getCurrentUser();
-        boolean hasNew = achievementService.hasNewAchievement(currentUser);
+
+        boolean hasNew = !achievementRepository
+                .findByUserAndNewlyUnlockedTrue(currentUser)
+                .isEmpty();
+
         return ResponseEntity.ok(hasNew);
     }
 
@@ -88,48 +68,25 @@ public class AchievementController {
         return ResponseEntity.ok().build();
     }
 
-    // ---------------- Thymeleaf page rendering ----------------
+    // ---------------- Thymeleaf dashboard page ----------------
     @GetMapping("/dashboard")
-    public String achievementsPage(Model model, @AuthenticationPrincipal User user) {
-        List<AchievementResponseDTO> achievements = achievementService.getUserAchievements(user);
-        List<AchievementResponseDTO> newAchievements = achievements.stream()
-                .filter(a -> a.isUnlocked() && !a.isSeen())
-                .collect(Collectors.toList());
+    public String achievementsPage(Model model,
+                                   @AuthenticationPrincipal User user) {
 
-        model.addAttribute("achievements", achievements);
+        List<Achievement> achievements =
+                achievementRepository.findByUser(user);
+
+        List<AchievementResponseDTO> dtoList = achievements.stream()
+                .map(AchievementMapper::toResponseDTO)
+                .toList();
+
+        List<AchievementResponseDTO> newAchievements = dtoList.stream()
+                .filter(a -> a.isUnlocked() && a.isNewlyUnlocked())
+                .toList();
+
+        model.addAttribute("achievements", dtoList);
         model.addAttribute("newAchievements", newAchievements);
-        return "achievements"; // Thymeleaf template
-    }
-    
-    @PostMapping("/{achievementId}/lock")
-    public ResponseEntity<String> lockAchievement(@PathVariable Long achievementId) {
-        User currentUser = userService.getCurrentUser();
 
-        achievementService.lockAchievement(currentUser, achievementId);
-
-        return ResponseEntity.ok("Achievement locked successfully");
-    }
-    
-    @GetMapping("/all")
-    public ResponseEntity<List<AchievementResponseDTO>> getAllAchievements() {
-        User currentUser = userService.getCurrentUser();
-        List<AchievementResponseDTO> achievements =
-                achievementService.getUserAchievements(currentUser);
-
-        return ResponseEntity.ok(achievements);
-    }
-
-    // -------------------------------------------------------------------------
-    // IMPORTANT: Refresh achievements after goal completion
-    // Frontend calls: GET /api/achievements/refresh
-    // -------------------------------------------------------------------------
-    @GetMapping("/refresh")
-    public ResponseEntity<List<AchievementResponseDTO>> refreshAchievements() {
-        User currentUser = userService.getCurrentUser();
-
-        List<AchievementResponseDTO> updated =
-                achievementService.refreshAchievements(currentUser);
-
-        return ResponseEntity.ok(updated);
+        return "achievements";
     }
 }

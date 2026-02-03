@@ -51,7 +51,6 @@ public class DashboardViewControllerTest {
     void getDashboardView_ShouldReturnDashboardTemplate() throws Exception {
         when(userService.getUserWithAllData("testuser")).thenReturn(testUser);
         when(streakTrackerService.getCurrentStreak(testUser)).thenReturn(5);
-        when(achievementService.getProductivityScore(testUser)).thenReturn(80);
         when(taskService.getTasksForUser(testUser)).thenReturn(List.of());
 
         mockMvc.perform(get("/dashboard"))

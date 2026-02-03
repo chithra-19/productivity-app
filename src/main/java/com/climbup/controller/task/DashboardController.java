@@ -77,7 +77,7 @@ public class DashboardController {
 
         // Dashboard stats
         int streak = streakTrackerService.getCurrentStreak(user);
-        int score = achievementService.getProductivityScore(user);
+      
 
         List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
         int pendingCount = (int) tasks.stream().filter(t -> !t.isCompleted()).count();
@@ -86,7 +86,7 @@ public class DashboardController {
         model.addAttribute("user", user);
         model.addAttribute("tasks", tasks);
         model.addAttribute("streak", streak);
-        model.addAttribute("score", score);
+
         model.addAttribute("pendingCount", pendingCount);
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("quote", "Success starts with self-discipline.");

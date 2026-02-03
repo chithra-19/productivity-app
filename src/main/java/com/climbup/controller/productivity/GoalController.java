@@ -68,7 +68,7 @@ public class GoalController {
     @PutMapping("/{goalId}")
     public ResponseEntity<GoalResponseDTO> updateGoal(
             @PathVariable Long goalId,
-            @RequestBody Goal updatedGoal
+            @RequestBody GoalRequestDTO dto
     ) {
         User user = getCurrentUser();
         Goal existingGoal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
@@ -79,13 +79,13 @@ public class GoalController {
         }
 
         // ✅ Selective field updates
-        if (updatedGoal.getTitle() != null) existingGoal.setTitle(updatedGoal.getTitle());
-        if (updatedGoal.getDescription() != null) existingGoal.setDescription(updatedGoal.getDescription());
-        if (updatedGoal.getDueDate() != null) existingGoal.setDueDate(updatedGoal.getDueDate());
-        if (updatedGoal.getPriority() != null) existingGoal.setPriority(updatedGoal.getPriority());
-        if (updatedGoal.getStatus() != null) existingGoal.setStatus(updatedGoal.getStatus());
-        if (updatedGoal.getProgress() >= 0 && updatedGoal.getProgress() <= 100) {
-            existingGoal.setProgress(updatedGoal.getProgress());
+        if (dto.getTitle() != null) existingGoal.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) existingGoal.setDescription(dto.getDescription());
+        if (dto.getDueDate() != null) existingGoal.setDueDate(dto.getDueDate());
+        if (dto.getPriority() != null) existingGoal.setPriority(dto.getPriority());
+        if (dto.getStatus() != null) existingGoal.setStatus(dto.getStatus());
+        if (dto.getProgress() >= 0 && dto.getProgress() <= 100) {
+            existingGoal.setProgress(dto.getProgress());
         }
 
         Goal saved = goalService.updateGoal(goalId, existingGoal);

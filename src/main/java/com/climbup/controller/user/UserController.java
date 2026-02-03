@@ -4,6 +4,7 @@ import com.climbup.dto.request.UserRequestDTO;
 import com.climbup.dto.response.UserResponseDTO;
 import com.climbup.dto.response.UserStatsDTO;
 import com.climbup.mapper.UserMapper;
+import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.user.UserService;
@@ -75,9 +76,14 @@ public class UserController {
     @GetMapping("/stats")
     public ResponseEntity<UserStatsDTO> getStats(Principal principal) {
         User user = userService.findByUsername(principal.getName());
-        int streak = user.getCurrentStreak();
-        int best = user.getBestStreak();
-        int productivity = achievementService.getProductivityScore(user);
-        return ResponseEntity.ok(new UserStatsDTO(streak, best, productivity));
+
+        return ResponseEntity.ok(
+            new UserStatsDTO(
+                user.getCurrentStreak(),
+                user.getBestStreak()
+            )
+        );
     }
+
+
 }

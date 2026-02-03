@@ -182,9 +182,7 @@ function renderAchievements(achievements) {
       <div class="achievement-icon"><i class="bi ${a.icon}"></i></div>
       <div class="achievement-title">${a.title}</div>
       <div class="achievement-desc">${a.description}</div>
-      ${a.progress !== undefined ? `<div class="achievement-progress"><div class="achievement-progress-bar" style="width:${a.progress}%"></div></div>` : ''}
-      <div class="achievement-meta">${a.unlocked ? `Unlocked on ${unlockedDate}` : 'Locked'}</div>
-    `;
+      
 
     col.appendChild(card);
 

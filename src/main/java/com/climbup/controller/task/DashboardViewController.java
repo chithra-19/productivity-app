@@ -5,6 +5,7 @@ import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.FocusSession;
+import com.climbup.model.Goal;
 import com.climbup.model.Profile;
 import com.climbup.model.Task;
 import com.climbup.model.User;
@@ -12,6 +13,7 @@ import com.climbup.service.productivity.*;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.ProfileService;
 import com.climbup.service.user.UserService;
+import com.climbup.service.productivity.GoalService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,7 +46,8 @@ public class DashboardViewController {
                                    AchievementService achievementService,
                                    ProfileService profileService,
                                    MotivationService motivationService,
-                                   FocusSessionService focusSessionService) {
+                                   FocusSessionService focusSessionService,
+                                   GoalService goalService) {
         this.userService = userService;
         this.taskService = taskService;
         this.streakTrackerService = streakTrackerService;
@@ -52,6 +55,7 @@ public class DashboardViewController {
         this.profileService = profileService;
         this.motivationService = motivationService;
         this.focusSessionService = focusSessionService;
+        this.goalService = goalService;
     }
 
     // Load common items
@@ -81,9 +85,8 @@ public class DashboardViewController {
         model.addAttribute("currentStreak", streakTrackerService.calculateCurrentStreak(user.getId()));
         model.addAttribute("bestStreak", streakTrackerService.getBestStreak(user.getId()));
 
-        // Productivity score (optional, can remove)
-        model.addAttribute("score", achievementService.getProductivityScore(user));
-
+        List<Goal> goals = goalService.getGoalsForUser(user);
+        model.addAttribute("goals", goals);
         // Tasks for today
         List<Task> today = taskService.getTasksDueOn(user, LocalDate.now());
         model.addAttribute("pendingCount", (int) today.stream().filter(t -> !t.isCompleted()).count());

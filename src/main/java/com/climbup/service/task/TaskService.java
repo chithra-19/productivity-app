@@ -59,7 +59,7 @@ public class TaskService {
         task.setDescription(dto.getDescription());
         task.setDueDate(dto.getDueDate());
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : Task.Priority.MEDIUM);
-
+        task.setTaskDate(LocalDate.now());
         Task savedTask = taskRepository.save(task);
         activityService.log("Created Task: " + savedTask.getTitle(), ActivityType.TASK, user);
 
@@ -93,7 +93,8 @@ public class TaskService {
                 // ✅ Update streak and achievements
                 boolean qualifiedToday = true;
                 streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-                achievementService.checkForNewAchievements(user);
+                achievementService.evaluateAchievements(user);
+
 
             } else if (!dto.getCompleted()) {
                 task.setCompleted(false);
@@ -129,7 +130,8 @@ public class TaskService {
             activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
             boolean qualifiedToday = true;
             streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-            achievementService.checkForNewAchievements(user);
+            achievementService.evaluateAchievements(user);
+
         }
 
         return TaskMapper.toResponse(task);
@@ -187,11 +189,12 @@ public class TaskService {
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
-        return taskRepository.findByUserAndDueDateBetween(user, today, today)
+        return taskRepository.findByUserAndDueDate(user, today)
                 .stream()
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
 
     // 🔹 Task stats by date
     public Map<LocalDate, Long> getTaskStats(User user) {
@@ -238,7 +241,8 @@ public class TaskService {
                 activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
                 boolean qualifiedToday = true;
                 streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-                achievementService.checkForNewAchievements(user);
+                achievementService.evaluateAchievements(user);
+
             }
             return true;
         }

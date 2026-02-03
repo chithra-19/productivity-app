@@ -17,7 +17,7 @@ public class AchievementResponseDTO {
     private boolean unlocked;
     private boolean newlyUnlocked;
     private boolean seen;
-    private LocalDate unlockedDate;
+    private LocalDateTime unlockedDate;
     private LocalDateTime createdAt;
     private Long userId;
     private int progressPercent;
@@ -28,7 +28,7 @@ public class AchievementResponseDTO {
     public AchievementResponseDTO(Long id, String title, String description, String type,
                                   String category, String icon, boolean unlocked,
                                   boolean newlyUnlocked, boolean seen,
-                                  LocalDate unlockedDate, LocalDateTime createdAt,
+                                  LocalDateTime unlockedDate, LocalDateTime createdAt,
                                   Long userId, int progressPercent) {
         this.id = id;
         this.title = title;
@@ -73,8 +73,8 @@ public class AchievementResponseDTO {
     public boolean isSeen() { return seen; }
     public void setSeen(boolean seen) { this.seen = seen; }
 
-    public LocalDate getUnlockedDate() { return unlockedDate; }
-    public void setUnlockedDate(LocalDate unlockedDate) { this.unlockedDate = unlockedDate; }
+    public LocalDateTime getUnlockedDate() { return unlockedDate; }
+    public void setUnlockedDate(LocalDateTime unlockedDate) { this.unlockedDate = unlockedDate; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

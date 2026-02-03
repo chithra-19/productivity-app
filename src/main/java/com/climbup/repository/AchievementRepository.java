@@ -2,38 +2,29 @@ package com.climbup.repository;
 
 import com.climbup.model.Achievement;
 import com.climbup.model.User;
+import com.climbup.model.Achievement.AchievementCode;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface AchievementRepository extends JpaRepository<Achievement, Long> {
 
-    long countByUser(User user);
-
+    // All achievements of a user
     List<Achievement> findByUser(User user);
 
+    // Achievements by user & unlocked status
     List<Achievement> findByUserAndUnlocked(User user, boolean unlocked);
 
-    boolean existsByUserAndUnlockedTrue(User user);
-
-    boolean existsByUserAndTitle(User user, String title);
-
-    Optional<Achievement> findByUserAndTitle(User user, String title);
-
+    // Newly unlocked achievements
     List<Achievement> findByUserAndNewlyUnlockedTrue(User user);
 
-    // ENUM FIXES 🚀
-    Optional<Achievement> findByCode(Achievement.AchievementCode code);
+    // Single achievement by user and code
+    Optional<Achievement> findByUserAndCode(User user, AchievementCode code);
 
-    Optional<Achievement> findByUserIdAndCode(Long userId, Achievement.AchievementCode code);
+    // Check if a code exists (used in seeder)
+    boolean existsByCode(AchievementCode code);
 
-    Optional<Achievement> findByTitleAndUser(String title, User user);
-
-    boolean existsByCode(Achievement.AchievementCode code);
-
-    // NEW – fetch all achievements linked to a goal
-    List<Achievement> findByGoalId(Long goalId);
+    // Count by user (used for initialization)
+    long countByUser(User user);
 }

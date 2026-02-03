@@ -60,15 +60,13 @@ public class GoalService {
     public Goal saveGoal(Goal goal) {
         Goal saved = goalRepository.save(goal);
 
-        // Optionally trigger achievements for creating a goal
-        // e.g., unlock “First Goal” achievement
-        achievementService.unlockGoalAchievement(saved, AchievementCode.FIRST_STEP);
-
-        // Refresh other achievements if needed
-        achievementService.checkForNewAchievements(saved.getUser());
+        
+        // Evaluate all other achievements for this user
+        achievementService.evaluateAchievements(saved.getUser());
 
         return saved;
     }
+
 
     // ===== Update an existing goal =====
     public Goal updateGoal(Long id, Goal updatedGoal) {
@@ -104,7 +102,9 @@ public class GoalService {
     @Transactional
     public Goal completeGoal(Long id) {
         Goal goal = goalRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Goal not found with ID: " + id));
+                .orElseThrow(() -> new NotFoundException("Goal not found"));
+
+        if (goal.isCompleted()) return goal;
 
         goal.setCompleted(true);
         goal.setStatus(Goal.GoalStatus.COMPLETED);
@@ -113,10 +113,10 @@ public class GoalService {
 
         goalRepository.save(goal);
 
-        achievementService.unlockGoalAchievement(goal, AchievementCode.GOAL_COMPLETED);
+       
+        // Evaluate all other achievements
+        achievementService.evaluateAchievements(goal.getUser());
 
-     // Then check other achievements
-     achievementService.checkForNewAchievements(goal.getUser());
         return goal;
     }
 
