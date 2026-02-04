@@ -37,8 +37,8 @@ public class GoalService {
     }
 
     // ===== Get all ACTIVE (not completed) goals for a user =====
-    public List<Goal> getGoalsByUser(User user) {
-        return goalRepository.findByUserAndCompletedFalse(user);
+    public List<Goal> getGoalsForUser(User user) {
+        return goalRepository.findByUser(user);
     }
 
     // ===== Filter goals by status and priority =====

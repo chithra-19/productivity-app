@@ -2,7 +2,7 @@ package com.climbup.service.task;
 
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
-import com.climbup.dto.response.HeatmapDTO;
+
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.mapper.TaskMapper;
 import com.climbup.model.Task;
@@ -117,26 +117,7 @@ public class TaskService {
         activityService.log("Deleted Task: " + task.getTitle(), ActivityType.TASK, user);
     }
 
-    // ✅ Complete Task
-    public TaskResponseDTO completeTask(Long taskId, User user) {
-        Task task = taskRepository.findByIdAndUser(taskId, user)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
-
-        if (!task.isCompleted()) {
-            task.setCompleted(true);
-            task.setCompletedDateTime(LocalDateTime.now());
-            taskRepository.save(task);
-
-            activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
-            boolean qualifiedToday = true;
-            streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-            achievementService.evaluateAchievements(user);
-
-        }
-
-        return TaskMapper.toResponse(task);
-    }
-
+   
     // 🔹 Completed task count
     public long getCompletedTaskCount(User user) {
         return taskRepository.countByUserAndCompleted(user, true);
@@ -155,33 +136,11 @@ public class TaskService {
                 ));
     }
 
-    // 🔹 Heatmap data
-    public List<HeatmapDTO> getHeatmapData(User user) {
-        List<Task> tasks = taskRepository.findByUserAndCompletedTrue(user);
-        Map<LocalDate, List<Task>> grouped = tasks.stream()
-                .filter(t -> t.getCompletedDateTime() != null)
-                .collect(Collectors.groupingBy(
-                        t -> t.getCompletedDateTime().toLocalDate()
-                ));
-
-        List<HeatmapDTO> result = new ArrayList<>();
-        for (var entry : grouped.entrySet()) {
-            LocalDate date = entry.getKey();
-            List<Task> dayTasks = entry.getValue();
-
-            int taskCount = dayTasks.size();
-            int focusMinutes = dayTasks.stream()
-                    .mapToInt(t -> t.getFocusHours() != null ? (int) (t.getFocusHours() * 60) : 0)
-                    .sum();
-
-            result.add(new HeatmapDTO(date.toString(), taskCount, focusMinutes, true));
-        }
-        return result;
-    }
-
+    
     // 🔹 Dashboard
-    public List<TaskResponseDTO> getAllTasks() {
-        return taskRepository.findAll().stream()
+    public List<TaskResponseDTO> getAllTasks(User user) {
+        return taskRepository.findByUser(user)
+                .stream()
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -189,7 +148,7 @@ public class TaskService {
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
-        return taskRepository.findByUserAndDueDate(user, today)
+        return taskRepository.findByUserAndTaskDate(user, today)
                 .stream()
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());

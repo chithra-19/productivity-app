@@ -38,6 +38,7 @@ public class DashboardViewController {
     private final ProfileService profileService;
     private final MotivationService motivationService;
     private final FocusSessionService focusSessionService;
+    private final GoalService goalService;
 
     @Autowired
     public DashboardViewController(UserService userService,
