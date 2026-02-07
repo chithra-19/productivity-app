@@ -33,6 +33,9 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     long countByUserAndCategoryAndDueDate(User user, String category, LocalDate dueDate);
     long countByUserAndCategoryAndDueDateAndCompletedTrue(User user, String category, LocalDate dueDate);
 
+    long countByCompletedTrue();
+    long countByCompletedFalse();
+
     List<Task> findByUserIdAndCategory(Long userId, String category);
 
     // ================= Basic Queries =================

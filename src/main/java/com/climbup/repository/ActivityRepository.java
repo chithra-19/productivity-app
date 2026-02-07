@@ -21,6 +21,8 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     // 2. All activities of a type for a user
     List<Activity> findByUserAndType(User user, ActivityType type);
 
+    List<Activity> findTop10ByOrderByCreatedAtDesc();
+
     // 3. Activities between two timestamps
     List<Activity> findByUserAndTimestampBetween(
             User user,
@@ -35,4 +37,6 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
             LocalDateTime from,
             LocalDateTime to
     );
+    
+    
 }

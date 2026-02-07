@@ -2,7 +2,6 @@ package com.climbup.controller.task;
 
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
-import com.climbup.dto.response.HeatmapDTO;
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.model.Task;
 import com.climbup.model.User;
@@ -119,13 +118,7 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
-    /** ✅ Heatmap data */
-    @GetMapping("/heatmap/all")
-    public ResponseEntity<List<HeatmapDTO>> getHeatmapData(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
-        List<HeatmapDTO> heatmapData = taskService.getHeatmapData(user);
-        return ResponseEntity.ok(heatmapData);
-    }
+   
 
     /** ✅ Task stats */
     @GetMapping("/stats")
