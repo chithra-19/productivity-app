@@ -9,8 +9,11 @@ import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.model.Activity.ActivityType;
 import com.climbup.repository.TaskRepository;
+import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.productivity.XPService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -33,16 +36,21 @@ public class TaskService {
     private final ActivityService activityService;
     private final StreakTrackerService streakTrackerService;
     private final AchievementService achievementService;
-
+    private final UserRepository userRepository;
+    private final XPService xpService;
     @Autowired
     public TaskService(TaskRepository taskRepository,
                        ActivityService activityService,
                        StreakTrackerService streakTrackerService,
-                       @Lazy AchievementService achievementService) {
+                       @Lazy AchievementService achievementService,
+                       UserRepository userRepository,
+                       XPService xpService) {
         this.taskRepository = taskRepository;
         this.activityService = activityService;
         this.streakTrackerService = streakTrackerService;
         this.achievementService = achievementService;
+        this.userRepository = userRepository;
+        this.xpService = xpService;
     }
 
     // ➕ Create Task
@@ -74,39 +82,43 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // ✏️ Update Task
+ // ✏️ Update Task
+    @Transactional
     public TaskResponseDTO updateTask(Long taskId, TaskUpdateDTO dto, User user) {
-        Task task = taskRepository.findByIdAndUser(taskId, user)
-            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
 
+        Task task = taskRepository.findByIdAndUser(taskId, user)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        // 📝 Update editable fields
         Optional.ofNullable(dto.getTitle()).ifPresent(task::setTitle);
         Optional.ofNullable(dto.getDescription()).ifPresent(task::setDescription);
         Optional.ofNullable(dto.getDueDate()).ifPresent(task::setDueDate);
         Optional.ofNullable(dto.getPriority()).ifPresent(task::setPriority);
         Optional.ofNullable(dto.getCategory()).ifPresent(task::setCategory);
 
-        if (dto.getCompleted() != null) {
-            if (dto.getCompleted() && !task.isCompleted()) {
-                task.setCompleted(true);
-                task.setCompletedDateTime(LocalDateTime.now());
+        // ✅ Completion logic (single source of truth)
+        if (Boolean.TRUE.equals(dto.getCompleted()) && !task.isCompleted()) {
+            completeTask(task.getId(), user);
+            return TaskMapper.toResponse(task); // already saved inside completeTask
+        }
 
-                // ✅ Update streak and achievements
-                boolean qualifiedToday = true;
-                streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-                achievementService.evaluateAchievements(user);
-
-
-            } else if (!dto.getCompleted()) {
-                task.setCompleted(false);
-                task.setCompletedDateTime(null);
-            }
+        // ↩️ Mark as incomplete (explicit false)
+        if (Boolean.FALSE.equals(dto.getCompleted())) {
+            task.setCompleted(false);
+            task.setCompletedDateTime(null);
         }
 
         Task updatedTask = taskRepository.save(task);
-        activityService.log("Updated Task: " + updatedTask.getTitle(), ActivityType.TASK, user);
+        activityService.log(
+                "Updated Task: " + updatedTask.getTitle(),
+                ActivityType.TASK,
+                user
+        );
 
         return TaskMapper.toResponse(updatedTask);
     }
+
 
     // ❌ Delete Task
     public void deleteTask(Long taskId, User user) {
@@ -137,14 +149,6 @@ public class TaskService {
     }
 
     
-    // 🔹 Dashboard
-    public List<TaskResponseDTO> getAllTasks(User user) {
-        return taskRepository.findByUser(user)
-                .stream()
-                .map(TaskMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
@@ -155,15 +159,15 @@ public class TaskService {
     }
 
 
-    // 🔹 Task stats by date
     public Map<LocalDate, Long> getTaskStats(User user) {
-        List<Task> tasks = taskRepository.findByUser(user);
-        return tasks.stream()
+        return taskRepository.findByUser(user).stream()
+                .filter(task -> task.getCreatedAt() != null)
                 .collect(Collectors.groupingBy(
                         task -> task.getCreatedAt().toLocalDate(),
                         Collectors.counting()
                 ));
     }
+
 
     public Map<String, Integer> getHeatmapDataForUser(User user) {
         return user.getTasks().stream()
@@ -189,24 +193,16 @@ public class TaskService {
     }
 
     public boolean markTaskAsCompleted(Long taskId, User user) {
-        Optional<Task> optionalTask = taskRepository.findByIdAndUser(taskId, user);
-        if (optionalTask.isPresent()) {
-            Task task = optionalTask.get();
-            if (!task.isCompleted()) {
-                task.setCompleted(true);
-                task.setCompletedDateTime(LocalDateTime.now());
-                taskRepository.save(task);
+        Task task = taskRepository.findByIdAndUser(taskId, user)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
 
-                activityService.log("Completed Task: " + task.getTitle(), ActivityType.TASK, user);
-                boolean qualifiedToday = true;
-                streakTrackerService.updateStreak(user, "Task", qualifiedToday);
-                achievementService.evaluateAchievements(user);
+        if (task.isCompleted()) return false;
 
-            }
-            return true;
-        }
-        return false;
+        completeTask(taskId, user);
+        return true;
     }
+
+
     
     public Map<LocalDate, Long> getTaskCountsByDate(User user) {
         List<Task> tasks = taskRepository.findByUser(user);
@@ -229,5 +225,56 @@ public class TaskService {
                 .findByUser(user, pageable)
                 .map(TaskMapper::toResponse);
     }
+
+    @Transactional
+    public void completeTask(Long taskId, User user) {
+
+        Task task = taskRepository.findByIdAndUser(taskId, user)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        if (task.isCompleted()) return;
+
+        // 1️⃣ mark completed
+        task.setCompleted(true);
+        task.setCompletedDateTime(LocalDateTime.now());
+
+        // 2️⃣ streak
+        streakTrackerService.handleTaskCompletion(user);
+
+        // 3️⃣ XP
+        xpService.handleTaskCompletion(user, task);
+
+        // 4️⃣ achievements ✅ MISSING EARLIER
+        achievementService.evaluateAchievements(user);
+
+        // 5️⃣ activity
+        activityService.logTaskCompleted(task, user);
+
+        taskRepository.save(task);
+        userRepository.save(user);
+    }
+
+    public TaskResponseDTO getTaskById(Long taskId, User user) {
+        Task task = taskRepository.findByIdAndUser(taskId, user)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+        return TaskMapper.toResponse(task);
+    }
+
+    public Task save(Task task) {
+        return taskRepository.save(task);
+    }
+
+    public Page<TaskResponseDTO> getTasksPaginated(User user, int page, int size, String status, String category) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Task> tasks;
+        if(status.equals("ALL") && (category == null || category.isEmpty())) {
+            tasks = taskRepository.findByUser(user, pageable);
+        } else {
+            tasks = taskRepository.findByUserWithFilters(user, status, category, pageable);
+        }
+        return tasks.map(TaskMapper::toResponse);
+    }
+
+
 
 }

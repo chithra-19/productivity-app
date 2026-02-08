@@ -43,7 +43,7 @@ public class AdminDashboardService {
 
         // 📊 Recent Activities (latest 10)
         List<RecentActivityDTO> recentActivities =
-                activityRepository.findTop10ByOrderByCreatedAtDesc()
+                activityRepository.findTop10ByOrderByTimestampDesc()
                         .stream()
                         .map(this::mapToRecentActivityDTO)
                         .collect(Collectors.toList());
@@ -66,4 +66,9 @@ public class AdminDashboardService {
         dto.setTimestamp(activity.getTimestamp());
         return dto;
     }
+    
+    public List<Activity> getRecentActivities() {
+        return activityRepository.findTop10ByOrderByTimestampDesc();
+    }
+
 }

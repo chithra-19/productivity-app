@@ -1,21 +1,36 @@
 package com.climbup.controller.task;
 
+import com.climbup.dto.request.FocusSessionRequestDTO;
+import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.request.TaskRequestDTO;
+import com.climbup.dto.response.DashboardSummaryDTO;
+import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.model.FocusSession;
+import com.climbup.model.Goal;
+import com.climbup.model.Profile;
+import com.climbup.model.Task;
 import com.climbup.model.User;
-import com.climbup.service.productivity.AchievementService;
-import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.productivity.*;
+import com.climbup.service.task.DashboardService;
 import com.climbup.service.task.TaskService;
+import com.climbup.service.user.ProfileService;
 import com.climbup.service.user.UserService;
+import com.climbup.service.productivity.GoalService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -23,59 +38,166 @@ import java.util.stream.Collectors;
 public class DashboardController {
 
     private final UserService userService;
-    private final AchievementService achievementService;
-    private final StreakTrackerService streakTrackerService;
     private final TaskService taskService;
+   private final ProfileService profileService;
+    private final MotivationService motivationService;
+    private final FocusSessionService focusSessionService;
+    private final GoalService goalService;
+    private final DashboardService dashboardService;
 
     @Autowired
     public DashboardController(UserService userService,
-                               AchievementService achievementService,
-                               StreakTrackerService streakTrackerService,
-                               TaskService taskService) {
+                                   TaskService taskService,
+                                   ProfileService profileService,
+                                   MotivationService motivationService,
+                                   FocusSessionService focusSessionService,
+                                   GoalService goalService,
+                                   DashboardService dashboardService) {
         this.userService = userService;
-        this.achievementService = achievementService;
-        this.streakTrackerService = streakTrackerService;
         this.taskService = taskService;
+        this.profileService = profileService;
+        this.motivationService = motivationService;
+        this.focusSessionService = focusSessionService;
+        this.goalService = goalService;
+        this.dashboardService = dashboardService;
+    }
+    
+
+
+    // Load common items
+    @ModelAttribute
+    public void preloadCommonAttributes(Model model,
+                                        @AuthenticationPrincipal UserDetails springUser,
+                                        HttpServletRequest request) {
+
+        if (springUser != null) {
+            User user = userService.getUserWithAllData(springUser.getUsername());
+            model.addAttribute("username", user.getUsername());
+            model.addAttribute("task", new TaskRequestDTO());
+            model.addAttribute("currentPath", request.getRequestURI());
+        }
     }
 
+    @GetMapping
+    public String showDashboard(Model model,
+                                @AuthenticationPrincipal UserDetails springUser) {
+
+        User user = userService.getUserWithAllData(springUser.getUsername());
+
+        // 🔥 CENTRALIZED DASHBOARD DATA
+        DashboardSummaryDTO summary = dashboardService.getDashboardSummary(user);
+        model.addAttribute("summary", summary);
+
+        // Motivation
+        model.addAttribute("quote", motivationService.getRandomQuote());
+
+        // Goals
+        model.addAttribute("goals", goalService.getGoalsForUser(user));
+
+        // Tasks
+        List<Task> today = taskService.getTasksDueOn(user, LocalDate.now());
+        model.addAttribute("todaysTasks", today);
+        model.addAttribute("todaysCount", today.size());
+        model.addAttribute("pendingCount",
+                (int) today.stream().filter(t -> !t.isCompleted()).count());
+
+        // Heatmap
+        Map<String, Integer> heatmapData = taskService.getTaskCountsByDate(user)
+                .entrySet().stream()
+                .filter(e -> e.getKey() != null)
+                .collect(Collectors.toMap(
+                        e -> e.getKey().toString(),
+                        e -> e.getValue().intValue()
+                ));
+
+        model.addAttribute("heatmapData", heatmapData);
+
+        // Focus
+        FocusSession currentSession = focusSessionService.getCurrentSession(user);
+        model.addAttribute("currentSession", currentSession);
+        model.addAttribute("completedPomodoros",
+                focusSessionService.getCompletedSessionsCount(user));
+
+        return "dashboard";
+    }
+   
+   
+
+    @GetMapping("/goals")
+    public String showGoalsPage(HttpServletRequest request, Model model) {
+        model.addAttribute("currentPath", request.getRequestURI());
+        return "goals";
+    }
+
+    @GetMapping("/streaks")
+    public String showStreaksPage(HttpServletRequest request, Model model) {
+        model.addAttribute("currentPath", request.getRequestURI());
+        return "streak-tracker";
+    }
+
+    @GetMapping("/achievements")
+    public String showAchievementsPage(HttpServletRequest request, Model model) {
+        model.addAttribute("currentPath", request.getRequestURI());
+        return "achievements";
+    }
+
+    @GetMapping("/profile")
+    public String showProfilePage(@AuthenticationPrincipal UserDetails springUser,
+                                  Model model,
+                                  HttpServletRequest request) {
+
+        User user = userService.findByEmail(springUser.getUsername());
+        Profile profile = profileService.getOrCreateProfile(user);
+
+        ProfileRequestDTO dto = new ProfileRequestDTO();
+        dto.setFirstName(profile.getFirstName());
+        dto.setLastName(profile.getLastName());
+        dto.setEmail(profile.getEmail());
+        dto.setBio(profile.getBio());
+        dto.setProfilePictureUrl(profile.getProfilePictureUrl());
+
+        model.addAttribute("profile", profile);
+        model.addAttribute("profileRequestDTO", dto);
+        model.addAttribute("currentPath", request.getRequestURI());
+
+        return "profile";
+    }
+    @GetMapping("/focus-mode")
+    public String showFocusMode(@AuthenticationPrincipal UserDetails springUser,
+                                Model model) {
+
+        User user = userService.getUserWithAllData(springUser.getUsername());
+        FocusSession currentSession = focusSessionService.getCurrentSession(user);
+
+        model.addAttribute("user", user); // 🔥 REQUIRED
+        model.addAttribute("currentSession", currentSession);
+        model.addAttribute("remainingMinutes",
+                currentSession != null ? focusSessionService.getRemainingMinutes(currentSession) : 0);
+
+        return "focus-mode";
+    }
+
+    @PostMapping("/focus-mode/start")
+    public @ResponseBody FocusSessionResponseDTO startFocusModeSession(
+            @AuthenticationPrincipal UserDetails springUser) {
+
+        User user = userService.getUserWithAllData(springUser.getUsername());
+
+        return focusSessionService.startSession(
+                new FocusSessionRequestDTO(25, FocusSession.SessionType.POMODORO, ""),
+                user
+        );
+    }
+    @GetMapping("/focus-sessions")
+    public String focusSessionsPage() {
+        return "focus-sessions";
+    }
     // 🔹 Helper method to fetch logged-in user
     private User getCurrentUser(Principal principal) {
         if (principal == null) {
             throw new IllegalStateException("No authenticated user found");
         }
         return userService.findByEmail(principal.getName());
-    }
-
-    /**
-     * ✅ Main dashboard view
-     */
-    @GetMapping("/view")
-    public String getDashboardView(Model model, Principal principal) {
-        User user = getCurrentUser(principal);
-
-        // Ensure achievements exist
-        achievementService.initializeAchievements(user);
-
-        List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
-
-        int completedCount = (int) tasks.stream()
-                .filter(TaskResponseDTO::isCompleted)
-                .count();
-
-        int pendingCount = tasks.size() - completedCount;
-
-        int streak = streakTrackerService.getCurrentStreak(user);
-
-        model.addAttribute("user", user);
-        model.addAttribute("tasks", tasks);
-        model.addAttribute("streak", streak);
-        model.addAttribute("pendingCount", pendingCount);
-        model.addAttribute("completedCount", completedCount);
-        model.addAttribute("totalTasks", tasks.size());
-        model.addAttribute("achievements", achievementService.getUserAchievements(user));
-        model.addAttribute("quote", "Success starts with self-discipline.");
-
-        return "dashboard";
     }
 
     /**
@@ -95,14 +217,12 @@ public class DashboardController {
     public String getTodayTasks(Model model, Principal principal) {
         User user = getCurrentUser(principal);
 
-        List<TaskResponseDTO> todayTasks = taskService.getTasksForUser(user).stream()
-                .filter(task -> task.getDueDate() != null
-                        && task.getDueDate().equals(LocalDate.now()))
-                .collect(Collectors.toList());
-
+        List<Task> todayTasks = taskService.getTasksDueOn(user, LocalDate.now());
         model.addAttribute("tasks", todayTasks);
+
         return "tasks/task-today";
     }
+
 
     /**
      * ✅ Add task page
@@ -112,4 +232,15 @@ public class DashboardController {
         model.addAttribute("task", new TaskRequestDTO());
         return "tasks/add-task";
     }
+
+    @GetMapping("/activities")
+    public ResponseEntity<List<ActivityDTO>> getActivities(Principal principal) {
+        User user = userService.findByUsername(principal.getName());
+        List<ActivityDTO> activities = activityService.getRecentActivities(user)
+                                    .stream()
+                                    .map(ActivityMapper::toDTO)
+                                    .collect(Collectors.toList());
+        return ResponseEntity.ok(activities);
+    }
+
 }

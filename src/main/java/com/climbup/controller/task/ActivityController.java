@@ -27,24 +27,6 @@ public class ActivityController {
         this.userService = userService;
     }
 
-    // ---------------- Log Activity ----------------
-    @PostMapping("/log")
-    public ResponseEntity<String> logActivity(
-            @RequestParam String description,
-            @RequestParam ActivityType type,
-            @RequestParam(required = false) String timestamp // ISO date-time
-    ) {
-        User user = userService.getCurrentUser(); // ✅ get current user from JWT
-        LocalDateTime ts = (timestamp != null) ? LocalDateTime.parse(timestamp) : null;
-
-        if (ts != null) {
-            activityService.log(description, type, user, ts);
-        } else {
-            activityService.log(description, type, user);
-        }
-
-        return ResponseEntity.ok("Activity logged successfully!");
-    }
 
     // ---------------- Get All Activities ----------------
     @GetMapping

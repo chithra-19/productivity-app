@@ -28,11 +28,11 @@ public class ProfileViewController {
     private final ProfileService profileService;
 
     @Autowired private UserService userService;
-    @Autowired private ActivityLogService activityLogService;
+   
     @Autowired private TaskService taskService;
     @Autowired private FocusSessionService focusService;
     @Autowired private StreakTrackerService streakService;
-    @Autowired private BadgeService badgeService;
+    
 
     public ProfileViewController(ProfileService profileService) {
         this.profileService = profileService;
@@ -64,9 +64,7 @@ public class ProfileViewController {
         int focusMinutes = focusService.getTotalFocusMinutes(user);
         int productivityScore = profile.getProductivityScore();
 
-        var recentActivities = activityLogService.getRecentActivities(user, 10);
-        var badges = badgeService.getUserBadges(user);
-
+        
         model.addAttribute("profile", profile);
         model.addAttribute("profileRequestDTO", dto);
 
@@ -75,10 +73,7 @@ public class ProfileViewController {
         model.addAttribute("focusMinutes", focusMinutes);
         model.addAttribute("productivityScore", productivityScore);
 
-        model.addAttribute("badges", badges);
-        model.addAttribute("badgesCount", badges.size());
-        model.addAttribute("recentActivities", recentActivities);
-
+     
         model.addAttribute("editMode", false); // NORMAL VIEW MODE
         return "profile";
     }
@@ -132,12 +127,6 @@ public class ProfileViewController {
         return "redirect:/dashboard/profile/" + userId + "?updated=true";
     }
     
-    // ---------------------- JSON ENDPOINT ----------------------
-    @GetMapping("/recent")
-    @ResponseBody
-    public List<ActivityLog> getRecentActivities(Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        return activityLogService.getRecentActivities(user, 10);
-    }
+   
 
 }

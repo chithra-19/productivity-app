@@ -2,6 +2,7 @@ package com.climbup.service.task;
 
 import com.climbup.model.Activity;
 import com.climbup.model.User;
+import com.climbup.model.Task;
 import com.climbup.model.Activity.ActivityType;
 import com.climbup.repository.ActivityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,27 +28,31 @@ public class ActivityService {
     // ---------------- Logging Activities ----------------
 
     /**
-     * Log activity with automatic timestamp.
+     * Log generic activity with timestamp
      */
     @Transactional
     public void log(String description, ActivityType type, User user) {
-        Activity activity = new Activity(description, type, user);
+        Activity activity = new Activity();
+        activity.setMessage(description);
+        activity.setType(type);
+        activity.setUser(user);
+        activity.setTimestamp(LocalDateTime.now());
         activityRepository.save(activity);
     }
 
     /**
-     * Log activity with custom timestamp.
+     * Log task completion specifically
      */
     @Transactional
-    public void log(String description, ActivityType type, User user, LocalDateTime timestamp) {
-        Activity activity = new Activity(description, type, user, timestamp);
-        activityRepository.save(activity);
+    public void logTaskCompleted(Task task, User user) {
+        String msg = "Completed Task: " + task.getTitle();
+        log(msg, ActivityType.TASK, user);
     }
 
     // ---------------- Fetch Activities ----------------
 
     /**
-     * Get all activities for a user, optionally filtered by type and date range.
+     * Get all activities for a user, optionally filtered by type and date range
      */
     public List<Activity> getAllActivities(User user, ActivityType type, LocalDateTime from, LocalDateTime to) {
         if (type != null && from != null && to != null) {
@@ -62,12 +67,19 @@ public class ActivityService {
     }
 
     /**
-     * Get recent activities (latest first) with optional pagination.
+     * Get recent activities (latest first) with pagination
      */
     public Page<Activity> getRecentActivities(User user, int page, int size) {
         return activityRepository.findByUser(
                 user,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"))
         );
+    }
+
+    /**
+     * Get last 15 activities for a user (simpler method for dashboard)
+     */
+    public List<Activity> getRecentActivities(User user) {
+        return activityRepository.findTop15ByUserOrderByTimestampDesc(user);
     }
 }

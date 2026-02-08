@@ -128,5 +128,22 @@ public class TaskController {
         return ResponseEntity.ok(stats);
     }
     
+ // Fetch single task for editing
+    @GetMapping("/single/{taskId}") 
+    public ResponseEntity<TaskResponseDTO> getTask(@PathVariable Long taskId, Principal principal) {
+        User user = userService.findByUsername(principal.getName());
+        TaskResponseDTO task = taskService.getTaskById(taskId, user);
+        if(task == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        return ResponseEntity.ok(task);
+    }
+   
+ // Delete task
+    @DeleteMapping("/delete/{taskId}")
+    public ResponseEntity<Void> deleteTaskForFrontend(@PathVariable Long taskId, Principal principal) {
+        User user = userService.findByUsername(principal.getName());
+        taskService.deleteTask(taskId, user);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

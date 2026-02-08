@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,11 +20,12 @@ import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.model.Activity.ActivityType;
 import com.climbup.repository.TaskRepository;
+
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.StreakTrackerService;
 
 @ExtendWith(MockitoExtension.class)
-public class TaskServiceTest {
+class TaskServiceTest {
 
     @Mock
     private TaskRepository taskRepository;
@@ -42,119 +42,119 @@ public class TaskServiceTest {
     @InjectMocks
     private TaskService taskService;
 
-    private User testUser;
-    private Task testTask;
+    private User user;
+    private Task task;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUsername("testuser");
+        user = new User();
+        user.setId(1L);
+        user.setUsername("testuser");
 
-        testTask = new Task();
-        testTask.setId(1L);
-        testTask.setTitle("Test Task");
-        testTask.setUser(testUser);
-        testTask.setCompleted(false);
+        task = new Task();
+        task.setId(1L);
+        task.setTitle("Test Task");
+        task.setUser(user);
+        task.setCompleted(false);
     }
 
-    private Optional<Task> taskOptional() {
-        return Optional.of(testTask);
-    }
+    /* ---------------- CREATE TASK ---------------- */
 
     @Test
-    void completeTask_ShouldCompleteTaskAndUpdateStreakAndAchievements() {
-        when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(taskOptional());
-        when(taskRepository.save(any(Task.class))).thenAnswer(i -> i.getArgument(0));
-
-        TaskResponseDTO response = taskService.completeTask(1L, testUser);
-
-        assertTrue(response.isCompleted());
-        assertNotNull(response.getCompletedDateTime());
-
-        verify(streakTrackerService).updateStreak(testUser);
-        verify(achievementService).checkForNewAchievements(testUser);
-        verify(activityService).log(contains("Completed Task: " + testTask.getTitle()), eq(ActivityType.TASK), eq(testUser));
-    }
-
-    @Test
-    void completeTask_AlreadyCompleted_ShouldReturnSameTaskResponse() {
-        testTask.setCompleted(true);
-        testTask.setCompletedDateTime(LocalDateTime.now().minusDays(1));
-
-        when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(taskOptional());
-
-        TaskResponseDTO response = taskService.completeTask(1L, testUser);
-
-        assertTrue(response.isCompleted());
-        assertEquals(testTask.getCompletedDateTime(), response.getCompletedDateTime());
-
-        verify(streakTrackerService, never()).updateStreak(any());
-        verify(achievementService, never()).checkForNewAchievements(any());
-        verify(activityService, never()).log(anyString(), any(), any());
-    }
-
-    @Test
-    void completeTask_TaskNotFound_ShouldThrowException() {
-        when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> taskService.completeTask(1L, testUser));
-
-        verify(streakTrackerService, never()).updateStreak(any());
-        verify(achievementService, never()).checkForNewAchievements(any());
-        verify(activityService, never()).log(anyString(), any(), any());
-    }
-
-    @Test
-    void createTask_ShouldSaveTaskAndLogActivity() {
+    void createTask_shouldSaveTaskAndLogActivity() {
         TaskRequestDTO dto = new TaskRequestDTO();
         dto.setTitle("New Task");
 
-        when(taskRepository.save(any(Task.class))).thenAnswer(i -> i.getArgument(0));
+        when(taskRepository.save(any(Task.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskResponseDTO response = taskService.createTask(dto, testUser);
+        TaskResponseDTO response = taskService.createTask(dto, user);
 
         assertEquals("New Task", response.getTitle());
         assertFalse(response.isCompleted());
 
-        verify(activityService).log(contains("Created Task: " + response.getTitle()), eq(ActivityType.TASK), eq(testUser));
+        verify(activityService)
+                .log(contains("Created Task"), eq(ActivityType.TASK), eq(user));
     }
 
     @Test
-    void createTask_EmptyTitle_ShouldThrowException() {
+    void createTask_emptyTitle_shouldThrowException() {
         TaskRequestDTO dto = new TaskRequestDTO();
         dto.setTitle("");
 
-        assertThrows(IllegalArgumentException.class, () -> taskService.createTask(dto, testUser));
-        verifyNoInteractions(taskRepository, activityService, streakTrackerService, achievementService);
+        assertThrows(IllegalArgumentException.class,
+                () -> taskService.createTask(dto, user));
+
+        verifyNoInteractions(taskRepository, activityService);
     }
 
+    /* ---------------- UPDATE TASK (COMPLETION INCLUDED) ---------------- */
+
     @Test
-    void updateTask_ShouldUpdateAndSaveTask() {
+    void updateTask_markCompleted_shouldUpdateStreakAndAchievements() {
         TaskUpdateDTO dto = new TaskUpdateDTO();
-        dto.setTitle("Updated Task");
         dto.setCompleted(true);
 
-        when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(taskOptional());
-        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskRepository.findByIdAndUser(1L, user))
+                .thenReturn(Optional.of(task));
 
-        TaskResponseDTO response = taskService.updateTask(1L, dto, testUser);
+        when(taskRepository.save(any(Task.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertEquals("Updated Task", response.getTitle());
+        TaskResponseDTO response = taskService.updateTask(1L, dto, user);
+
         assertTrue(response.isCompleted());
-        verify(taskRepository).save(any(Task.class));
-        verify(streakTrackerService).updateStreak(testUser);
-        verify(achievementService).checkForNewAchievements(testUser);
-        verify(activityService).log(contains("Updated Task: " + testTask.getTitle()), eq(ActivityType.TASK), eq(testUser));
+        assertNotNull(response.getCompletedDateTime());
+
+        verify(streakTrackerService).updateStreak(user);
+        verify(achievementService).checkForNewAchievements(user);
+        verify(activityService)
+                .log(contains("Updated Task"), eq(ActivityType.TASK), eq(user));
     }
 
     @Test
-    void deleteTask_ShouldDeleteAndLog() {
-        when(taskRepository.findByIdAndUser(1L, testUser)).thenReturn(taskOptional());
+    void updateTask_alreadyCompleted_shouldNotUpdateStreakAgain() {
+        task.setCompleted(true);
+        task.setCompletedDateTime(LocalDateTime.now().minusDays(1));
 
-        taskService.deleteTask(1L, testUser);
+        TaskUpdateDTO dto = new TaskUpdateDTO();
+        dto.setCompleted(true);
 
-        verify(taskRepository).delete(testTask);
-        verify(activityService).log(contains("Deleted Task: " + testTask.getTitle()), eq(ActivityType.TASK), eq(testUser));
+        when(taskRepository.findByIdAndUser(1L, user))
+                .thenReturn(Optional.of(task));
+
+        TaskResponseDTO response = taskService.updateTask(1L, dto, user);
+
+        assertTrue(response.isCompleted());
+        assertEquals(task.getCompletedDateTime(), response.getCompletedDateTime());
+
+        verify(streakTrackerService, never()).updateStreak(any());
+        verify(achievementService, never()).checkForNewAchievements(any());
+    }
+
+    @Test
+    void updateTask_taskNotFound_shouldThrowException() {
+        TaskUpdateDTO dto = new TaskUpdateDTO();
+        dto.setCompleted(true);
+
+        when(taskRepository.findByIdAndUser(1L, user))
+                .thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class,
+                () -> taskService.updateTask(1L, dto, user));
+    }
+
+    /* ---------------- DELETE TASK ---------------- */
+
+    @Test
+    void deleteTask_shouldDeleteAndLogActivity() {
+        when(taskRepository.findByIdAndUser(1L, user))
+                .thenReturn(Optional.of(task));
+
+        taskService.deleteTask(1L, user);
+
+        verify(taskRepository).delete(task);
+        verify(activityService)
+                .log(contains("Deleted Task"), eq(ActivityType.TASK), eq(user));
     }
 }

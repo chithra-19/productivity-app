@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @Size(min = 8)
     @Column(nullable = false)
     private String password;
+    
+	@Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     // Productivity & Streak
     @Column(name = "productivity_score", nullable = false)
@@ -58,6 +61,7 @@ public class User implements UserDetails {
     private boolean credentialsNonExpired = true;
     private boolean accountNonLocked = true;
 
+    
     // Timestamps
     @CreationTimestamp
     @Column(updatable = false)
@@ -65,6 +69,9 @@ public class User implements UserDetails {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+	private int availableFreezes; // 0 or 1
+    private LocalDate lastFreezeResetDate;
 
     // Tokens
     @Column(unique = true)
@@ -87,6 +94,70 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Achievement> achievements = new HashSet<>();
 
+ // XP & Level System
+    @Column(nullable = false)
+    private int xp = 0;
+
+    @Column(nullable = false)
+    private int level = 1;
+
+
+    public int getXp() {
+        return xp;
+    }
+
+    public void setXp(int xp) {
+        this.xp = xp;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public int getAvailableFreezes() {
+		return availableFreezes;
+	}
+
+	public void setAvailableFreezes(int availableFreezes) {
+		this.availableFreezes = availableFreezes;
+	}
+
+	public LocalDate getLastFreezeResetDate() {
+		return lastFreezeResetDate;
+	}
+
+	public void setLastFreezeResetDate(LocalDate lastFreezeResetDate) {
+		this.lastFreezeResetDate = lastFreezeResetDate;
+	}
+
+    
+    public LocalDateTime getLastLoginAt() {
+		return lastLoginAt;
+	}
+
+	public void setLastLoginAt(LocalDateTime lastLoginAt) {
+		this.lastLoginAt = lastLoginAt;
+	}
+
+	public List<FocusSession> getFocusSessions() {
+		return focusSessions;
+	}
+
+	public void setFocusSessions(List<FocusSession> focusSessions) {
+		this.focusSessions = focusSessions;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 
     // Constructors
     public User() {}

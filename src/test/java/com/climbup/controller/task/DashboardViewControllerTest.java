@@ -2,7 +2,7 @@ package com.climbup.controller.task;
 
 import com.climbup.model.User;
 import com.climbup.service.productivity.AchievementService;
-import com.climbup.service.productivity.ActivityLogService;
+
 import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
@@ -35,8 +35,7 @@ public class DashboardViewControllerTest {
     @MockBean private TaskService taskService;
     @MockBean private StreakTrackerService streakTrackerService;
     @MockBean private AchievementService achievementService;
-    @MockBean private ActivityLogService activityLogService;
-
+   
     private User testUser;
 
     @BeforeEach
@@ -71,9 +70,7 @@ public class DashboardViewControllerTest {
         LocalDate to = LocalDate.now();
 
         when(userService.getUserWithAllData("testuser")).thenReturn(testUser);
-        when(activityLogService.getHeatmapData(testUser, "TASK")).thenReturn(List.of());
-        when(activityLogService.getCurrentStreak(testUser, "TASK")).thenReturn(3);
-
+     
         mockMvc.perform(get("/dashboard/api/activity-log/TASK")
                         .param("from", from.toString())
                         .param("to", to.toString()))

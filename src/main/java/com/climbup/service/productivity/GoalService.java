@@ -24,16 +24,18 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final UserRepository userRepository;
     private final AchievementRepository achievementRepository;
-
+    private final XPService xpservice;
     @Autowired
     private AchievementService achievementService;
 
     public GoalService(GoalRepository goalRepository,
                        UserRepository userRepository,
-                       AchievementRepository achievementRepository) {
+                       AchievementRepository achievementRepository,
+                       XPService xpservice) {
         this.goalRepository = goalRepository;
         this.userRepository = userRepository;
         this.achievementRepository = achievementRepository;
+        this.xpservice = xpservice;
     }
 
     // ===== Get all ACTIVE (not completed) goals for a user =====
@@ -100,25 +102,18 @@ public class GoalService {
 
     // ===== Mark goal as completed and unlock achievement =====
     @Transactional
-    public Goal completeGoal(Long id) {
-        Goal goal = goalRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Goal not found"));
+    public void completeGoal(Goal goal, User user) {
 
-        if (goal.isCompleted()) return goal;
+        if (goal.isCompleted()) return;
 
         goal.setCompleted(true);
-        goal.setStatus(Goal.GoalStatus.COMPLETED);
-        goal.setProgress(100);
-        goal.setCompletedDate(LocalDate.now());
-
         goalRepository.save(goal);
 
-       
-        // Evaluate all other achievements
-        achievementService.evaluateAchievements(goal.getUser());
+        xpservice.addXp(user, 50);
 
-        return goal;
+        achievementService.evaluateAchievements(user);
     }
+
 
    
     

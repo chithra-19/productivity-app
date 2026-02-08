@@ -32,28 +32,35 @@ public class SecurityConfig {
 
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
-                    // H2 console
-                    .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
 
-                    // Public endpoints
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/register")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/login")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/perform_login")).permitAll()  // <-- REQUIRED
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/css/**")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/js/**")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/images/**")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/uploads/**")).permitAll()
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/error")).permitAll()
-                    .requestMatchers("/login", "/perform_login", "/register", "/css/**", "/js/**").permitAll()
+            	    // H2 console
+            	    .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
 
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/favicon.ico")).permitAll()
+            	    // Auth & public pages
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/register")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/login")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/perform_login")).permitAll()
 
-                    // Dashboard (secured)
-                    .requestMatchers(new MvcRequestMatcher(introspector, "/dashboard/**")).authenticated()
+            	    // Password reset (IMPORTANT)
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/forgot-password")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/reset-password")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/reset-password/**")).permitAll()
 
-                    // All other requests
-                    .anyRequest().authenticated()
-            )
+            	    // Static resources
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/css/**")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/js/**")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/images/**")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/uploads/**")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/favicon.ico")).permitAll()
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/error")).permitAll()
+
+            	    // Dashboard
+            	    .requestMatchers(new MvcRequestMatcher(introspector, "/dashboard/**")).authenticated()
+
+            	    // Everything else
+            	    .anyRequest().authenticated()
+            	)
+
 
             .formLogin(form -> form
             	    .loginPage("/auth/login")

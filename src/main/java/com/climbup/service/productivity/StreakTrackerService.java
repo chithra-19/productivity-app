@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -161,6 +162,44 @@ public class StreakTrackerService {
     public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
         return streakTrackerRepository.findByUserIdAndCategory(userId, category)
                 .orElse(null); // or throw exception if preferred
+    }
+    
+
+    public void handleTaskCompletion(User user) {
+        LocalDate today = LocalDate.now();
+
+        resetWeeklyFreezeIfNeeded(user, today);
+
+        if (user.getLastActiveDate() == null) {
+            user.setCurrentStreak(1);
+        } else {
+            long gap = ChronoUnit.DAYS.between(user.getLastActiveDate(), today);
+
+            if (gap == 0) {
+                return; // same day, ignore
+            }
+
+            if (gap == 1) {
+                user.setCurrentStreak(user.getCurrentStreak() + 1);
+            } else {
+                if (user.getAvailableFreezes() > 0) {
+                    user.setAvailableFreezes(0); // consume freeze
+                } else {
+                    user.setCurrentStreak(1); // reset streak
+                }
+            }
+        }
+
+        user.setLastActiveDate(today);
+    }
+
+    private void resetWeeklyFreezeIfNeeded(User user, LocalDate today) {
+        if (user.getLastFreezeResetDate() == null ||
+            ChronoUnit.DAYS.between(user.getLastFreezeResetDate(), today) >= 7) {
+
+            user.setAvailableFreezes(1);
+            user.setLastFreezeResetDate(today);
+        }
     }
 
 

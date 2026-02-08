@@ -92,7 +92,7 @@ public class GoalController {
         return ResponseEntity.ok(GoalMapper.toDTO(saved));
     }
 
-    // ✅ PUT /goals/{goalId}/complete — Mark goal as completed
+ // ✅ PUT /goals/{goalId}/complete — Mark goal as completed
     @PutMapping("/{goalId}/complete")
     public ResponseEntity<GoalResponseDTO> completeGoal(@PathVariable Long goalId) {
         User user = getCurrentUser();
@@ -103,15 +103,12 @@ public class GoalController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        // This already updates + triggers achievement check
-        Goal completedGoal = goalService.completeGoal(goalId);
+        // ✅ Call completeGoal correctly
+        goalService.completeGoal(goal, user);
 
         // Return updated goal
-        return ResponseEntity.ok(GoalMapper.toDTO(completedGoal));
+        return ResponseEntity.ok(GoalMapper.toDTO(goal));
     }
-
-
-
 
     // ✅ PUT /goals/{goalId}/drop — Drop a goal
     @PutMapping("/{goalId}/drop")

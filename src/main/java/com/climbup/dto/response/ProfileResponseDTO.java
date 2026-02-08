@@ -22,7 +22,7 @@ public class ProfileResponseDTO {
 
     private Long userId;
 
-    private List<BadgeResponseDTO> badges;   // 🔥 NEW
+    
 
     // ---------------- Getters & Setters ----------------
 
@@ -65,6 +65,4 @@ public class ProfileResponseDTO {
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
 
-    public List<BadgeResponseDTO> getBadges() { return badges; }
-    public void setBadges(List<BadgeResponseDTO> badges) { this.badges = badges; }
 }
