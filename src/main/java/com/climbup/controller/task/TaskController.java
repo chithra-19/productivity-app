@@ -14,7 +14,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -143,6 +145,20 @@ public class TaskController {
         User user = userService.findByUsername(principal.getName());
         taskService.deleteTask(taskId, user);
         return ResponseEntity.ok().build();
+    }
+    
+    @PutMapping("/tasks/mark-done/{id}")
+    public ResponseEntity<Map<String, Object>> markTaskDone(@PathVariable Long id) {
+        Task task = taskService.markDone(id); // update task completed=true
+
+        int currentStreak = streakService.calculateCurrentStreak(task.getUser());
+        int xpProgress = xpService.calculateXpProgress(task.getUser());
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("currentStreak", currentStreak);
+        resp.put("xpProgress", xpProgress);
+
+        return ResponseEntity.ok(resp);
     }
 
 

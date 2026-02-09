@@ -11,6 +11,7 @@ import com.climbup.model.Activity.ActivityType;
 import com.climbup.repository.TaskRepository;
 import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.AchievementService;
+import com.climbup.service.productivity.ProductivityService;
 import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.productivity.XPService;
 
@@ -38,19 +39,24 @@ public class TaskService {
     private final AchievementService achievementService;
     private final UserRepository userRepository;
     private final XPService xpService;
+    private final ProductivityService productivityService;
+
     @Autowired
     public TaskService(TaskRepository taskRepository,
                        ActivityService activityService,
                        StreakTrackerService streakTrackerService,
                        @Lazy AchievementService achievementService,
                        UserRepository userRepository,
-                       XPService xpService) {
+                       XPService xpService,
+                       ProductivityService productivityService) {
         this.taskRepository = taskRepository;
         this.activityService = activityService;
         this.streakTrackerService = streakTrackerService;
         this.achievementService = achievementService;
         this.userRepository = userRepository;
         this.xpService = xpService;
+        this.productivityService = productivityService;
+
     }
 
     // ➕ Create Task
@@ -169,14 +175,6 @@ public class TaskService {
     }
 
 
-    public Map<String, Integer> getHeatmapDataForUser(User user) {
-        return user.getTasks().stream()
-                .filter(task -> task.getDueDate() != null)
-                .collect(Collectors.groupingBy(
-                        task -> task.getDueDate().toString(),
-                        Collectors.collectingAndThen(Collectors.counting(), Long::intValue)
-                ));
-    }
 
     public int countCompletedTasks(Long userId) {
         User user = new User();
@@ -244,15 +242,20 @@ public class TaskService {
         // 3️⃣ XP
         xpService.handleTaskCompletion(user, task);
 
-        // 4️⃣ achievements ✅ MISSING EARLIER
+        // 4️⃣ achievements
         achievementService.evaluateAchievements(user);
 
         // 5️⃣ activity
         activityService.logTaskCompleted(task, user);
 
+        // 6️⃣ productivity score 🔥 (THIS WAS MISSING)
+        int score = productivityService.calculate(user);
+        user.setProductivityScore(score);
+
         taskRepository.save(task);
         userRepository.save(user);
     }
+
 
     public TaskResponseDTO getTaskById(Long taskId, User user) {
         Task task = taskRepository.findByIdAndUser(taskId, user)
@@ -264,17 +267,12 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public Page<TaskResponseDTO> getTasksPaginated(User user, int page, int size, String status, String category) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Task> tasks;
-        if(status.equals("ALL") && (category == null || category.isEmpty())) {
-            tasks = taskRepository.findByUser(user, pageable);
-        } else {
-            tasks = taskRepository.findByUserWithFilters(user, status, category, pageable);
-        }
-        return tasks.map(TaskMapper::toResponse);
-    }
+	public Task markDone(Long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-
+   
+   
 
 }

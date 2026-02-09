@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 public class TaskUpdateDTO {
 
+	private Long id;
     private String title;
     private String description;
     private LocalDate dueDate;
@@ -67,6 +68,8 @@ public class TaskUpdateDTO {
     public void setCategory(String category) {
         this.category = category;
     }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     // ===== toString (optional) =====
     @Override

@@ -15,6 +15,39 @@ body {
   overflow-x: hidden;
   transition: all 0.3s ease;
 }
+.welcome-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.welcome-card .subtext {
+  font-size: 1.1rem;
+  color: #475569;
+}
+
+.motivation-card .quote {
+  font-style: italic;
+  border-left: 4px solid #0284c7;
+  padding-left: 12px;
+  color: #334155;
+}
+.table {
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+
+.table th {
+  background-color: #f0f9ff;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.table td {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
 
 /* ===== Sidebar ===== */
 .sidebar {
@@ -29,6 +62,19 @@ body {
   transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
   flex-shrink: 0;
   z-index: 1001;
+}
+.add-task-btn {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.add-task-btn:hover {
+  transform: scale(1.05);
 }
 
 .sidebar.collapsed {
@@ -84,7 +130,7 @@ body {
 /* ===== Main Content ===== */
 .main-content {
   flex-grow: 1;
-  padding:1.5rem 2rem;
+  padding: 1.5rem 2rem 3rem 2rem; /* added bottom padding */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -106,9 +152,9 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.row.g-4 > .col-md-4 {
+.row.g-4 > .col-md-4, .row.g-4 > .col-md-3 {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
   display: flex;
 }
 
@@ -128,7 +174,7 @@ body {
 }
 
 .stat-card:hover {
-  transform: translateY(-4px) scale(1.02);
+  transform: translateY(-6px) scale(1.03);
   box-shadow: 0 10px 28px rgba(0,0,0,0.2);
 }
 
@@ -164,89 +210,31 @@ body {
   color: #075985;
 }
 
-/* ===== Cards (Heatmap, Tasks, etc.) ===== */
+/* ===== Cards ===== */
 .card, .task-card, .dashboard-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 1px solid rgba(255,255,255,0.3);
   margin: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover, .task-card:hover, .dashboard-card:hover {
-  transform: translateY(-4px) scale(1.02);
+  transform: translateY(-6px) scale(1.03);
   box-shadow: 0 10px 28px rgba(0,0,0,0.2);
 }
 
-/* ===== Heatmap ===== */
-
-.heatmap-box {
-    background: #fff;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    overflow-x: auto;
-    width: fit-content;
-    margin: 0 auto;
+/* ===== Tables ===== */
+.table-hover tbody tr:hover {
+  background-color: rgba(2,132,199,0.05);
 }
 
-/* Month header aligned to heatmap width */
-
-
-.heatmap-wrapper {
-    width: 100%;
+.table th, .table td {
+  vertical-align: middle;
 }
-.heatmap-scroll {
-  overflow-x: auto;
-  width: 100%;
-}
-
-.heatmap-header {
-    display: flex;
-    justify-content: flex-start;
-    gap: 46px; /* <-- THIS CREATES PERFECT SPACING */
-    padding: 26px; /* match left margin of SVG cells */
-    margin-bottom: 10px;
-	width: 820px;
-    font-size: 14px;
-    color: #555;
-}
-
-.heatmap-header span {
-    min-width: 40px;
-    text-align: left;
-}
-
-/* SVG cells */
-
-.heatmap-container {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 5px;
-}
-
-#activityHeatmap {
-    width: 100%;
-    height: auto;
-}
-
-.heatmap-cell {
-    rx: 3;
-    ry: 3;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.heatmap-cell:hover {
-    stroke: #000;
-    stroke-width: 1;
-}
-
-
-
 
 /* ===== XP Card ===== */
 .xp-card {

@@ -23,6 +23,9 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     List<Activity> findTop10ByOrderByTimestampDesc();
 
+    List<Activity> findTop15ByUserOrderByTimestampDesc(User user);
+    
+    
     List<Activity> findByUserOrderByTimestampDesc(User user);
     // 3. Activities between two timestamps
     List<Activity> findByUserAndTimestampBetween(

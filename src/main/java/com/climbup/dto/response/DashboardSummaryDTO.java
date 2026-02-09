@@ -4,47 +4,33 @@ import java.util.Map;
 
 public class DashboardSummaryDTO {
 
-    private int level;
-    private int xp;
-    private int xpProgress;
-    private int xpForNextLevel;
+    // 🔥 Core productivity metric
+    private int productivityScore;      // 0–100
+    private String productivityLabel;   // LOW / MEDIUM / HIGH
 
+    // 🔥 Streaks
     private int currentStreak;
     private int bestStreak;
 
+    // 🔥 Task stats
     private Map<String, Integer> taskStats;
 
-    // getters & setters
-    public int getLevel() {
-        return level;
+    // ===== getters & setters =====
+
+    public int getProductivityScore() {
+        return productivityScore;
     }
 
-    public void setLevel(int level) {
-        this.level = level;
+    public void setProductivityScore(int productivityScore) {
+        this.productivityScore = productivityScore;
     }
 
-    public int getXp() {
-        return xp;
+    public String getProductivityLabel() {
+        return productivityLabel;
     }
 
-    public void setXp(int xp) {
-        this.xp = xp;
-    }
-
-    public int getXpProgress() {
-        return xpProgress;
-    }
-
-    public void setXpProgress(int xpProgress) {
-        this.xpProgress = xpProgress;
-    }
-
-    public int getXpForNextLevel() {
-        return xpForNextLevel;
-    }
-
-    public void setXpForNextLevel(int xpForNextLevel) {
-        this.xpForNextLevel = xpForNextLevel;
+    public void setProductivityLabel(String productivityLabel) {
+        this.productivityLabel = productivityLabel;
     }
 
     public int getCurrentStreak() {

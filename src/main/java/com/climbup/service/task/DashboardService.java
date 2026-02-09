@@ -12,83 +12,58 @@ import com.climbup.service.productivity.XPService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-
 @Service
 public class DashboardService {
 
     private final TaskService taskService;
     private final AchievementService achievementService;
     private final StreakTrackerService streakTrackerService;
-    private final XPService xpService;
 
     public DashboardService(TaskService taskService,
-            AchievementService achievementService,
-            StreakTrackerService streakTrackerService,
-            XPService xpService) {
+                            AchievementService achievementService,
+                            StreakTrackerService streakTrackerService) {
 
-this.taskService = taskService;
-this.achievementService = achievementService;
-this.streakTrackerService = streakTrackerService;
-this.xpService = xpService;
-}
-
-
-    /**
-     * 🔹 Fetch all tasks for user
-     */
-    public List<TaskResponseDTO> getAllTasks(User user) {
-        return taskService.getTasksForUser(user);
-    }
-
-    public List<TaskResponseDTO> getTodayTasks(User user) {
-        return taskService.getTodayTasks(user);
+        this.taskService = taskService;
+        this.achievementService = achievementService;
+        this.streakTrackerService = streakTrackerService;
     }
 
     public Map<String, Integer> getTaskStats(User user) {
         List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
 
         int total = tasks.size();
-        int completed = (int) tasks.stream().filter(TaskResponseDTO::isCompleted).count();
-        int pending = total - completed;
+        int completed = (int) tasks.stream()
+                .filter(TaskResponseDTO::isCompleted)
+                .count();
 
         return Map.of(
                 "total", total,
                 "completed", completed,
-                "pending", pending
+                "pending", total - completed
         );
     }
 
-    /**
-     * 🔹 Current streak
-     */
-    public int getCurrentStreak(User user) {
-        return streakTrackerService.getCurrentStreak(user);
-    }
-
-    /**
-     * 🔹 Achievements
-     */
-    public Object getUserAchievements(User user) {
-        achievementService.initializeAchievements(user);
-        return achievementService.getUserAchievements(user);
-    }
-    
     public DashboardSummaryDTO getDashboardSummary(User user) {
 
         DashboardSummaryDTO dto = new DashboardSummaryDTO();
 
-        dto.setLevel(user.getLevel());
-        dto.setXp(user.getXp());
-        dto.setCurrentStreak(streakTrackerService.getCurrentStreak(user));
-        dto.setBestStreak(streakTrackerService.getCurrentStreak(user));
+        int score = user.getProductivityScore();
+        dto.setProductivityScore(score);
 
+        // 🔥 Human-readable meaning
+        if (score < 40) {
+            dto.setProductivityLabel("LOW");
+        } else if (score < 70) {
+            dto.setProductivityLabel("MEDIUM");
+        } else {
+            dto.setProductivityLabel("HIGH");
+        }
 
-        dto.setXpForNextLevel(xpService.xpForNextLevel(user));
-        dto.setXpProgress(xpService.xpProgressInCurrentLevel(user));
+        dto.setCurrentStreak(user.getCurrentStreak());
+        dto.setBestStreak(user.getBestStreak());
 
         dto.setTaskStats(getTaskStats(user));
 
         return dto;
     }
-
 }

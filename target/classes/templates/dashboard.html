@@ -93,84 +93,139 @@
         </div>
       </div>
 
+	  <!-- Today's Tasks Table -->
+	      <div class="card mb-4 animate-fade">
+	        <div class="card-body">
+	          <div class="d-flex justify-content-between align-items-center mb-3">
+	            <h5 class="card-title mb-0">🌤️ Today's Tasks</h5>
+	            <a th:href="@{/tasks/add}" class="btn btn-sm btn-primary">+ Add Task</a>
+	          </div>
+	          <p class="text-muted fst-italic mb-3">Stay consistent. Regret is more painful than consistency 💪</p>
+
+	          <div th:if="${todaysTasks != null and !todaysTasks.isEmpty()}">
+	            <table class="table table-hover align-middle">
+	              <thead class="table-light">
+	                <tr>
+	                  <th>Title</th>
+	                  <th>Description</th>
+	                  <th>Category</th>
+	                  <th>Status</th>
+	                  <th>Due</th>
+	                  <th>Action</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+	                <tr th:each="task : ${todaysTasks}">
+	                  <td th:text="${task.title != null ? task.title : 'Untitled'}">Title</td>
+	                  <td th:text="${task.description != null ? task.description : '-'}">Description</td>
+	                  <td th:text="${task.category != null ? task.category : '-'}">Category</td>
+	                  <td>
+	                    <span th:if="${task.completed}" class="text-success fw-semibold">Done</span>
+	                    <span th:if="${!task.completed}" class="text-warning fw-semibold">Pending</span>
+	                  </td>
+	                  <td th:text="${task.dueDate != null ? task.dueDate : '-'}">Due Date</td>
+	                  <td>
+	                    <button 
+	                      type="button" 
+	                      th:if="${!task.completed}" 
+	                      class="btn btn-sm btn-success mark-done-btn" 
+	                      th:attr="data-id=${task.id}">
+	                      Mark Done
+	                    </button>
+	                  </td>
+	                </tr>
+	              </tbody>
+	            </table>
+	          </div>
+
+	          <div th:if="${todaysTasks == null or todaysTasks.isEmpty()}">
+	            <p class="text-muted text-center">No tasks for today! Enjoy your day 🎉</p>
+	          </div>
+	        </div>
+	      </div>
+
       <!-- Stats Row -->
       <div class="row g-4 mb-4" id="statsRow">
         
+        <!-- Current Streak -->
         <div class="col-md-4 animate-fade">
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-success mb-2"><i class="bi bi-fire"></i></div>
             <h5 class="text-muted">Current Streak</h5>
-            <h3 id="current-streak" class="stat-value" th:text="${currentStreak != null ? currentStreak : 0}" data-value="${currentStreak != null ? currentStreak : 0}">0</h3>
+            <h3 class="stat-value" th:text="${currentStreak != null ? currentStreak : 0}">0</h3>
           </div>
         </div>
+
+        <!-- Best Streak -->
+        <div class="col-md-4 animate-fade">
+          <div class="stat-card text-center p-3 border rounded">
+            <div class="stat-icon text-primary mb-2"><i class="bi bi-trophy"></i></div>
+            <h5 class="text-muted">Best Streak</h5>
+            <h3 class="stat-value" th:text="${bestStreak != null ? bestStreak : 0}">0</h3>
+          </div>
+        </div>
+
+        <!-- Today’s Tasks -->
         <div class="col-md-4 animate-fade">
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-info mb-2"><i class="bi bi-calendar-day"></i></div>
             <h5 class="text-muted">Today’s Tasks</h5>
-            <h3 id="pendingCount" class="stat-value" th:text="${todaysCount != null ? todaysCount : 0}" data-value="${todaysCount != null ? todaysCount : 0}">0</h3>
+            <h3 class="stat-value" th:text="${todaysCount != null ? todaysCount : 0}">0</h3>
           </div>
         </div>
       </div>
 
-     
-      <!-- Today's Tasks Table -->
+      <!-- Additional Stats Row -->
+      <div class="row g-4 mb-4">
+        <!-- Total / Completed / Pending Tasks -->
+        <div class="col-md-6 animate-fade">
+          <div class="stat-card p-3 border rounded">
+            <h5 class="text-muted mb-3">Tasks Overview</h5>
+            <p>Total Tasks: <span th:text="${totalTasks != null ? totalTasks : 0}">0</span></p>
+            <p>Completed: <span th:text="${completedTasks != null ? completedTasks : 0}">0</span></p>
+            <p>Pending: <span th:text="${pendingTasks != null ? pendingTasks : 0}">0</span></p>
+          </div>
+        </div>
+
+        <!-- XP Progress -->
+        <div class="col-md-6 animate-fade">
+          <div class="stat-card p-3 border rounded">
+            <h5 class="text-muted mb-2">Level / XP Progress</h5>
+            <h6>Level: <span th:text="${level != null ? level : 1}">1</span></h6>
+            <div class="progress">
+              <div class="progress-bar bg-warning" th:style="'width:' + (${xpProgress != null ? xpProgress : 0}) + '%;'">
+                <span th:text="${xpProgress != null ? xpProgress + '%' : '0%'}"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activities -->
       <div class="card mb-4 animate-fade">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">🌤️ Today's Tasks</h5>
-            <a th:href="@{/tasks/add}" class="btn btn-sm btn-primary">+ Add Task</a>
-          </div>
-          <p class="text-muted fst-italic mb-3">Stay consistent. Regret is more painful than consistency 💪</p>
-
-          <div th:if="${todaysTasks != null and !todaysTasks.isEmpty()}">
-            <table class="table table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Title</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Due</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr th:each="task : ${todaysTasks}">
-                  <td th:text="${task.title}">Title</td>
-                  <td th:text="${task.description}">Description</td>
-                  <td th:text="${task.category}">Category</td>
-                  <td>
-                    <span th:if="${task.completed}" class="text-success fw-semibold">Done</span>
-                    <span th:if="${!task.completed}" class="text-warning fw-semibold">Pending</span>
-                  </td>
-                  <td th:text="${task.dueDate}">Due Date</td>
-                  <td>
-                    <button 
-                      type="button" 
-                      th:if="${!task.completed}" 
-                      class="btn btn-sm btn-success mark-done-btn" 
-                      th:attr="data-id=${task.id}">
-                      Mark Done
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div th:if="${todaysTasks == null or todaysTasks.isEmpty()}">
-            <p class="text-muted text-center">No tasks for today! Enjoy your day 🎉</p>
-          </div>
+          <h5 class="card-title mb-3">Recent Activities</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item" th:each="act : ${recentActivities}">
+              <span th:text="${act}">Sample Activity</span>
+            </li>
+            <li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}" class="list-group-item text-muted text-center">
+              No recent activity yet.
+            </li>
+          </ul>
         </div>
       </div>
 
+    
     </div> <!-- main-content -->
   </div> <!-- wrapper -->
-
+  
+  
   <!-- JS Dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Custom JS -->
-  <script th:src="@{/js/dashboard.js}"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+   <!-- Custom JS -->
+   <script th:src="@{/js/dashboard.js}"></script>
+
 
 </body>
 </html>

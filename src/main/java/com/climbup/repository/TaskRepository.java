@@ -38,6 +38,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByUserIdAndCategory(Long userId, String category);
 
+    
     // ================= Basic Queries =================
     List<Task> findByUser(User user);
     List<Task> findByUserAndCompleted(User user, boolean completed);
@@ -115,4 +116,20 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     """)
     List<Task> searchTasks(@Param("user") User user,
                            @Param("query") String query);
+    
+    @Query("""
+    	    SELECT t FROM Task t
+    	    WHERE t.user = :user
+    	    AND (:status = 'ALL' OR 
+    	         (:status = 'COMPLETED' AND t.completed = true) OR
+    	         (:status = 'PENDING' AND t.completed = false))
+    	    AND (:category IS NULL OR :category = '' OR t.category = :category)
+    	""")
+    	Page<Task> findByUserWithFilters(
+    	        @Param("user") User user,
+    	        @Param("status") String status,
+    	        @Param("category") String category,
+    	        Pageable pageable
+    	);
+
 }

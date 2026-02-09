@@ -10,7 +10,8 @@ import java.util.Objects;
 })
 public class Activity {
 
-    @Id
+
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -45,22 +46,55 @@ public class Activity {
         this.timestamp = LocalDateTime.now();
     }
 
-    // Getters & setters
-    public Long getId() { return id; }
+    public Long getId() {
+		return id;
+	}
 
-    public String getDescription() { return description; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public ActivityType getType() { return type; }
+	public String getDescription() {
+		return description;
+	}
 
-    public LocalDateTime getTimestamp() { return timestamp; }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    public User getUser() { return user; }
+	public ActivityType getType() {
+		return type;
+	}
 
-    public Integer getFocusMinutes() { return focusMinutes; }
+	public void setType(ActivityType type) {
+		this.type = type;
+	}
 
-    public void setFocusMinutes(Integer focusMinutes) {
-        this.focusMinutes = focusMinutes != null ? focusMinutes : 0;
-    }
+	public LocalDateTime getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(LocalDateTime timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public Integer getFocusMinutes() {
+		return focusMinutes;
+	}
+
+	public void setFocusMinutes(Integer focusMinutes) {
+		this.focusMinutes = focusMinutes;
+	}
+
+
 
     // equals & hashCode
     @Override

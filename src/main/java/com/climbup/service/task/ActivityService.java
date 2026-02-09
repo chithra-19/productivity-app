@@ -1,5 +1,7 @@
 package com.climbup.service.task;
 
+import com.climbup.dto.response.ActivityDTO;
+import com.climbup.mapper.ActivityMapper;
 import com.climbup.model.Activity;
 import com.climbup.model.User;
 import com.climbup.model.Task;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ActivityService {
@@ -27,22 +30,16 @@ public class ActivityService {
 
     // ---------------- Logging Activities ----------------
 
-    /**
-     * Log generic activity with timestamp
-     */
     @Transactional
     public void log(String description, ActivityType type, User user) {
         Activity activity = new Activity();
-        activity.setMessage(description);
+        activity.setDescription(description);
         activity.setType(type);
         activity.setUser(user);
         activity.setTimestamp(LocalDateTime.now());
         activityRepository.save(activity);
     }
 
-    /**
-     * Log task completion specifically
-     */
     @Transactional
     public void logTaskCompleted(Task task, User user) {
         String msg = "Completed Task: " + task.getTitle();
@@ -51,35 +48,36 @@ public class ActivityService {
 
     // ---------------- Fetch Activities ----------------
 
-    /**
-     * Get all activities for a user, optionally filtered by type and date range
-     */
-    public List<Activity> getAllActivities(User user, ActivityType type, LocalDateTime from, LocalDateTime to) {
+    public List<ActivityDTO> getAllActivities(User user, ActivityType type, LocalDateTime from, LocalDateTime to) {
+        List<Activity> activities;
+
         if (type != null && from != null && to != null) {
-            return activityRepository.findByUserAndTypeAndTimestampBetween(user, type, from, to);
+            activities = activityRepository.findByUserAndTypeAndTimestampBetween(user, type, from, to);
         } else if (type != null) {
-            return activityRepository.findByUserAndType(user, type);
+            activities = activityRepository.findByUserAndType(user, type);
         } else if (from != null && to != null) {
-            return activityRepository.findByUserAndTimestampBetween(user, from, to);
+            activities = activityRepository.findByUserAndTimestampBetween(user, from, to);
         } else {
-            return activityRepository.findByUser(user);
+            activities = activityRepository.findByUser(user);
         }
+
+        return activities.stream()
+                .map(ActivityMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Get recent activities (latest first) with pagination
-     */
-    public Page<Activity> getRecentActivities(User user, int page, int size) {
+    public Page<ActivityDTO> getRecentActivities(User user, int page, int size) {
         return activityRepository.findByUser(
-                user,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"))
-        );
+                        user,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"))
+                )
+                .map(ActivityMapper::toDTO);
     }
 
-    /**
-     * Get last 15 activities for a user (simpler method for dashboard)
-     */
-    public List<Activity> getRecentActivities(User user) {
-        return activityRepository.findTop15ByUserOrderByTimestampDesc(user);
+    public List<ActivityDTO> getRecentActivities(User user) {
+        return activityRepository.findTop15ByUserOrderByTimestampDesc(user)
+                .stream()
+                .map(ActivityMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

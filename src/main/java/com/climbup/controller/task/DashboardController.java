@@ -3,15 +3,18 @@ package com.climbup.controller.task;
 import com.climbup.dto.request.FocusSessionRequestDTO;
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.request.TaskRequestDTO;
+import com.climbup.dto.response.ActivityDTO;
 import com.climbup.dto.response.DashboardSummaryDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.mapper.ActivityMapper;
 import com.climbup.model.FocusSession;
 import com.climbup.model.Goal;
 import com.climbup.model.Profile;
 import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.service.productivity.*;
+import com.climbup.service.task.ActivityService;
 import com.climbup.service.task.DashboardService;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.ProfileService;
@@ -39,12 +42,14 @@ public class DashboardController {
 
     private final UserService userService;
     private final TaskService taskService;
-   private final ProfileService profileService;
+    private final ProfileService profileService;
     private final MotivationService motivationService;
     private final FocusSessionService focusSessionService;
     private final GoalService goalService;
     private final DashboardService dashboardService;
+    private final ActivityService activityService;
 
+    
     @Autowired
     public DashboardController(UserService userService,
                                    TaskService taskService,
@@ -52,7 +57,8 @@ public class DashboardController {
                                    MotivationService motivationService,
                                    FocusSessionService focusSessionService,
                                    GoalService goalService,
-                                   DashboardService dashboardService) {
+                                   DashboardService dashboardService,
+                                   ActivityService activityService) {
         this.userService = userService;
         this.taskService = taskService;
         this.profileService = profileService;
@@ -60,6 +66,7 @@ public class DashboardController {
         this.focusSessionService = focusSessionService;
         this.goalService = goalService;
         this.dashboardService = dashboardService;
+        this.activityService = activityService;
     }
     
 
@@ -236,10 +243,7 @@ public class DashboardController {
     @GetMapping("/activities")
     public ResponseEntity<List<ActivityDTO>> getActivities(Principal principal) {
         User user = userService.findByUsername(principal.getName());
-        List<ActivityDTO> activities = activityService.getRecentActivities(user)
-                                    .stream()
-                                    .map(ActivityMapper::toDTO)
-                                    .collect(Collectors.toList());
+        List<ActivityDTO> activities = activityService.getRecentActivities(user); // Already DTOs
         return ResponseEntity.ok(activities);
     }
 

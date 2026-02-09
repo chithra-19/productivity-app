@@ -157,72 +157,194 @@
     }
   </style>
 </head>
-
 <body>
-	
-	<a href="/dashboard" class="back-arrow">
-	  <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
-	</a>
-<div class="container">
-  <h2>All Tasks</h2>
+  <a href="/dashboard" class="back-arrow">
+    <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+  </a>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>Description</th>
-        <th>Status</th>
-        <th>Due Date</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr th:each="task : ${tasks}">
-        <td th:text="${task.title}">Task Title</td>
-        <td th:text="${task.description}">Task Description</td>
-        <td>
-          <span th:text="${task.completed} ? 'Done' : 'Pending'"
-                th:classappend="${task.completed} ? 'status-done' : 'status-pending'">Status</span>
-        </td>
-        <td th:text="${task.dueDate != null ? task.dueDate : '-'}">Due Date</td>
-        <td>
-          <button th:if="${!task.completed}"
-                  th:attr="onclick='markTaskCompleted(' + ${task.id} + ', this)'"
-                  class="btn-complete">
-            Mark Done
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+  <div class="container">
+    <h2>All Tasks</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable('title')">Title <i class="bi bi-chevron-expand"></i></th>
+          <th>Description</th>
+          <th>Status</th>
+          <th onclick="sortTable('dueDate')">Due Date <i class="bi bi-chevron-expand"></i></th>
+          <th>Action</th>
+        </tr>
+      </thead>
+	  <tbody>
+	    <tr th:each="task : ${tasks}">
+	      <td th:text="${task.title}"></td>
+	      <td th:text="${task.description}"></td>
+	      <td>
+	        <span th:class="${task.completed} ? 'status-done' : 'status-pending'"
+	              th:text="${task.completed} ? 'Done' : 'Pending'"></span>
+	      </td>
+	      <td th:text="${task.dueDate} ?: '-'"></td>
+	      <td>
+	        <form th:if="${!task.completed}"
+	              th:action="@{/tasks/complete/{id}(id=${task.id})}"
+	              method="post">
+	          <button class="btn-complete">Mark Done</button>
+	        </form>
+	      </td>
+	    </tr>
+	  </tbody>
+
+    </table>
+
+	<nav th:if="${totalPages > 1}" class="mt-4">
+	  <ul class="pagination justify-content-center">
+
+	    <!-- Previous -->
+	    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+	      <a class="page-link"
+	         th:href="@{/tasks/all(page=${currentPage - 1})}">
+	        Previous
+	      </a>
+	    </li>
+
+	    <!-- Page numbers -->
+	    <li class="page-item"
+	        th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+	        th:classappend="${i == currentPage} ? 'active'">
+	      <a class="page-link"
+	         th:href="@{/tasks/all(page=${i})}"
+	         th:text="${i + 1}">
+	      </a>
+	    </li>
+
+	    <!-- Next -->
+	    <li class="page-item"
+	        th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+	      <a class="page-link"
+	         th:href="@{/tasks/all(page=${currentPage + 1})}">
+	        Next
+	      </a>
+	    </li>
+
+	  </ul>
+	</nav>
+
+  </div>
 
 <script>
-async function markTaskCompleted(taskId, button) {
-  try {
-    const res = await fetch(`/tasks/complete/${taskId}`, { method: 'POST' });
-    if (!res.ok) throw new Error("Failed to mark as done");
+let currentPage = 1;
+let pageSize = 10;
+let sortField = 'title';
+let sortDir = 'asc';
 
-    const row = button.closest('tr');
-    row.style.transition = 'opacity 0.3s ease';
-    row.style.opacity = 0;
-    setTimeout(() => row.remove(), 300);
+// Load tasks from backend and render table
+async function loadTasks() {
+    try {
+        const res = await fetch(`/tasks/all?page=${currentPage}&size=${pageSize}&sortField=${sortField}&sortDir=${sortDir}`);
 
-    const statsRes = await fetch('/dashboard/api/stats');
-    if (statsRes.ok) {
-      const stats = await statsRes.json();
-      const scoreElem = document.querySelector("#score");
-      const streakElem = document.querySelector("#streak");
-      const pendingElem = document.querySelector("#pendingCount");
-      if (scoreElem) scoreElem.textContent = stats.score;
-      if (streakElem) streakElem.textContent = stats.streak;
-      if (pendingElem) pendingElem.textContent = stats.pendingCount;
+        const data = await res.json();
+
+        renderTable(data.tasks);
+        renderPagination(data.totalPages);
+    } catch(err) {
+        console.error(err);
+        
     }
-  } catch (err) {
-    console.error(err);
-  }
 }
+
+// Render table rows
+function renderTable(tasks) {
+    const tbody = document.querySelector('table tbody');
+    tbody.innerHTML = ''; // clear previous rows
+
+    tasks.forEach(task => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${task.title}</td>
+            <td>${task.description}</td>
+            <td>
+                <span class="${task.completed ? 'status-done' : 'status-pending'}">
+                    ${task.completed ? 'Done' : 'Pending'}
+                </span>
+            </td>
+            <td>${task.dueDate || '-'}</td>
+            <td>
+                ${!task.completed ? `<button onclick="markTaskCompleted(${task.id}, this)" class="btn-complete">Mark Done</button>` : ''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Render pagination buttons
+function renderPagination(totalPages) {
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage===1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage-1})">Previous</a>`;
+    pagination.appendChild(prevLi);
+
+    for(let i=1;i<=totalPages;i++){
+        const li = document.createElement('li');
+        li.className = `page-item ${i===currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        pagination.appendChild(li);
+    }
+
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage===totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage+1})">Next</a>`;
+    pagination.appendChild(nextLi);
+}
+
+// Change page
+function changePage(page) {
+    if(page < 1) return;
+    currentPage = page;
+    loadTasks();
+}
+
+// Sort table
+function sortTable(field) {
+    if(sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortField = field; sortDir = 'asc'; }
+    loadTasks();
+}
+
+// Mark task as completed
+async function markTaskCompleted(taskId, button) {
+    try {
+        const res = await fetch(`/tasks/complete/${taskId}`, { method: 'POST' });
+        if(!res.ok) throw new Error("Failed to mark as done");
+
+        const row = button.closest('tr');
+        row.style.transition = 'opacity 0.3s';
+        row.style.opacity = 0;
+        setTimeout(() => row.remove(), 300);
+
+        // Optional: refresh stats
+        const statsRes = await fetch('/dashboard/api/stats');
+        if(statsRes.ok){
+            const stats = await statsRes.json();
+            const scoreElem = document.querySelector("#score");
+            const streakElem = document.querySelector("#streak");
+            const pendingElem = document.querySelector("#pendingCount");
+            if(scoreElem) scoreElem.textContent = stats.score;
+            if(streakElem) streakElem.textContent = stats.streak;
+            if(pendingElem) pendingElem.textContent = stats.pendingCount;
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Failed to mark task as done.");
+    }
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', loadTasks);
 </script>
+
 
 </body>
 </html>
