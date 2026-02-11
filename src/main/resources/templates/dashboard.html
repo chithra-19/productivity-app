@@ -111,7 +111,7 @@
 	                  <th>Category</th>
 	                  <th>Status</th>
 	                  <th>Due</th>
-	                  <th>Action</th>
+	                
 	                </tr>
 	              </thead>
 	              <tbody>
@@ -152,7 +152,7 @@
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-success mb-2"><i class="bi bi-fire"></i></div>
             <h5 class="text-muted">Current Streak</h5>
-            <h3 class="stat-value" th:text="${currentStreak != null ? currentStreak : 0}">0</h3>
+            <h3 class="stat-value" th:text="${summary.currentStreak}">0</h3>
           </div>
         </div>
 
@@ -161,7 +161,8 @@
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-primary mb-2"><i class="bi bi-trophy"></i></div>
             <h5 class="text-muted">Best Streak</h5>
-            <h3 class="stat-value" th:text="${bestStreak != null ? bestStreak : 0}">0</h3>
+            <h3 class="stat-value" th:text="${summary.bestStreak}"
+>0</h3>
           </div>
         </div>
 
@@ -175,17 +176,7 @@
         </div>
       </div>
 
-      <!-- Additional Stats Row -->
-      <div class="row g-4 mb-4">
-        <!-- Total / Completed / Pending Tasks -->
-        <div class="col-md-6 animate-fade">
-          <div class="stat-card p-3 border rounded">
-            <h5 class="text-muted mb-3">Tasks Overview</h5>
-            <p>Total Tasks: <span th:text="${totalTasks != null ? totalTasks : 0}">0</span></p>
-            <p>Completed: <span th:text="${completedTasks != null ? completedTasks : 0}">0</span></p>
-            <p>Pending: <span th:text="${pendingTasks != null ? pendingTasks : 0}">0</span></p>
-          </div>
-        </div>
+       
 
         <!-- XP Progress -->
         <div class="col-md-6 animate-fade">

@@ -73,6 +73,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findOverdueTasks(@Param("user") User user,
                                 @Param("today") LocalDate today);
 
+    
+    long countByUserAndCategoryAndCompletedTrueAndCompletedDateTimeBetween(
+    	    User user,
+    	    String category,
+    	    LocalDateTime start,
+    	    LocalDateTime end
+    	);
+
     // ================= Productivity =================
     @Query("""
         SELECT t FROM Task t

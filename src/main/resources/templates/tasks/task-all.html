@@ -168,11 +168,11 @@
     <table>
       <thead>
         <tr>
-          <th onclick="sortTable('title')">Title <i class="bi bi-chevron-expand"></i></th>
-          <th>Description</th>
-          <th>Status</th>
-          <th onclick="sortTable('dueDate')">Due Date <i class="bi bi-chevron-expand"></i></th>
-          <th>Action</th>
+          <th>TITLE</th>
+          <th>DESCRIPTION</th>
+          <th>STATUS</th>
+          <th>DUEDATE</th>
+          
         </tr>
       </thead>
 	  <tbody>
@@ -181,16 +181,10 @@
 	      <td th:text="${task.description}"></td>
 	      <td>
 	        <span th:class="${task.completed} ? 'status-done' : 'status-pending'"
-	              th:text="${task.completed} ? 'Done' : 'Pending'"></span>
+	              th:text="${task.completed} ? 'Done' : 'Not Done'"></span>
 	      </td>
 	      <td th:text="${task.dueDate} ?: '-'"></td>
-	      <td>
-	        <form th:if="${!task.completed}"
-	              th:action="@{/tasks/complete/{id}(id=${task.id})}"
-	              method="post">
-	          <button class="btn-complete">Mark Done</button>
-	        </form>
-	      </td>
+	     
 	    </tr>
 	  </tbody>
 

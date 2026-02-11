@@ -7,6 +7,8 @@ import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.repository.TaskRepository;
 import com.climbup.repository.UserRepository;
+import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.productivity.XPService;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 
@@ -30,17 +32,24 @@ public class TaskController {
     private final UserService userService;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final StreakTrackerService streakTrackerService;
+    private final XPService xpService;
+    
 
     @Autowired
     public TaskController(TaskService taskService,
                           UserService userService,
                           TaskRepository taskRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          StreakTrackerService streakTrackerService,
+                          XPService xpService) {
         this.taskService = taskService;
         this.userService = userService;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
-    }
+        this.streakTrackerService = streakTrackerService ;
+        this.xpService = xpService;
+        }
 
     /** ✅ Create a new task */
     @PostMapping
@@ -80,17 +89,25 @@ public class TaskController {
             task.setCompleted(true);
             taskRepository.save(task);
 
-            int newScore = user.getProductivityScore() + 10;
-            int newStreak = user.getCurrentStreak() + 1;
+         // 1️⃣ Update streak (category-based)
+            streakTrackerService.evaluateToday(user, task.getCategory());
 
-            user.setProductivityScore(newScore);
-            user.setCurrentStreak(newStreak);
-            userRepository.save(user);
+            // 2️⃣ Update XP
+            xpService.handleTaskCompletion(user, task);
+
+            // 3️⃣ Get fresh streak value
+            int currentStreak = streakTrackerService.getCurrentStreak(user);
+
+            // 4️⃣ Get XP
+            int xp = user.getXp();
+
 
             Map<String, Object> response = new HashMap<>();
-            response.put("score", newScore);
-            response.put("streak", newStreak);
-            response.put("pendingCount", taskRepository.countByUserAndCompletedFalse(user));
+            response.put("xp", xp);
+            response.put("streak", currentStreak);
+            response.put("pendingTasks", taskRepository.countByUserAndCompletedFalse(user));
+            response.put("xpIncrement", 10);
+
 
             return ResponseEntity.ok(response);
 
@@ -112,13 +129,6 @@ public class TaskController {
         return ResponseEntity.ok(updated);
     }
 
-    /** ✅ Delete task */
-    @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long taskId, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
-        taskService.deleteTask(taskId, user);
-        return ResponseEntity.noContent().build();
-    }
 
    
 
@@ -141,25 +151,52 @@ public class TaskController {
    
  // Delete task
     @DeleteMapping("/delete/{taskId}")
-    public ResponseEntity<Void> deleteTaskForFrontend(@PathVariable Long taskId, Principal principal) {
+    public ResponseEntity<Map<String, Object>> deleteTaskForFrontend(
+            @PathVariable Long taskId,
+            Principal principal) {
+
         User user = userService.findByUsername(principal.getName());
         taskService.deleteTask(taskId, user);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PutMapping("/tasks/mark-done/{id}")
-    public ResponseEntity<Map<String, Object>> markTaskDone(@PathVariable Long id) {
-        Task task = taskService.markDone(id); // update task completed=true
 
-        int currentStreak = streakService.calculateCurrentStreak(task.getUser());
-        int xpProgress = xpService.calculateXpProgress(task.getUser());
+        int currentStreak = streakTrackerService.getCurrentStreak(user);
+        int xp = user.getXp();
+        long pendingTasks = taskRepository.countByUserAndCompletedFalse(user);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("pendingTasks", pendingTasks);
+        response.put("streak", currentStreak);
+        response.put("xp", xp);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PutMapping("/mark-done/{id}")
+    public ResponseEntity<Map<String, Object>> markTaskDone(@PathVariable Long id) {
+        // Mark task as completed
+        Task task = taskService.markDone(id); // sets task.completed = true
+
+        User user = task.getUser(); // get the task owner
+
+        streakTrackerService.evaluateToday(user, task.getCategory());
+        int currentStreak = streakTrackerService.getCurrentStreak(user);
+
+
+        // XP is the user's current productivity score
+        int xp = user.getProductivityScore();
+
+        // Pending tasks
+        long pendingCount = taskRepository.countByUserAndCompletedFalse(user);
 
         Map<String, Object> resp = new HashMap<>();
-        resp.put("currentStreak", currentStreak);
-        resp.put("xpProgress", xpProgress);
+        resp.put("streak", currentStreak);
+        resp.put("xp", xp);
+        resp.put("pendingCount", pendingCount);
+        resp.put("xpIncrement", 10); // optional, for toast message
 
         return ResponseEntity.ok(resp);
     }
+
 
 
 }

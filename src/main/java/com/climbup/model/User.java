@@ -46,14 +46,7 @@ public class User implements UserDetails {
     @Column(name = "productivity_score", nullable = false)
     private Integer productivityScore = 0;
 
-    @Column(name = "current_streak", nullable = false)
-    private Integer currentStreak = 0;
-
-    @Column(name = "best_streak", nullable = false)
-    private Integer bestStreak = 0;
-
-    @Column(name = "last_active_date")
-    private LocalDate lastActiveDate;
+ 
 
     // Security Flags
     private boolean enabled = true;
@@ -216,15 +209,7 @@ public class User implements UserDetails {
     public Integer getProductivityScore() { return productivityScore == null ? 0 : productivityScore; }
     public void setProductivityScore(Integer productivityScore) { this.productivityScore = productivityScore; }
 
-    public Integer getCurrentStreak() { return currentStreak; }
-    public void setCurrentStreak(Integer currentStreak) { this.currentStreak = currentStreak; }
-
-    public Integer getBestStreak() { return bestStreak; }
-    public void setBestStreak(Integer bestStreak) { this.bestStreak = bestStreak; }
-
-    public LocalDate getLastActiveDate() { return lastActiveDate; }
-    public void setLastActiveDate(LocalDate lastActiveDate) { this.lastActiveDate = lastActiveDate; }
-
+   
     public boolean isEnabledFlag() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 

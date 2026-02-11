@@ -59,8 +59,14 @@ public class DashboardService {
             dto.setProductivityLabel("HIGH");
         }
 
-        dto.setCurrentStreak(user.getCurrentStreak());
-        dto.setBestStreak(user.getBestStreak());
+        dto.setCurrentStreak(
+        	    streakTrackerService.getCurrentStreak(user)
+        	);
+
+        	dto.setBestStreak(
+        	    streakTrackerService.getBestStreak(user.getId())
+        	);
+
 
         dto.setTaskStats(getTaskStats(user));
 

@@ -237,7 +237,8 @@ public class TaskService {
         task.setCompletedDateTime(LocalDateTime.now());
 
         // 2️⃣ streak
-        streakTrackerService.handleTaskCompletion(user);
+        streakTrackerService.evaluateToday(user, "TASK");
+
 
         // 3️⃣ XP
         xpService.handleTaskCompletion(user, task);

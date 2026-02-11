@@ -35,8 +35,9 @@ public class GoalController {
     // ✅ Utility: Get authenticated user
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepository.findByEmail(auth.getName())
+        return userRepository.findByUsername(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
     }
 
     // ✅ GET /goals — Filter goals by status and priority

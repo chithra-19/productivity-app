@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class XPService {
 
     private final UserRepository userRepository;
+    private final StreakTrackerService streakTrackerService;
 
     // ===== XP RULES (DAY 1) =====
     private static final int XP_PER_TASK = 10;
@@ -19,8 +20,10 @@ public class XPService {
     // Optional level system (kept dead simple)
     private static final int BASE_XP_FOR_LEVEL = 100;
 
-    public XPService(UserRepository userRepository) {
+    public XPService(UserRepository userRepository,
+    		StreakTrackerService streakTrackerService) {
         this.userRepository = userRepository;
+        this.streakTrackerService = streakTrackerService;
     }
 
     /**
@@ -34,9 +37,11 @@ public class XPService {
         int xpEarned = XP_PER_TASK;
 
         // 🔥 streak bonus (simple + visible impact)
-        if (user.getCurrentStreak() > 0) {
+        int streak = streakTrackerService.getCurrentStreak(user, task.getCategory());
+        if (streak > 0) {
             xpEarned += XP_PER_STREAK_DAY;
         }
+
 
         addXp(user, xpEarned);
     }
@@ -99,4 +104,9 @@ public class XPService {
 
         // Day 1: do nothing (but logic is interview gold)
     }
+
+	public int calculateXpProgress(User user) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

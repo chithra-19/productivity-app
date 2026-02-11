@@ -7,6 +7,7 @@ import com.climbup.mapper.UserMapper;
 import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.service.productivity.AchievementService;
+import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.user.UserService;
 import jakarta.validation.Valid;
 
@@ -23,11 +24,15 @@ public class UserController {
 
     private final UserService userService;
     private final AchievementService achievementService;
-
+    private final StreakTrackerService streakTrackerService;
+    
     @Autowired
-    public UserController(AchievementService achievementService, UserService userService) {
+    public UserController(AchievementService achievementService, 
+    		StreakTrackerService streakTrackerService,
+    		UserService userService) {
         this.achievementService = achievementService;
         this.userService = userService;
+        this.streakTrackerService = streakTrackerService;
     }
     
 
@@ -77,12 +82,16 @@ public class UserController {
     public ResponseEntity<UserStatsDTO> getStats(Principal principal) {
         User user = userService.findByUsername(principal.getName());
 
+        int currentStreak = streakTrackerService.getCurrentStreak(user);
+        int bestStreak = streakTrackerService.getBestStreak(user.getId());
+
         return ResponseEntity.ok(
             new UserStatsDTO(
-                user.getCurrentStreak(),
-                user.getBestStreak()
+                currentStreak,
+                bestStreak
             )
         );
+
     }
 
 

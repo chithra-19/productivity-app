@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
   <style>
@@ -126,13 +129,21 @@
 
 
 <script>
-  const token = localStorage.getItem('token');
+  
+	const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+	const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+	if (csrfToken && csrfHeader) {
+	  axios.defaults.headers.common[csrfHeader] = csrfToken;
+	}
+
+	axios.defaults.withCredentials = true;
 
   // Fetch and render all goals
   async function fetchGoals() {
     try {
       const status = document.getElementById('filter-status').value;
-      const res = await axios.get(`/goals?status=${status}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(`/goals?status=${status}`);
       renderGoals(res.data || []);
     } catch (err) {
       console.error('Error fetching goals:', err);
@@ -235,7 +246,7 @@
     };
 
     try {
-      await axios.post('/goals/save', newGoal, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post('/goals/save', newGoal);
       e.target.reset();
       fetchGoals();
     } catch (err) {
@@ -246,7 +257,7 @@
   // Complete goal (AJAX)
   async function completeGoal(id) {
     try {
-      await axios.put(`/goals/${id}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`/goals/${id}/complete`, {});
       // Remove card locally for instant feedback
       const btn = document.querySelector(`button[onclick]`) || null; // no inline onclicks anymore
       fetchGoals();
@@ -259,7 +270,7 @@
   // Drop goal
   async function dropGoal(id) {
     try {
-      await axios.put(`/goals/${id}/drop`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`/goals/${id}/drop`, {});
       fetchGoals();
     } catch (err) {
       console.error('Error dropping goal:', err);
@@ -292,9 +303,7 @@
     };
 
     try {
-      await axios.put(`/goals/${id}`, updatedGoal, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.put(`/goals/${id}`, updatedGoal);
 
       document.getElementById('edit-goal-container').style.display = 'none';
       fetchGoals();
@@ -308,9 +317,7 @@
   async function deleteGoal(id) {
 
     try {
-      await axios.delete(`/goals/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/goals/${id}`);
       fetchGoals();
     } catch (err) {
       alert("Delete failed. Please refresh and try again.");
@@ -331,3 +338,4 @@
 </script>
 </body>
 </html>
+

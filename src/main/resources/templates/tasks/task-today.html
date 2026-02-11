@@ -8,7 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-</head>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+	</head>
 
 <style>
 body {
@@ -359,14 +362,16 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
         const data = await res.json();
         if(res.ok) {
             // Update row dynamically without reload
-            const rows = document.querySelectorAll('tr');
-            rows.forEach(row => {
-                if(row.querySelector('.edit-btn').dataset.id == taskId) {
-                    row.querySelector('td:nth-child(1)').textContent = payload.title;
-                    row.querySelector('td:nth-child(2)').textContent = payload.description;
-                    row.querySelector('td:nth-child(3)').textContent = payload.category;
-                }
-            });
+			const rows = document.querySelectorAll('tbody tr');
+			rows.forEach(row => {
+			    const editBtn = row.querySelector('.edit-btn');
+			    if (editBtn && editBtn.dataset.id == taskId) {
+			        row.querySelector('td:nth-child(1)').textContent = payload.title;
+			        row.querySelector('td:nth-child(2)').textContent = payload.description;
+			        row.querySelector('td:nth-child(3)').textContent = payload.category;
+			    }
+			});
+
 
             bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
         } else {

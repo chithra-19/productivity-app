@@ -5,10 +5,13 @@ import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.repository.TaskRepository;
+import com.climbup.repository.UserRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,31 +23,31 @@ public class StreakTrackerService {
 
     private final StreakTrackerRepository streakTrackerRepository;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     public StreakTrackerService(StreakTrackerRepository streakTrackerRepository,
-                                TaskRepository taskRepository) {
+                                TaskRepository taskRepository,
+                                UserRepository userRepository) {
         this.streakTrackerRepository = streakTrackerRepository;
         this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
     }
 
     // 🔹 Evaluate streak for TODAY (call after task completion)
     @Transactional
     public void evaluateToday(User user, String category) {
 
-        LocalDate today = LocalDate.now();
+    	LocalDate today = LocalDate.now();
 
-        long totalTasks =
-                taskRepository.countByUserAndCategoryAndDueDate(user, category, today);
+    	LocalDateTime start = today.atStartOfDay();
+    	LocalDateTime end = today.plusDays(1).atStartOfDay();
 
-        // ❌ No tasks today → streak unchanged
-        if (totalTasks == 0) return;
+    	long completedTasks =
+    	    taskRepository.countByUserAndCategoryAndCompletedTrueAndCompletedDateTimeBetween(
+    	        user, category, start, end
+    	    );
 
-        long completedTasks =
-                taskRepository.countByUserAndCategoryAndDueDateAndCompletedTrue(
-                        user, category, today
-                );
-
-        boolean qualifiedToday = (totalTasks == completedTasks);
+    	boolean qualifiedToday = completedTasks > 0;
 
         StreakTracker tracker = streakTrackerRepository
                 .findByUserAndCategory(user, category)
@@ -164,34 +167,7 @@ public class StreakTrackerService {
                 .orElse(null); // or throw exception if preferred
     }
     
-
-    public void handleTaskCompletion(User user) {
-        LocalDate today = LocalDate.now();
-
-        resetWeeklyFreezeIfNeeded(user, today);
-
-        if (user.getLastActiveDate() == null) {
-            user.setCurrentStreak(1);
-        } else {
-            long gap = ChronoUnit.DAYS.between(user.getLastActiveDate(), today);
-
-            if (gap == 0) {
-                return; // same day, ignore
-            }
-
-            if (gap == 1) {
-                user.setCurrentStreak(user.getCurrentStreak() + 1);
-            } else {
-                if (user.getAvailableFreezes() > 0) {
-                    user.setAvailableFreezes(0); // consume freeze
-                } else {
-                    user.setCurrentStreak(1); // reset streak
-                }
-            }
-        }
-
-        user.setLastActiveDate(today);
-    }
+  
 
     private void resetWeeklyFreezeIfNeeded(User user, LocalDate today) {
         if (user.getLastFreezeResetDate() == null ||
