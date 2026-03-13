@@ -46,7 +46,7 @@ class AuthControllerTest {
     @Test
     void testProcessRegisterSuccess() throws Exception {
         when(userService.registerUser(any(UserRequestDTO.class)))
-            .thenReturn(new User("newuser", "newuser@test.com", "newpass"));
+            .thenReturn(new User( "newuser@test.com", "newpass"));
 
         mockMvc.perform(post("/auth/register")
                 .param("userDTO.username", "newuser")

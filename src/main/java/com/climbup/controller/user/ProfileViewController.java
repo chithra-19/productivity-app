@@ -3,6 +3,7 @@ package com.climbup.controller.user;
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.response.ProfileResponseDTO;
 import com.climbup.model.ActivityLog;
+import com.climbup.model.Badge;
 import com.climbup.model.User;
 import com.climbup.service.productivity.*;
 import com.climbup.service.task.TaskService;
@@ -11,7 +12,6 @@ import com.climbup.service.user.UserService;
 
 import jakarta.validation.Valid;
 
-import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +28,12 @@ public class ProfileViewController {
     private final ProfileService profileService;
 
     @Autowired private UserService userService;
-   
     @Autowired private TaskService taskService;
     @Autowired private FocusSessionService focusService;
     @Autowired private StreakTrackerService streakService;
-    
+    @Autowired private XPService xpService;
+    @Autowired private BadgeService badgeService;
+    @Autowired private ActivityLogService activityLogService;
 
     public ProfileViewController(ProfileService profileService) {
         this.profileService = profileService;
@@ -41,6 +42,7 @@ public class ProfileViewController {
     // -----------------------------------------------------------
     // VIEW PROFILE
     // -----------------------------------------------------------
+  
     @GetMapping("/{userId}")
     public String showProfile(@PathVariable Long userId, Model model) {
 
@@ -49,9 +51,23 @@ public class ProfileViewController {
             return "redirect:/dashboard?error=user_not_found";
         }
 
+        // Fetch profile DTO
         ProfileResponseDTO profile = profileService.getProfile(userId);
 
-        // Preload data for UI
+        // ----------------- Dynamic stats -----------------
+        int currentStreak = streakService.getCurrentStreak(user);
+        int bestStreak = streakService.getBestStreak(userId);
+        int completedTasks = taskService.countCompletedTasks(userId);
+        int productivityScore = profile.getProductivityScore(); // optional
+
+        // XP & Level
+        long currentXP = xpService.getCurrentXP(userId);
+        int level = xpService.calculateLevel((int) currentXP);
+        int xpPercentage = xpService.getProgressToNextLevel(currentXP);
+
+        // --------------------------------------------------
+
+        // DTO for form binding
         ProfileRequestDTO dto = new ProfileRequestDTO();
         dto.setFirstName(profile.getFirstName());
         dto.setLastName(profile.getLastName());
@@ -59,22 +75,32 @@ public class ProfileViewController {
         dto.setBio(profile.getBio());
         dto.setProfilePictureUrl(profile.getProfilePictureUrl());
 
-        int streak = streakService.getCurrentStreak(user);
-        int completedTasks = taskService.countCompletedTasks(userId);
-        int focusMinutes = focusService.getTotalFocusMinutes(user);
-        int productivityScore = profile.getProductivityScore();
+        // Badges
+        List<Badge> badges = badgeService.getBadgesForUser(user);
 
-        
-        model.addAttribute("profile", profile);
+        // Recent activities
+        List<ActivityLog> recentActivities = activityLogService.getRecentActivities(user);
+
+        // --------- Add all to model ---------
+        model.addAttribute("profile", profile); // basic info
         model.addAttribute("profileRequestDTO", dto);
 
-        model.addAttribute("streak", streak);
+        model.addAttribute("currentStreak", currentStreak);
+        model.addAttribute("bestStreak", bestStreak);
         model.addAttribute("completedTasks", completedTasks);
-        model.addAttribute("focusMinutes", focusMinutes);
         model.addAttribute("productivityScore", productivityScore);
 
-     
-        model.addAttribute("editMode", false); // NORMAL VIEW MODE
+        model.addAttribute("level", level);
+        model.addAttribute("currentXP", currentXP);
+        model.addAttribute("xpForNextLevel", xpService.getProgressToNextLevel(currentXP));
+        model.addAttribute("xpPercentage", xpPercentage);
+
+        model.addAttribute("badges", badges);
+        model.addAttribute("badgesCount", badges.size());
+        model.addAttribute("recentActivities", recentActivities);
+
+        model.addAttribute("editMode", false);
+
         return "profile";
     }
 
@@ -95,13 +121,13 @@ public class ProfileViewController {
 
         model.addAttribute("profileRequestDTO", dto);
         model.addAttribute("userId", userId);
-        model.addAttribute("editMode", true); // ENABLE EDIT MODE
+        model.addAttribute("editMode", true);
 
-        return "profile";  // same HTML but in edit mode
+        return "profile";
     }
 
     // -----------------------------------------------------------
-    // UPDATE PROFILE ACTION
+    // UPDATE PROFILE
     // -----------------------------------------------------------
     @PostMapping("/{userId}/update")
     public String updateProfile(@PathVariable Long userId,
@@ -111,7 +137,6 @@ public class ProfileViewController {
                                 Model model) {
 
         if (result.hasErrors()) {
-            // reload edit mode with errors
             model.addAttribute("editMode", true);
             model.addAttribute("userId", userId);
             return "profile";
@@ -126,7 +151,4 @@ public class ProfileViewController {
 
         return "redirect:/dashboard/profile/" + userId + "?updated=true";
     }
-    
-   
-
 }

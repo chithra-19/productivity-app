@@ -1,7 +1,9 @@
 package com.climbup.dto.request;
 
 import com.climbup.model.Goal.Priority;
-import com.climbup.model.Goal.GoalStatus;
+import com.climbup.model.GoalStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -18,13 +20,12 @@ public class GoalRequestDTO {
     private String description;
 
     @FutureOrPresent(message = "Due date must be today or in the future")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dueDate;
 
     private GoalStatus status = GoalStatus.ACTIVE;
 
     private Priority priority = Priority.MEDIUM;
-
-    private int progress = 0;
 
     // ===== Getters & Setters =====
     public String getTitle() { return title; }
@@ -41,7 +42,4 @@ public class GoalRequestDTO {
 
     public Priority getPriority() { return priority; }
     public void setPriority(Priority priority) { this.priority = priority; }
-
-    public int getProgress() { return progress; }
-    public void setProgress(int progress) { this.progress = progress; }
 }

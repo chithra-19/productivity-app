@@ -52,7 +52,7 @@ public class StreakTrackerControllerTest {
 
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
+        
 
         testStreak = new StreakTracker();
         testStreak.setId(1L);

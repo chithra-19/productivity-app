@@ -72,6 +72,7 @@
               </select>
             </div>
           </div>
+		
           <button class="btn btn-primary w-100" type="submit">Add Goal</button>
         </form>
       </div>
@@ -84,7 +85,7 @@
         <option value="ALL" selected>All</option>
         <option value="ACTIVE">Active</option>
         <option value="COMPLETED">Completed</option>
-        <option value="DROPPED">Dropped</option>
+
       </select>
     </div>
 
@@ -121,15 +122,16 @@
           <option value="HIGH">High</option>
         </select>
       </div>
-
-      <button class="btn btn-primary w-100 mt-2" type="submit">Save Changes</button>
-      <button class="btn btn-secondary w-100 mt-2" type="button" id="cancel-edit">Cancel</button>
-    </form>
-  </div>
+	  <div class="mt-3">
+	    <button type="submit" class="btn btn-primary">Save Changes</button>
+	    <button type="button" class="btn btn-secondary" id="cancel-edit-goal">Cancel</button>
+	  </div>
+	  
 
 
 <script>
   
+	let latestGoals = [];
 	const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
 	const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
 
@@ -140,16 +142,22 @@
 	axios.defaults.withCredentials = true;
 
   // Fetch and render all goals
+  // Fetch and render all goals
   async function fetchGoals() {
     try {
       const status = document.getElementById('filter-status').value;
-      const res = await axios.get(`/goals?status=${status}`);
-      renderGoals(res.data || []);
+      const priority = "ALL";
+      const res = await axios.get(`/api/goals?status=${status}&priority=${priority}`);
+
+      latestGoals = Array.isArray(res.data) ? res.data : []; // ✅ store globally
+      renderGoals(latestGoals);
     } catch (err) {
       console.error('Error fetching goals:', err);
-      document.getElementById('goal-list').innerHTML = `<p class="text-center text-muted">Failed to load goals.</p>`;
+      document.getElementById('goal-list').innerHTML =
+        `<p class="text-center text-muted">Failed to load goals.</p>`;
     }
   }
+
 
   // Render goals (creates DOM elements + safe event handlers)
   function renderGoals(goals) {
@@ -163,8 +171,15 @@
 
     goals.forEach(goal => {
       const goalId = goal.id;
-      const badgeClass = goal.completed ? 'success' : goal.dropped ? 'danger' : 'primary';
-      const badgeText = goal.completed ? 'Completed' : goal.dropped ? 'Dropped' : 'Active';
+      const badgeClass =
+        goal.status === 'COMPLETED' ? 'success' :
+        goal.status === 'DROPPED' ? 'danger' :
+        'primary';
+
+      const badgeText =
+        goal.status === 'COMPLETED' ? 'Completed' :
+        goal.status === 'DROPPED' ? 'Dropped' :
+        'Active';
 
       const col = document.createElement('div');
       col.className = 'col-md-6';
@@ -188,35 +203,39 @@
       small.className = 'text-muted';
       small.textContent = `📅 Due: ${goal.dueDate || 'N/A'} | ⚡ Priority: ${goal.priority || 'Medium'}`;
 
+
       const actions = document.createElement('div');
       actions.className = 'mt-3 d-flex flex-wrap gap-2 action-buttons';
 
-      // Complete / Drop buttons only if active
-      if (!goal.completed && !goal.dropped) {
+      if (goal.status === 'ACTIVE') {
+		 
+		
         const completeBtn = document.createElement('button');
         completeBtn.className = 'btn btn-success btn-sm';
         completeBtn.type = 'button';
         completeBtn.textContent = '✅ Complete';
         completeBtn.addEventListener('click', () => completeGoal(goalId));
         actions.appendChild(completeBtn);
-
-        const dropBtn = document.createElement('button');
-        dropBtn.className = 'btn btn-warning btn-sm';
-        dropBtn.type = 'button';
-        dropBtn.textContent = '🛑 Drop';
-        dropBtn.addEventListener('click', () => dropGoal(goalId));
-        actions.appendChild(dropBtn);
       }
 
-      // Edit button — opens inline edit form
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn btn-secondary btn-sm';
-      editBtn.type = 'button';
-      editBtn.textContent = '✏️ Edit';
-      editBtn.addEventListener('click', () => showEditForm(goalId, goal.title || '', goal.description || '', goal.dueDate || '', goal.priority || 'MEDIUM'));
-      actions.appendChild(editBtn);
-
-      // Delete button
+	  // Edit button — opens inline edit form
+	  const editBtn = document.createElement('button');
+	  editBtn.className = 'btn btn-secondary btn-sm';
+	  editBtn.type = 'button';
+	  editBtn.textContent = '✏️ Edit';
+	  editBtn.addEventListener('click', () => {
+	    // ✅ Only pass the basic fields
+	    showEditForm(
+	      goalId,
+	      goal.title || '',
+	      goal.description || '',
+	      goal.dueDate || '',
+	      goal.priority || 'MEDIUM'
+	    );
+	  });
+	  actions.appendChild(editBtn);
+	  
+	  
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'btn btn-danger btn-sm';
       deleteBtn.type = 'button';
@@ -238,17 +257,42 @@
   // Add new goal
   document.getElementById('add-goal-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newGoal = {
-      title: document.getElementById('goal-title').value,
-      description: document.getElementById('goal-description').value,
-      dueDate: document.getElementById('goal-due-date').value,
-      priority: document.getElementById('goal-priority').value
-    };
+
+    const title = document.getElementById('goal-title').value;
+    const description = document.getElementById('goal-description').value;
+    const dueDate = document.getElementById('goal-due-date').value;
+    const priority = document.getElementById('goal-priority').value;
+
+    // ✅ Date format validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+      alert("Please enter a valid date in YYYY-MM-DD format.");
+      return;
+    }
+
+    // ✅ Future-or-present check
+    const today = new Date().toISOString().split("T")[0];
+    if (dueDate < today) {
+      alert("Due date must be today or in the future.");
+      return;
+    }
+
+    const newGoal = { title, description, dueDate, priority };
+    console.log("Payload:", newGoal);
 
     try {
-      await axios.post('/goals/save', newGoal);
+      const res = await axios.post('/api/goals/save', newGoal);
+      const savedGoal = res.data;
       e.target.reset();
-      fetchGoals();
+
+      latestGoals.push(savedGoal);
+
+      const currentStatus = document.getElementById('filter-status').value;
+      let filteredGoals = latestGoals;
+      if (currentStatus !== "ALL") {
+        filteredGoals = latestGoals.filter(g => g.status === currentStatus);
+      }
+
+      renderGoals(filteredGoals);
     } catch (err) {
       console.error('Error adding goal:', err);
     }
@@ -257,68 +301,79 @@
   // Complete goal (AJAX)
   async function completeGoal(id) {
     try {
-      await axios.put(`/goals/${id}/complete`, {});
-      // Remove card locally for instant feedback
-      const btn = document.querySelector(`button[onclick]`) || null; // no inline onclicks anymore
-      fetchGoals();
+      const res = await axios.put(`/api/goals/${id}/complete`, {});
+      const updatedGoal = res.data;
+
+      // Update local array
+      latestGoals = latestGoals.map(g => g.id === id ? updatedGoal : g);
+      renderGoals(latestGoals);
+
       if (window.updateAchievements) window.updateAchievements();
     } catch (err) {
       console.error('Error completing goal:', err);
     }
   }
 
-  // Drop goal
-  async function dropGoal(id) {
-    try {
-      await axios.put(`/goals/${id}/drop`, {});
-      fetchGoals();
-    } catch (err) {
-      console.error('Error dropping goal:', err);
-    }
-  }
-
   // Show inline edit form and populate fields
   function showEditForm(id, title, desc, dueDate, priority) {
+    // ✅ Find the goal object from the latestGoals array
+    const goal = latestGoals.find(g => g.id === id);
+    if (!goal) {
+      console.error("Goal not found for editing:", id);
+      return;
+    }
+
+    // Fill in the edit form fields
     document.getElementById('edit-goal-id').value = id;
     document.getElementById('edit-goal-title').value = title;
     document.getElementById('edit-goal-description').value = desc;
     document.getElementById('edit-goal-due-date').value = dueDate || "";
     document.getElementById('edit-goal-priority').value = priority || "MEDIUM";
 
+   
+    // Show the edit form container
     document.getElementById('edit-goal-container').style.display = 'block';
-    window.scrollTo({ top: document.getElementById('edit-goal-container').offsetTop - 20, behavior: 'smooth' });
+    window.scrollTo({
+      top: document.getElementById('edit-goal-container').offsetTop - 20,
+      behavior: 'smooth'
+    });
   }
 
   // Submit edit form
   document.getElementById('edit-goal-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const id = document.getElementById('edit-goal-id').value;
 
-    const updatedGoal = {
-      title: document.getElementById('edit-goal-title').value,
-      description: document.getElementById('edit-goal-description').value,
-      dueDate: document.getElementById('edit-goal-due-date').value,
-      priority: document.getElementById('edit-goal-priority').value
-    };
+	const updatedGoal = {
+	  title: document.getElementById('edit-goal-title').value,
+	  description: document.getElementById('edit-goal-description').value,
+	  dueDate: document.getElementById('edit-goal-due-date').value,
+	  priority: document.getElementById('edit-goal-priority').value,
+	 };
 
     try {
-      await axios.put(`/goals/${id}`, updatedGoal);
+      const res = await axios.put(`/api/goals/${id}`, updatedGoal);
+      const savedGoal = res.data;
+
+      // Update local array
+	  await fetchGoals(); // ✅ Re-fetch from backend
+	  if (window.updateAchievements) window.updateAchievements();
 
       document.getElementById('edit-goal-container').style.display = 'none';
-      fetchGoals();
     } catch (err) {
       console.error('Error updating goal:', err);
     }
+	
+	window.lastEditedGoalId = id;
   });
 
 
   // Delete goal (keeps confirmation)
   async function deleteGoal(id) {
-
     try {
-      await axios.delete(`/goals/${id}`);
-      fetchGoals();
+      await axios.delete(`/api/goals/${id}`);
+      latestGoals = latestGoals.filter(g => g.id !== id); // remove locally
+      renderGoals(latestGoals);
     } catch (err) {
       alert("Delete failed. Please refresh and try again.");
       console.error(err);

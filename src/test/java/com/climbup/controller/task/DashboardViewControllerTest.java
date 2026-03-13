@@ -42,7 +42,7 @@ public class DashboardViewControllerTest {
     void setUp() {
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
+        
     }
 
     @Test

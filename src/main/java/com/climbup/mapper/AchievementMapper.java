@@ -36,8 +36,11 @@ public class AchievementMapper {
                         ? achievement.getUser().getId()
                         : null
         );
+        dto.setRelatedGoalId(
+        	    achievement.getGoal() != null ? achievement.getGoal().getId() : null
+        	);
 
-        dto.setProgressPercent(calculateProgressPercent(achievement));
+        
 
         return dto;
     }

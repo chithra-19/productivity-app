@@ -91,13 +91,22 @@
         <h4 class="mb-3">Your Progress</h4>
         <div class="row text-center g-3">
 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-fire-fill text-danger fs-2"></i>
-              <h5 th:text="${streak}">0</h5>
-              <small>Days Streak</small>
-            </div>
-          </div>
+			<div class="col-md-3 col-6">
+			  <div class="stat-card p-3 rounded shadow-sm">
+			    <i class="bi bi-fire-fill text-danger fs-2"></i>
+			    <h5 th:text="${currentStreak}">0</h5>
+			    <small>Current Streak</small>
+			  </div>
+			</div>
+
+			<div class="col-md-3 col-6">
+			  <div class="stat-card p-3 rounded shadow-sm">
+			    <i class="bi bi-trophy-fill text-warning fs-2"></i>
+			    <h5 th:text="${bestStreak}">0</h5>
+			    <small>Best Streak</small>
+			  </div>
+			</div>
+
 
           <div class="col-md-3 col-6">
             <div class="stat-card p-3 rounded shadow-sm">
@@ -123,32 +132,68 @@
             </div>
           </div>
 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-award-fill text-warning fs-2"></i>
-              <h5 th:text="${badgesCount}">0</h5>
-              <small>Achievements</small>
-              <div class="badges mt-2 d-flex justify-content-center flex-wrap gap-2">
-                <img th:each="badge : ${badges}" 
-                     th:src="${badge.imageUrl}" 
-                     th:alt="${badge.name}" 
-                     th:title="${badge.name}" 
-                     class="badge-img">
-              </div>
-            </div>
-          </div>
+		  <div class="col-md-3 col-6">
+		    <div class="stat-card p-3 rounded shadow-sm">
+		      <i class="bi bi-award-fill text-warning fs-2"></i>
+		      <h5 th:text="${badgesCount}">0</h5>
+		      <small>Achievements</small>
+
+		      <!-- Achievements grid -->
+		      <div class="badges mt-2 d-flex flex-wrap gap-2 justify-content-center">
+		        <div th:each="badge : ${badges}" class="badge-item position-relative" 
+		             th:title="${badge.name}" style="cursor:pointer;">
+		          <img th:src="${badge.imageUrl}" th:alt="${badge.name}" class="badge-img rounded-circle shadow-sm" 
+		               style="width:40px; height:40px; object-fit:cover;">
+		          <!-- Optional: overlay on hover -->
+		          <div class="badge-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+		               style="background:rgba(0,0,0,0.5); color:#fff; font-size:0.8rem; opacity:0; transition:0.2s;">
+		            <span th:text="${badge.name}"></span>
+		          </div>
+		        </div>
+		      </div>
+		    </div>
+		  </div>
+
 
         </div>
       </div>
+
+	  <div class="xp-section mb-4">
+	    <h4 class="mb-3">Level Progress</h4>
+
+	    <div class="stat-card p-4 text-center">
+	      <h5>Level <span th:text="${level}">1</span></h5>
+	      <div class="progress mt-3" style="height:8px;">
+	        <div class="progress-bar bg-primary"
+	             role="progressbar"
+	             th:style="'width:' + ${xpPercentage} + '%'"
+	             th:attr="aria-valuenow=${xpPercentage}"
+	             aria-valuemin="0"
+	             aria-valuemax="100">
+	        </div>
+	      </div>
+	      <small th:text="${currentXP} + ' / ' + ${xpForNextLevel} + ' XP'">
+	        0 / 100 XP
+	      </small>
+	    </div>
+	  </div>
 
       <!-- Timeline Section -->
       <div class="timeline-section mb-4">
         <h4 class="mb-3">Recent Activity</h4>
         <ul class="timeline list-unstyled">
-          <li th:each="activity : ${recentActivities}">
-            <span class="time" th:text="${activity.activityDate}">Date</span>
-            <span class="event" th:text="${activity.description}">Event description</span>
-          </li>
+			<li th:each="activity : ${recentActivities}" class="mb-3">
+			  <div class="d-flex align-items-start gap-3">
+			    <i class="bi bi-clock-history text-primary fs-5"></i>
+			    <div>
+			      <div class="fw-semibold" th:text="${activity.description}">Event</div>
+			      <small class="text-muted" th:text="${activity.activityDate}">
+			        Date
+			      </small>
+			    </div>
+			  </div>
+			</li>
+
         </ul>
       </div>
 

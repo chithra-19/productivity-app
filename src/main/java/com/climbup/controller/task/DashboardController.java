@@ -1,6 +1,7 @@
 package com.climbup.controller.task;
 
 import com.climbup.dto.request.FocusSessionRequestDTO;
+import com.climbup.dto.request.GoalRequestDTO;
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.ActivityDTO;
@@ -128,13 +129,39 @@ public class DashboardController {
         return "dashboard";
     }
    
-   
-
     @GetMapping("/goals")
-    public String showGoalsPage(HttpServletRequest request, Model model) {
+    public String showGoalsPage(@AuthenticationPrincipal UserDetails springUser,
+                                HttpServletRequest request,
+                                Model model) {
+
+        User user = userService.getUserWithAllData(springUser.getUsername());
+
+        model.addAttribute("goals", goalService.getGoalsForUser(user));
+        model.addAttribute("goal", new GoalRequestDTO()); // form binding
         model.addAttribute("currentPath", request.getRequestURI());
+
         return "goals";
     }
+    
+    @PostMapping("/goals/save")
+    public String saveGoal(@ModelAttribute GoalRequestDTO dto,
+                           @AuthenticationPrincipal UserDetails springUser) {
+
+        User user = userService.findByEmail(springUser.getUsername());
+
+        Goal goal = new Goal();
+        goal.setTitle(dto.getTitle());
+        goal.setDescription(dto.getDescription());
+        goal.setDueDate(dto.getDueDate());
+        goal.setPriority(dto.getPriority());
+        goal.setStatus(dto.getStatus());
+        goal.setUser(user);
+
+        goalService.saveGoal(goal);
+
+        return "redirect:/dashboard/goals";
+    }
+   
 
     @GetMapping("/streaks")
     public String showStreaksPage(HttpServletRequest request, Model model) {
@@ -242,7 +269,7 @@ public class DashboardController {
 
     @GetMapping("/activities")
     public ResponseEntity<List<ActivityDTO>> getActivities(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         List<ActivityDTO> activities = activityService.getRecentActivities(user); // Already DTOs
         return ResponseEntity.ok(activities);
     }

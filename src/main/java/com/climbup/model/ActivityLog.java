@@ -7,116 +7,132 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "activity_log")
+@Table(
+    name = "activity_log",
+    indexes = {
+        @Index(name = "idx_user_date", columnList = "user_id, activityDate"),
+        @Index(name = "idx_activity_type", columnList = "type")
+    }
+)
 public class ActivityLog {
 
-
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ---------- User Relation ----------
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // e.g. TASK_COMPLETED, STREAK_UPDATED, ACHIEVEMENT_UNLOCKED
+    // ---------- Activity Type (SAFE ENUM) ----------
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String type;
+    private ActivityType type;
 
-	private Integer taskCount = 0;      // 🔥 add this
-    private Integer focusMinutes = 0;  
-  
+    // ---------- Metrics ----------
+    @Column(nullable = false)
+    private Integer taskCount = 0;
 
-	@Column(nullable = true)
+    @Column(nullable = false)
+    private Integer focusMinutes = 0;
+
+    // Optional categorization (e.g., WORK, FITNESS, STUDY)
+    @Column(length = 100)
     private String category;
 
-
-    // Human-friendly text: "Completed task: Build Profile Page"
+    // Human-readable description
     @Column(nullable = false, length = 255)
     private String description;
 
-    // Date when activity happened
+    // Business date of activity
     @Column(nullable = false)
     private LocalDate activityDate;
 
+    // Auto timestamp when record inserted
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(updatable = false, nullable = false)
     private LocalDateTime loggedAt;
 
-    // --- getters & setters ---
-    
-    
+    // ---------- Constructors ----------
+
+    public ActivityLog() {
+    }
+
+    public ActivityLog(User user,
+                       ActivityType type,
+                       String description,
+                       LocalDate activityDate) {
+        this.user = user;
+        this.type = type;
+        this.description = description;
+        this.activityDate = activityDate;
+    }
+
+    // ---------- Getters & Setters ----------
 
     public Long getId() {
-		return id;
-	}
+        return id;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public User getUser() {
+        return user;
+    }
 
-	public User getUser() {
-		return user;
-	}
+    public void setUser(User user) {
+        this.user = user;
+    }
 
-	public void setUser(User user) {
-		this.user = user;
-	}
+    public ActivityType getType() {
+        return type;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public void setType(ActivityType type) {
+        this.type = type;
+    }
 
-	public void setType(String type) {
-		this.type = type;
-	}
+    public Integer getTaskCount() {
+        return taskCount;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public void setTaskCount(Integer taskCount) {
+        this.taskCount = taskCount;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public Integer getFocusMinutes() {
+        return focusMinutes;
+    }
 
-	public LocalDate getActivityDate() {
-		return activityDate;
-	}
+    public void setFocusMinutes(Integer focusMinutes) {
+        this.focusMinutes = focusMinutes;
+    }
 
-	public void setActivityDate(LocalDate activityDate) {
-		this.activityDate = activityDate;
-	}
+    public String getCategory() {
+        return category;
+    }
 
-	public LocalDateTime getLoggedAt() {
-		return loggedAt;
-	}
+    public void setCategory(String category) {
+        this.category = category;
+    }
 
-	public void setLoggedAt(LocalDateTime loggedAt) {
-		this.loggedAt = loggedAt;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	  public String getCategory() {
-			return category;
-		}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-		public void setCategory(String category) {
-			this.category = category;
-		}
-	    
-	    public Integer getTaskCount() {
-			return taskCount;
-		}
+    public LocalDate getActivityDate() {
+        return activityDate;
+    }
 
-		public void setTaskCount(Integer taskCount) {
-			this.taskCount = taskCount;
-		}
+    public void setActivityDate(LocalDate activityDate) {
+        this.activityDate = activityDate;
+    }
 
-		public Integer getFocusMinutes() {
-			return focusMinutes;
-		}
-
-		public void setFocusMinutes(Integer focusMinutes) {
-			this.focusMinutes = focusMinutes;
-		}
-
+    public LocalDateTime getLoggedAt() {
+        return loggedAt;
+    }
+   
 }

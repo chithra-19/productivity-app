@@ -3,6 +3,8 @@ package com.climbup.repository;
 import com.climbup.model.Achievement;
 import com.climbup.model.User;
 import com.climbup.model.Achievement.AchievementCode;
+import com.climbup.model.Goal;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -27,4 +29,8 @@ public interface AchievementRepository extends JpaRepository<Achievement, Long> 
 
     // Count by user (used for initialization)
     long countByUser(User user);
+    
+    boolean existsByUserAndGoal(User user, Goal goal);
+    
+    Optional<Achievement> findByUserAndGoal(User user, Goal goal);
 }

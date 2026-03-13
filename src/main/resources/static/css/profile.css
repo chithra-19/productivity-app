@@ -1,199 +1,207 @@
-/* ================== Base Styling ================== */
-body {
+/* ================== GLOBAL ================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
     font-family: 'Inter', sans-serif;
     background: #f4f6f8;
     color: #222;
-    padding: 2rem 1rem;
 }
 
 .container {
     max-width: 1250px;
+    padding: 2rem 1rem;
 }
 
-/* ================== Left & Right Layout ================== */
-.profile-left,
-.profile-right {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
+/* ================== PROFILE CARD ================== */
 
-/* Make sure stats row wraps clean */
-.stats-section .row {
-    row-gap: 1.5rem;
-}
-
-/* ================== Profile Card ================== */
 .profile-card {
-    background: #fff;
+    background: #ffffff;
     padding: 2rem;
     border-radius: 18px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-    width: 100%;
-}
-
-/* ================== Profile Photo ================== */
-.profile-photo-wrapper {
-    position: relative;
-    width: 165px;
-    height: 165px;
-    margin: auto;
-}
-
-.profile-photo-wrapper::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    padding: 5px;
-    background: linear-gradient(135deg, #6a9bff, #9f7bff);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-}
-
-.profile-photo {
-    width: 165px;
-    height: 165px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 5px solid #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     transition: 0.25s ease;
 }
 
-.profile-photo:hover {
+.profile-card:hover {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+}
+
+/* ================== PROFILE PICTURE ================== */
+
+.profile-pic-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.profile-pic {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    transition: 0.3s ease;
+}
+
+.profile-pic-container:hover .profile-pic {
     transform: scale(1.05);
 }
 
-.edit-photo-badge {
+.overlay {
     position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background: #4d8cff;
-    color: #fff;
-    padding: 10px;
+    inset: 0;
     border-radius: 50%;
-    cursor: pointer;
-    display: none;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: 0.3s ease;
 }
 
-/* ================== Stat Cards ================== */
+.profile-pic-container:hover .overlay {
+    opacity: 1;
+}
+
+/* ================== STAT CARDS ================== */
+
 .stat-card {
     background: #fff;
-    border-radius: 15px;
+    border-radius: 16px;
     padding: 1.5rem 1rem;
+    transition: 0.25s ease;
     height: 100%;
-    transition: 0.2s ease;
-    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12);
 }
 
-.stat-card i {
-    margin-bottom: 10px;
+.stat-card h5 {
+    margin-top: 0.75rem;
+    font-weight: 600;
 }
 
-/* ================== Badges ================== */
+.stat-card small {
+    color: #666;
+}
+
+/* ================== BADGES ================== */
+
 .badge-img {
-    width: 35px;
-    height: 35px;
-    transition: 0.2s;
+    width: 32px;
+    height: 32px;
+    transition: 0.2s ease;
 }
 
 .badge-img:hover {
     transform: scale(1.2);
 }
 
-/* ================== Timeline ================== */
+/* ================== TIMELINE ================== */
+
+.timeline {
+    padding-left: 0;
+    margin: 0;
+}
+
 .timeline li {
-    padding: 12px 0;
+    position: relative;
+    padding: 12px 0 12px 25px;
     border-left: 2px solid #4d8cff;
     margin-left: 15px;
-    position: relative;
 }
 
 .timeline li::before {
     content: "";
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
+    width: 12px;
+    height: 12px;
     background: #4d8cff;
+    border-radius: 50%;
     position: absolute;
     left: -7px;
-    top: 10px;
+    top: 18px;
 }
 
 .timeline .time {
+    display: block;
     font-size: 0.8rem;
-    color: #666;
+    color: #777;
 }
 
 .timeline .event {
     font-size: 0.95rem;
 }
 
-/* ================== Responsive Behavior ================== */
+/* ================== THEME TOGGLE ================== */
 
-/* 🔥 For Large Tablets & Small Laptops */
-@media (max-width: 1200px) {
-    .stat-card {
-        padding: 1.25rem 0.75rem;
-    }
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-/* 🔥 For Tablets (<992px) */
+.badge-item:hover .badge-overlay {
+    opacity: 1;
+    border-radius: 50%;
+}
+
+.badge-img {
+    transition: transform 0.2s;
+}
+
+.badge-item:hover .badge-img {
+    transform: scale(1.2);
+}
+
+
+/* ================== RESPONSIVE FIXES ================== */
+
 @media (max-width: 992px) {
-    body {
-        padding: 1rem;
-    }
-
-    .profile-photo-wrapper {
-        width: 140px;
-        height: 140px;
-    }
-
-    .profile-photo {
-        width: 140px;
-        height: 140px;
-    }
 
     .profile-card {
         padding: 1.5rem;
     }
+
+    .profile-pic-container {
+        width: 140px;
+        height: 140px;
+    }
 }
 
-/* 🔥 For Small Tablets (<768px) */
 @media (max-width: 768px) {
+
+    .profile-pic-container {
+        width: 120px;
+        height: 120px;
+    }
+
     .stat-card {
         padding: 1rem;
     }
 
-    .profile-photo-wrapper {
-        width: 120px;
-        height: 120px;
-    }
-
-    .profile-photo {
-        width: 120px;
-        height: 120px;
-    }
-
-    .timeline li {
-        margin-left: 10px;
-    }
-}
-
-/* 🔥 Mobile (<576px) */
-@media (max-width: 576px) {
     .stat-card h5 {
         font-size: 1.1rem;
     }
+}
 
-    .stat-card i {
-        font-size: 1.6rem;
+@media (max-width: 576px) {
+
+    .container {
+        padding: 1.5rem 1rem;
     }
 
     .profile-card {
@@ -201,6 +209,9 @@ body {
     }
 
     .timeline li {
-        padding-left: 5px;
+        margin-left: 10px;
+        padding-left: 18px;
     }
+	
+	
 }

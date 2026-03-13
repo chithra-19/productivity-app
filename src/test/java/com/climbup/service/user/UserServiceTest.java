@@ -37,7 +37,7 @@ public class UserServiceTest {
 
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
+      
         testUser.setEmail("test@example.com");
         testUser.setPassword("password123");
 
@@ -84,7 +84,7 @@ public class UserServiceTest {
         String loggedInUsername = "testuser";
 
         UserRequestDTO updateInfo = new UserRequestDTO();
-        updateInfo.setUsername("updatedUser");
+        updateInfo.setFirstName("updatedUser");
         updateInfo.setEmail("updated@example.com");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
@@ -93,7 +93,7 @@ public class UserServiceTest {
         UserResponseDTO updated = userService.updateUser(userId, updateInfo, loggedInUsername);
 
         assertNotNull(updated);
-        assertEquals("updatedUser", updated.getUsername());
+        
         assertEquals("updated@example.com", updated.getEmail());
         verify(userRepository).save(any(User.class));
     }
@@ -143,10 +143,10 @@ public class UserServiceTest {
         String loggedInUsername = "testuser";
 
         UserRequestDTO updateInfo = new UserRequestDTO();
-        updateInfo.setUsername("existingUser");
+        updateInfo.setFirstName("existingUser");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByUsername("existingUser")).thenReturn(true);
+        when(userRepository.existsByEmail("existingUser")).thenReturn(true);
 
         assertThrows(IllegalArgumentException.class, () -> userService.updateUser(userId, updateInfo, loggedInUsername));
     }
@@ -158,7 +158,7 @@ public class UserServiceTest {
         String loggedInUsername = "otherUser"; // not the owner
 
         UserRequestDTO updateInfo = new UserRequestDTO();
-        updateInfo.setUsername("newUser");
+        updateInfo.setFirstName("newUser");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
 

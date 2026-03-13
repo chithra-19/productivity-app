@@ -11,7 +11,7 @@ public class UserMapper {
 
         return new UserResponseDTO(
                 user.getId(),
-                user.getUsername(),
+                user.getFirstName(),
                 user.getEmail()
         );
     }
@@ -20,7 +20,7 @@ public class UserMapper {
         if (dto == null) return null;
 
         User user = new User();
-        user.setUsername(dto.getUsername());
+        user.setFirstName(dto.getFirstName());
         user.setEmail(dto.getEmail());
         user.setPassword(dto.getPassword()); // hashed in UserService
         return user;

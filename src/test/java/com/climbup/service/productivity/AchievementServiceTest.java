@@ -28,7 +28,7 @@ class AchievementServiceTest {
         achievementRepository = mock(AchievementRepository.class);
         achievementService = new AchievementService(achievementRepository, null, null);
 
-        testUser = new User("testuser", "test@example.com", "password");
+        testUser = new User("test@example.com", "password");
         testUser.setId(1L);
     }
 

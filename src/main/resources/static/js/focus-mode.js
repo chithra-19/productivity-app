@@ -25,11 +25,22 @@ function checkNewDay() {
 
   if (lastDate !== today) {
     localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
+
+    // Reset daily stats
+    totalFocusedMinutes = 0;
+    completedSessions = 0;
+    updateStats();
+
+    // Reset remaining goal
+    const goal = Number(localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || 5;
+    remainingGoalHours = goal;
+    remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+    updateGoalProgress();
+
+    // Save resets in localStorage
     localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, 0);
     localStorage.setItem(STORAGE_KEYS.SESSIONS, 0);
-
-    const goal = localStorage.getItem(STORAGE_KEYS.DAILY_GOAL) || 5;
-    localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, goal);
+    localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
   }
 }
 
@@ -40,8 +51,9 @@ let interval = null;
 let running = false;
 
 // Stats
-let totalFocusedMinutes = 0;
-let completedSessions = 0;
+// Restore stats from localStorage, or start at 0 if nothing saved
+let totalFocusedMinutes = Number(localStorage.getItem(STORAGE_KEYS.TOTAL_MINUTES)) || 0;
+let completedSessions = Number(localStorage.getItem(STORAGE_KEYS.SESSIONS)) || 0;
 
 // Session history & streak
 let sessionHistory = [];
@@ -112,133 +124,6 @@ function updateStreak(today) {
   localStorage.setItem(STORAGE_KEYS.LAST_SESSION_DATE, new Date().toISOString());
 
   streakEl.textContent = `${streak} 🔥`;
-}
-
-
-// Chart setup
-const ctx = document.getElementById('focusChart').getContext('2d');
-let focusChart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: [], // last 7 days
-    datasets: [
-      {
-        label: 'Hours Focused',
-        data: [],
-        backgroundColor: 'rgba(159,108,255,0.7)',
-      },
-      {
-        label: 'Sessions Completed',
-        data: [],
-        backgroundColor: 'rgba(76,175,80,0.7)',
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    plugins: { legend: { position: 'top' } },
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
-});
-
-
-const barBtn = document.getElementById('barBtn');
-const lineBtn = document.getElementById('lineBtn');
-
-barBtn.addEventListener('click', () => {
-  focusChart.config.type = 'bar';
-  focusChart.update();
-});
-
-lineBtn.addEventListener('click', () => {
-  focusChart.config.type = 'line';
-  focusChart.update();
-});
-
-// Function to update chart
-function updateChart() {
-  const days = [];
-  const focusData = [];
-  const shortData = [];
-  const longData = [];
-  const customData = [];
-  const today = new Date();
-
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(today.getDate() - i);
-    const dayStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-    days.push(dayStr);
-
-    let focus = 0, shortB = 0, longB = 0, custom = 0;
-
-    sessionHistory.forEach(s => {
-      const sessionDate = new Date(s.date);
-      if(sessionDate.toDateString() === d.toDateString()) {
-        const type = s.type.toLowerCase();
-        if(type.includes("focus")) focus += s.minutes/60;
-        else if(type.includes("short")) shortB += s.minutes/60;
-        else if(type.includes("long")) longB += s.minutes/60;
-        else custom += s.minutes/60;
-      }
-    });
-
-    focusData.push(focus.toFixed(2));
-    shortData.push(shortB.toFixed(2));
-    longData.push(longB.toFixed(2));
-    customData.push(custom.toFixed(2));
-  }
-
-  focusChart.data.labels = days;
-  focusChart.data.datasets = [
-    { label: 'Focus', data: focusData, backgroundColor: '#d1c4ff' },
-    { label: 'Short Break', data: shortData, backgroundColor: '#c8f7dc' },
-    { label: 'Long Break', data: longData, backgroundColor: '#ffe0b2' },
-    { label: 'Custom', data: customData, backgroundColor: '#f8d7da' }
-  ];
-  focusChart.options.scales = {
-    y: { beginAtZero: true, stacked: true },
-    x: { stacked: true }
-  };
-  focusChart.update();
-}
-
-
-function addSessionToHistory(type, minutes) {
-  const now = new Date();
-
-  // ✅ store ISO date (important for streak & analytics)
-  const sessionObj = {
-    type,
-    minutes,
-    date: now.toISOString()
-  };
-
-  // update memory + storage
-  sessionHistory.unshift(sessionObj);
-  localStorage.setItem(
-    STORAGE_KEYS.SESSION_HISTORY,
-    JSON.stringify(sessionHistory)
-  );
-
-  // update UI history (only ONE entry)
-  const li = document.createElement("li");
-  li.className = "history-item";
-
-  const typeLower = type.toLowerCase();
-  if (typeLower.includes("focus")) li.classList.add("history-focus");
-  else if (typeLower.includes("short")) li.classList.add("history-short");
-  else if (typeLower.includes("long")) li.classList.add("history-long");
-  else li.classList.add("history-custom");
-
-  li.textContent = `${now.toLocaleString()} — ${type} (${minutes} min)`;
-  historyEl.prepend(li);
-
-  // ✅ analytics + streak (ONLY ONCE)
-  updateChart();
-  updateStreak(new Date());
 }
 
 
@@ -316,6 +201,7 @@ function startTimer() {
       if (remainingGoalHours < 0) remainingGoalHours = 0;
       remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
 
+	  updateDailyGoalDisplay();
       const percent =
         ((dailyGoalHours - remainingGoalHours) / dailyGoalHours) * 100;
       document.getElementById("goalProgress").style.width = percent + "%";
@@ -447,17 +333,26 @@ if (savedGoal) {
 }
 
 // Restore stats
+// Restore stats
 totalFocusedMinutes = savedMinutes ? Number(savedMinutes) : 0;
 completedSessions = savedSessions ? Number(savedSessions) : 0;
 
-// Remaining goal (safe fallback)
-const goal = Number(dailyGoalInput.value) || 0;
+// ---- Add daily goal + progress sync here ----
+dailyGoalHours = Number(savedGoal) || 5;
+dailyGoalInput.value = dailyGoalHours;
+
 remainingGoalHours = savedRemaining
   ? Number(savedRemaining)
-  : Math.max(goal - totalFocusedMinutes / 60, 0);
-
-// UI update
+  : Math.max(dailyGoalHours - totalFocusedMinutes / 60, 0);
 remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+
+const updateGoalProgress = () => {
+  const percent = ((dailyGoalHours - remainingGoalHours) / dailyGoalHours) * 100;
+  document.getElementById('goalProgress').style.width = percent + '%';
+};
+
+updateGoalProgress();
+updateDailyGoalDisplay();
 updateStats();
 
 // Theme restore
@@ -470,21 +365,17 @@ if (savedTheme === "dark") {
 }
 
 // ===== Handle goal change =====
-dailyGoalInput.addEventListener("change", () => {
+dailyGoalInput.addEventListener('change', () => {
   const newGoal = Number(dailyGoalInput.value) || 0;
 
-  remainingGoalHours = Math.max(newGoal - totalFocusedMinutes / 60, 0);
+  dailyGoalHours = newGoal;
+  remainingGoalHours = Math.max(dailyGoalHours - totalFocusedMinutes / 60, 0);
   remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+  updateDailyGoalDisplay();
+  updateGoalProgress();
 
-  // Update progress bar
-  const goalProgress = document.getElementById('goalProgress');
-  const percent = ((newGoal - remainingGoalHours)/newGoal) * 100;
-  goalProgress.style.width = percent + '%';
-
-  localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, newGoal);
+  localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, dailyGoalHours);
   localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
-
-  updateStats();
 });
 
 function showToast(message) {
@@ -492,5 +383,11 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2500); // hide after 2.5s
+}
+
+// Update the 0h / Xh display
+function updateDailyGoalDisplay() {
+  document.getElementById('goalDone').textContent = (totalFocusedMinutes / 60).toFixed(2) + 'h';
+  document.getElementById('goalTotal').textContent = dailyGoalHours + 'h';
 }
 

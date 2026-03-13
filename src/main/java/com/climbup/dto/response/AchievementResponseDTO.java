@@ -20,16 +20,19 @@ public class AchievementResponseDTO {
     private LocalDateTime unlockedDate;
     private LocalDateTime createdAt;
     private Long userId;
-    private int progressPercent;
+    private Long relatedGoalId;
+   
 
-    // Constructors
+   
+
+	// Constructors
     public AchievementResponseDTO() {}
 
     public AchievementResponseDTO(Long id, String title, String description, String type,
                                   String category, String icon, boolean unlocked,
                                   boolean newlyUnlocked, boolean seen,
                                   LocalDateTime unlockedDate, LocalDateTime createdAt,
-                                  Long userId, int progressPercent) {
+                                  Long userId, Long relatedGoalId) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -42,7 +45,8 @@ public class AchievementResponseDTO {
         this.unlockedDate = unlockedDate;
         this.createdAt = createdAt;
         this.userId = userId;
-        this.progressPercent = progressPercent;
+        this.relatedGoalId = relatedGoalId;
+      
     }
 
     // Getters & Setters
@@ -81,7 +85,13 @@ public class AchievementResponseDTO {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    
+    public Long getRelatedGoalId() {
+		return relatedGoalId;
+	}
 
-    public int getProgressPercent() { return progressPercent; }
-    public void setProgressPercent(int progressPercent) { this.progressPercent = progressPercent; }
-}
+	public void setRelatedGoalId(Long relatedGoalId) {
+		this.relatedGoalId = relatedGoalId;
+	}
+
+   }

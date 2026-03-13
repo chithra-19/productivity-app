@@ -109,4 +109,55 @@ public class XPService {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	// =============================
+	// READ METHODS (For Dashboard)
+	// =============================
+
+	public int getCurrentXP(Long userId) {
+	    User user = userRepository.findById(userId)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+	    return user.getXp();
+	}
+
+	public int getLevel(Long userId) {
+	    User user = userRepository.findById(userId)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+	    return user.getLevel();
+	}
+
+	public int getXpForNextLevel(Long userId) {
+	    User user = userRepository.findById(userId)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+	    return xpForNextLevel(user);
+	}
+
+	public double getXpPercentage(Long userId) {
+	    User user = userRepository.findById(userId)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+
+	    int progress = xpProgressInCurrentLevel(user);
+	    int required = BASE_XP_FOR_LEVEL;
+
+	    return (progress * 100.0) / required;
+	}
+
+
+	/**
+	 * Total XP required to reach a given level
+	 */
+	private int xpForLevel(int level) {
+	    return (level - 1) * BASE_XP_FOR_LEVEL;
+	}
+
+	public int getProgressToNextLevel(long xp) {
+	    int currentLevel = calculateLevel((int) xp); // calculateLevel can still use int
+	    int xpForCurrentLevel = xpForLevel(currentLevel);
+	    int xpForNextLevel = xpForLevel(currentLevel + 1);
+
+	    int progress = (int)(((double)(xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100);
+	    return Math.min(progress, 100);
+	}
+
+
 }

@@ -35,7 +35,7 @@ class JpaSanityTest {
     @Test
     void userRepositoryShouldSaveAndRetrieveUser() {
         // Arrange
-        User user = new User("testuser", "test@example.com", "password123");
+        User user = new User( "test@example.com", "password123");
 
         // Act
         User savedUser = userRepository.save(user);

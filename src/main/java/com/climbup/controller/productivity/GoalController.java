@@ -4,10 +4,14 @@ import com.climbup.dto.request.GoalRequestDTO;
 import com.climbup.dto.response.GoalResponseDTO;
 import com.climbup.mapper.GoalMapper;
 import com.climbup.model.Goal;
+import com.climbup.model.Goal.Priority;
 import com.climbup.model.User;
+import com.climbup.model.GoalStatus;
 import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.GoalService;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +19,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/goals")
+@RequestMapping("/api/goals")
 public class GoalController {
 
     private final GoalService goalService;
@@ -35,7 +40,12 @@ public class GoalController {
     // ✅ Utility: Get authenticated user
     private User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepository.findByUsername(auth.getName())
+        String email = auth.getName();
+
+        System.out.println("LOGGED USER EMAIL: " + email);
+        
+        
+        return userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
     }
@@ -44,26 +54,45 @@ public class GoalController {
     @GetMapping
     public ResponseEntity<List<GoalResponseDTO>> getGoals(
             @RequestParam(defaultValue = "ALL") String status,
-            @RequestParam(defaultValue = "ALL") String priority
+            @RequestParam(defaultValue = "ALL") String priority,
+            Principal principal
     ) {
-        User user = getCurrentUser();
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         List<Goal> goals = goalService.filterGoals(user, status, priority);
-        List<GoalResponseDTO> dtoList = goals.stream()
-                .map(GoalMapper::toDTO)
-                .collect(Collectors.toList());
+
+        List<GoalResponseDTO> dtoList = goals == null
+                ? List.of()
+                : goals.stream()
+                       .map(GoalMapper::toDTO)
+                       .toList();
+
         return ResponseEntity.ok(dtoList);
     }
 
+
     // ✅ POST /goals/save — Create a new goal
     @PostMapping("/save")
-    public ResponseEntity<GoalResponseDTO> saveGoal(@RequestBody GoalRequestDTO dto) {
-        User user = getCurrentUser();
+    public ResponseEntity<GoalResponseDTO> saveGoal(@Valid @RequestBody GoalRequestDTO dto) {
+        User user = getCurrentUser(); // always fetch the logged-in user
+
+        System.out.println("Received DTO: " + dto);
         Goal goal = GoalMapper.toEntity(dto);
-        goal.setUser(user);
+        goal.setUser(user); // ✅ must set the user here
+
+        if (goal.getStatus() == null) {
+            goal.setStatus(GoalStatus.ACTIVE);
+        }
+
+        if (goal.getPriority() == null) {
+            goal.setPriority(Priority.MEDIUM);
+        }
+
         Goal saved = goalService.saveGoal(goal);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(GoalMapper.toDTO(saved));
     }
-
 
     // ✅ PUT /goals/{goalId} — Update an existing goal
     @PutMapping("/{goalId}")
@@ -72,7 +101,7 @@ public class GoalController {
             @RequestBody GoalRequestDTO dto
     ) {
         User user = getCurrentUser();
-        Goal existingGoal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
+        Goal existingGoal = goalService.getGoalByIdAndUser(goalId, user);
 
         // ✅ Defensive null check
         if (existingGoal == null) {
@@ -85,9 +114,7 @@ public class GoalController {
         if (dto.getDueDate() != null) existingGoal.setDueDate(dto.getDueDate());
         if (dto.getPriority() != null) existingGoal.setPriority(dto.getPriority());
         if (dto.getStatus() != null) existingGoal.setStatus(dto.getStatus());
-        if (dto.getProgress() >= 0 && dto.getProgress() <= 100) {
-            existingGoal.setProgress(dto.getProgress());
-        }
+        
 
         Goal saved = goalService.updateGoal(goalId, existingGoal);
         return ResponseEntity.ok(GoalMapper.toDTO(saved));
@@ -99,38 +126,26 @@ public class GoalController {
         User user = getCurrentUser();
 
         // Validate ownership
-        Goal goal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
+        Goal goal = goalService.getGoalByIdAndUser(goalId, user);
         if (goal == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // ✅ Call completeGoal correctly
         goalService.completeGoal(goal, user);
+        achievementService.evaluateAchievements(user);
+        achievementService.evaluateAchievements(user);
+
 
         // Return updated goal
         return ResponseEntity.ok(GoalMapper.toDTO(goal));
-    }
-
-    // ✅ PUT /goals/{goalId}/drop — Drop a goal
-    @PutMapping("/{goalId}/drop")
-    public ResponseEntity<GoalResponseDTO> dropGoal(@PathVariable Long goalId) {
-        User user = getCurrentUser();
-        Goal goal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
-
-        if (goal == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        goal.dropGoal();
-        Goal saved = goalService.updateGoal(goalId, goal);
-        return ResponseEntity.ok(GoalMapper.toDTO(saved));
     }
 
     // ✅ DELETE /goals/{goalId} — Delete a goal
     @DeleteMapping("/{goalId}")
     public ResponseEntity<Void> deleteGoal(@PathVariable Long goalId) {
         User user = getCurrentUser();
-        Goal goal = goalService.getGoalByIdAndUser(goalId, user.getUsername());
+        Goal goal = goalService.getGoalByIdAndUser(goalId, user);
 
         if (goal == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -141,4 +156,5 @@ public class GoalController {
     }
     
     
-}
+    
+}  

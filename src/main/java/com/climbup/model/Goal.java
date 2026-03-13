@@ -26,7 +26,7 @@ public class Goal {
     private String description;
 
     @Column(nullable = false)
-    private int progress = 0; // progress in percentage (0–100)
+    private int progress = 0; // 0–100
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -39,17 +39,16 @@ public class Goal {
     @Column(nullable = false)
     private Priority priority = Priority.MEDIUM;
 
+    private LocalDate completedDate;
+    
     @Column(nullable = false)
-    private boolean completed = false;
-
-    @Column(nullable = false)
-    private boolean dropped = false;
+    private Boolean completed = false;
+    
+    //private boolean dropped = false;
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-    
-    private LocalDate completedDate;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
@@ -58,17 +57,15 @@ public class Goal {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // ==== ENUMS ====
-    public enum GoalStatus { ACTIVE, COMPLETED, DROPPED }
-    public enum Priority { LOW, MEDIUM, HIGH }
-    
-    
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Achievement> achievements = new ArrayList<>();
 
-    public List<Achievement> getAchievements() { return achievements; }
-    public void setAchievements(List<Achievement> achievements) { this.achievements = achievements; }
-
+ 
+    public enum Priority {
+        LOW,
+        MEDIUM,
+        HIGH
+    }
 
     // ==== CONSTRUCTORS ====
     public Goal() {}
@@ -84,20 +81,18 @@ public class Goal {
 
     // ==== BUSINESS LOGIC ====
     public void markCompleted() {
-        this.completed = true;
+        if (this.status == GoalStatus.COMPLETED) {
+            return;
+        }
+
         this.status = GoalStatus.COMPLETED;
         this.progress = 100;
+        this.completedDate = LocalDate.now();
+        this.completed = true;
     }
-
-    public void dropGoal() {
-        this.dropped = true;
-        this.status = GoalStatus.DROPPED;
-        this.completed = false;
-    }
-
     // ==== GETTERS & SETTERS ====
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long id) {this.id= id;}
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -117,22 +112,21 @@ public class Goal {
     public Priority getPriority() { return priority; }
     public void setPriority(Priority priority) { this.priority = priority; }
 
-    public boolean isCompleted() { return completed; }
-    public void setCompleted(boolean completed) { this.completed = completed; }
-
-    public boolean isDropped() { return dropped; }
-    public void setDropped(boolean dropped) { this.dropped = dropped; }
+    public LocalDate getCompletedDate() { return completedDate; }
+    public void setCompletedDate(LocalDate completedDate) { this.completedDate = completedDate; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    // ==== toString ====
+    public List<Achievement> getAchievements() { return achievements; }
+    public void setAchievements(List<Achievement> achievements) {
+        this.achievements = achievements;
+    }
+
     @Override
     public String toString() {
         return "Goal{" +
@@ -140,17 +134,7 @@ public class Goal {
                 ", title='" + title + '\'' +
                 ", status=" + status +
                 ", progress=" + progress +
-                ", completed=" + completed +
-                ", dropped=" + dropped +
                 ", dueDate=" + dueDate +
                 '}';
     }
-
-	public LocalDate getCompletedDate() {
-		return completedDate;
-	}
-
-	public void setCompletedDate(LocalDate completedDate) {
-		this.completedDate = completedDate;
-	}
 }

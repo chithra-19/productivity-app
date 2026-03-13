@@ -56,7 +56,7 @@ class AchievementControllerWebTest {
         requestDTO.setType(Type.GOAL);
         requestDTO.setUnlockedDate(LocalDate.now());
 
-        User mockUser = new User("testuser", "test@example.com", "password");
+        User mockUser = new User( "test@example.com", "password");
         mockUser.setId(1L);
 
         AchievementResponseDTO responseDTO = new AchievementResponseDTO();

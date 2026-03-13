@@ -6,6 +6,8 @@ import com.climbup.exception.ResourceNotFoundException;
 import com.climbup.mapper.UserMapper;
 import com.climbup.model.User;
 import com.climbup.repository.UserRepository;
+import com.climbup.service.productivity.AchievementService;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,10 +28,12 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AchievementService achievementService;
 
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, AchievementService achievementService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.achievementService = achievementService;
     }
 
     // ---------- Save User ----------
@@ -48,11 +52,6 @@ public class UserService implements UserDetailsService {
         return userRepository.existsByEmail(email);
     }
 
-    // ---------- Username Check ----------
-    public boolean usernameExists(String username) {
-        return userRepository.existsByUsername(username);
-    }
-
     // ---------- Find User by Email ----------
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -65,13 +64,6 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     }
 
-    // ---------- Find by Username ----------
-    public User findByUsername(String login) {
-        return userRepository.findByUsername(login)
-                .or(() -> userRepository.findByEmail(login))
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username/email: " + login));
-    }
-
 
     // ---------- Current Authenticated User ----------
     public User getCurrentUser() {
@@ -82,41 +74,39 @@ public class UserService implements UserDetailsService {
 
         String login = authentication.getName(); // this is email now
         return userRepository.findByEmail(login)
-                .or(() -> userRepository.findByUsername(login))
+
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
     
 
     // ---------------- Registration ----------------
     public User registerUser(UserRequestDTO dto) {
-        if(userRepository.existsByEmail(dto.getEmail())) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
-        }
-        if(userRepository.existsByUsername(dto.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
         }
 
         User user = new User();
-        user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        return userRepository.save(user);
+
+        User saved = userRepository.save(user);
+
+        // 🔑 Initialize baseline achievements
+        achievementService.initializeAchievements(saved);
+       
+
+        return saved;
     }
+
 
     // ---------- Update User ----------
     public UserResponseDTO updateUser(Long id, UserRequestDTO dto, String username) {
         User user = getUserById(id);
-
-        if (!user.getUsername().equals(username)) {
+        if (!user.getEmail().equals(username)) {
             throw new SecurityException("You are not allowed to update this user");
         }
 
-        if (dto.getUsername() != null && !dto.getUsername().equals(user.getUsername())) {
-            if (usernameExists(dto.getUsername())) {
-                throw new IllegalArgumentException("Username already exists");
-            }
-            user.setUsername(dto.getUsername());
-        }
+       
 
         if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail())) {
             if (emailExists(dto.getEmail())) {
@@ -183,8 +173,8 @@ public class UserService implements UserDetailsService {
 
     
     public User findByUsernameOrEmail(String login) {
-        return userRepository.findByUsername(login)
-                .or(() -> userRepository.findByEmail(login))
+        return userRepository.findByEmail(login)
+                
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username or email: " + login));
     }
 

@@ -22,7 +22,7 @@ public class Profile {
 
     // ---------- Stats ----------
     private int streak;
-    private int completedTasks;
+    private long completedTasks;
     private int productivityScore;
     private LocalDate lastActiveDate;
 
@@ -71,8 +71,8 @@ public class Profile {
     public int getStreak() { return streak; }
     public void setStreak(int streak) { this.streak = streak; }
 
-    public int getCompletedTasks() { return completedTasks; }
-    public void setCompletedTasks(int completedTasks) { this.completedTasks = completedTasks; }
+    public long getCompletedTasks() { return completedTasks; }
+    public void setCompletedTasks(long completedTasks) { this.completedTasks = completedTasks; }
 
     public int getProductivityScore() { return productivityScore; }
     public void setProductivityScore(int productivityScore) { this.productivityScore = productivityScore; }

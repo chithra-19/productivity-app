@@ -37,7 +37,7 @@ public class StreakTrackerServiceTest {
         MockitoAnnotations.openMocks(this);
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
+       
 
         streak = new StreakTracker();
         streak.setId(1L);

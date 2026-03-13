@@ -15,7 +15,7 @@ public class ProfileMapper {
         dto.setEmail(profile.getEmail());
         dto.setBio(profile.getBio());
         dto.setProfilePictureUrl(profile.getProfilePictureUrl());
-        dto.setStreak(profile.getStreak());
+        dto.setCurrentStreak(profile.getStreak());
         dto.setCompletedTasks(profile.getCompletedTasks());
         dto.setProductivityScore(profile.getProductivityScore()); // ✅ int → int
         dto.setLastActiveDate(profile.getLastActiveDate());
@@ -34,7 +34,7 @@ public class ProfileMapper {
         profile.setEmail(dto.getEmail());
         profile.setBio(dto.getBio());
         profile.setProfilePictureUrl(dto.getProfilePictureUrl());
-        profile.setStreak(dto.getStreak());
+        profile.setStreak(dto.getCurrentStreak());
         profile.setCompletedTasks(dto.getCompletedTasks());
         profile.setProductivityScore(dto.getProductivityScore()); // ✅ int → int
         profile.setLastActiveDate(dto.getLastActiveDate());

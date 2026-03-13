@@ -13,38 +13,12 @@ import java.util.Objects;
 @Table(
     name = "achievements",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "code"})
+        @UniqueConstraint(columnNames = {"user_id", "goal_id"})
     }
 )
 public class Achievement {
 
-    public void setId(Long id) {
-		this.id = id;
-	}
-
-	public void setUnlocked(boolean unlocked) {
-		this.unlocked = unlocked;
-	}
-
-	public void setNewlyUnlocked(boolean newlyUnlocked) {
-		this.newlyUnlocked = newlyUnlocked;
-	}
-
-	public void setSeen(boolean seen) {
-		this.seen = seen;
-	}
-
-	public void setUnlockedDate(LocalDateTime unlockedDate) {
-		this.unlockedDate = unlockedDate;
-	}
-
-	public void setUnlockedAt(LocalDateTime unlockedAt) {
-		this.unlockedAt = unlockedAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
+ 
 	
 	 @ManyToOne
 	    @JoinColumn(name = "goal_id")
@@ -106,6 +80,35 @@ public class Achievement {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
+    
+    
+    public void setId(Long id) {
+ 		this.id = id;
+ 	}
+
+ 	public void setUnlocked(boolean unlocked) {
+ 		this.unlocked = unlocked;
+ 	}
+
+ 	public void setNewlyUnlocked(boolean newlyUnlocked) {
+ 		this.newlyUnlocked = newlyUnlocked;
+ 	}
+
+ 	public void setSeen(boolean seen) {
+ 		this.seen = seen;
+ 	}
+
+ 	public void setUnlockedDate(LocalDateTime unlockedDate) {
+ 		this.unlockedDate = unlockedDate;
+ 	}
+
+ 	public void setUnlockedAt(LocalDateTime unlockedAt) {
+ 		this.unlockedAt = unlockedAt;
+ 	}
+
+ 	public void setCreatedAt(LocalDateTime createdAt) {
+ 		this.createdAt = createdAt;
+ 	}
 
     // ------------------ Enums ------------------
 

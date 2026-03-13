@@ -18,35 +18,37 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final UserService userService;
 
-    public ProfileController(ProfileService profileService) {
+    public ProfileController(ProfileService profileService,
+                             UserService userService) {
         this.profileService = profileService;
+        this.userService = userService;
     }
 
-    // ---------- Create Profile ----------
-    @PostMapping("/{userId}")
-    public ResponseEntity<ProfileResponseDTO> createProfile(
-            @PathVariable Long userId,
-            @Valid @RequestBody ProfileRequestDTO profileRequestDTO) {
+    // ---------- Get Logged-in User Profile ----------
+    @GetMapping
+    public ResponseEntity<ProfileResponseDTO> getMyProfile(Principal principal) {
 
-        ProfileResponseDTO response = profileService.createProfile(userId, profileRequestDTO);
+        User user = userService.findByEmail(principal.getName());
+
+        ProfileResponseDTO response =
+                profileService.getProfile(user.getId());
+
         return ResponseEntity.ok(response);
     }
 
-    // ---------- Get Profile ----------
-    @GetMapping("/{userId}")
-    public ResponseEntity<ProfileResponseDTO> getProfile(@PathVariable Long userId) {
-        ProfileResponseDTO response = profileService.getProfile(userId);
-        return ResponseEntity.ok(response);
-    }
-
-    // ---------- Update Profile ----------
-    @PutMapping("/{userId}")
-    public ResponseEntity<ProfileResponseDTO> updateProfile(
-            @PathVariable Long userId,
+    // ---------- Update Logged-in User Profile ----------
+    @PutMapping
+    public ResponseEntity<ProfileResponseDTO> updateMyProfile(
+            Principal principal,
             @Valid @RequestBody ProfileRequestDTO profileRequestDTO) {
 
-        ProfileResponseDTO response = profileService.updateProfile(userId, profileRequestDTO);
+        User user = userService.findByEmail(principal.getName());
+
+        ProfileResponseDTO response =
+                profileService.updateProfile(user.getId(), profileRequestDTO);
+
         return ResponseEntity.ok(response);
     }
 }

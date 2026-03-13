@@ -51,7 +51,7 @@ class GoalControllerTest {
 
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
+        
 
         testGoal = new Goal();
         testGoal.setId(1L);
@@ -67,7 +67,7 @@ class GoalControllerTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
 
-        when(userRepository.findByUsername(testUser.getUsername())).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(testUser.getUsername())).thenReturn(Optional.of(testUser));
     }
 
     @Test
@@ -102,7 +102,7 @@ class GoalControllerTest {
         Goal updatedGoal = new Goal();
         updatedGoal.setTitle("Updated Goal");
 
-        when(goalService.getGoalByIdAndUser(1L, testUser.getUsername())).thenReturn(testGoal);
+        when(goalService.getGoalByIdAndUser(1L, testUser));
         when(goalService.updateGoal(eq(1L), any(Goal.class))).thenReturn(updatedGoal);
 
         mockMvc.perform(put("/goals/1")
@@ -117,7 +117,7 @@ class GoalControllerTest {
     void completeGoal_ShouldMarkGoalCompleted() throws Exception {
         testGoal.markCompleted();
 
-        when(goalService.getGoalByIdAndUser(1L, testUser.getUsername())).thenReturn(testGoal);
+        when(goalService.getGoalByIdAndUser(1L, testUser));
         when(goalService.updateGoal(1L, testGoal)).thenReturn(testGoal);
 
         mockMvc.perform(put("/goals/1/complete"))
@@ -125,23 +125,11 @@ class GoalControllerTest {
                 .andExpect(jsonPath("$.completed").value(true));
     }
 
-    @Test
-    @DisplayName("PUT /goals/{id}/drop should mark goal dropped")
-    void dropGoal_ShouldMarkGoalDropped() throws Exception {
-        testGoal.dropGoal();
-
-        when(goalService.getGoalByIdAndUser(1L, testUser.getUsername())).thenReturn(testGoal);
-        when(goalService.updateGoal(1L, testGoal)).thenReturn(testGoal);
-
-        mockMvc.perform(put("/goals/1/drop"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.dropped").value(true));
-    }
-
+   
     @Test
     @DisplayName("DELETE /goals/{id} should return 204 No Content")
     void deleteGoal_ShouldReturnNoContent() throws Exception {
-        when(goalService.getGoalByIdAndUser(1L, testUser.getUsername())).thenReturn(testGoal);
+        when(goalService.getGoalByIdAndUser(1L, testUser));
         doNothing().when(goalService).deleteGoal(1L);
 
         mockMvc.perform(delete("/goals/1"))
@@ -153,7 +141,7 @@ class GoalControllerTest {
     @Test
     @DisplayName("PUT /goals/{id} should return 404 if goal not found")
     void updateGoal_NotFound_ShouldReturn404() throws Exception {
-        when(goalService.getGoalByIdAndUser(999L, testUser.getUsername())).thenReturn(null);
+        when(goalService.getGoalByIdAndUser(999L, testUser));
 
         mockMvc.perform(put("/goals/999")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -15,7 +15,11 @@ public class GoalMapper {
         if (dto == null) return null;
 
         Goal goal = new Goal();
-        copyCommonFields(goal, dto);
+        goal.setTitle(dto.getTitle());
+        goal.setDescription(dto.getDescription());
+        goal.setDueDate(dto.getDueDate());
+        goal.setPriority(dto.getPriority());
+   
         return goal;
     }
 
@@ -23,39 +27,36 @@ public class GoalMapper {
     public static GoalResponseDTO toDTO(Goal goal) {
         if (goal == null) return null;
 
-        String dueDate = (goal.getDueDate() != null)
+        String dueDate = goal.getDueDate() != null
                 ? goal.getDueDate().format(DATE_FORMATTER)
                 : null;
 
-        boolean completed = goal.getStatus() == Goal.GoalStatus.COMPLETED;
-        boolean dropped = goal.getStatus() == Goal.GoalStatus.DROPPED;
+        String priority = goal.getPriority() != null
+                ? goal.getPriority().name()
+                : "MEDIUM";
+
+        String status = goal.getStatus() != null
+                ? goal.getStatus().name()
+                : "ACTIVE";
 
         return new GoalResponseDTO(
                 goal.getId(),
                 goal.getTitle(),
                 goal.getDescription(),
                 dueDate,
-                completed,
-                dropped,
-                goal.getProgress(),
-                goal.getPriority() != null ? goal.getPriority().name() : null,
-                null // iconUrl placeholder
+                priority,
+                status
         );
     }
 
     // ===== Update existing Goal entity from DTO =====
     public static void updateEntity(Goal goal, GoalRequestDTO dto) {
         if (goal == null || dto == null) return;
-        copyCommonFields(goal, dto);
-    }
 
-    // ===== Shared mapping logic =====
-    private static void copyCommonFields(Goal goal, GoalRequestDTO dto) {
-        goal.setTitle(dto.getTitle());
-        goal.setDescription(dto.getDescription());
-        goal.setDueDate(dto.getDueDate());
-        goal.setStatus(dto.getStatus());
-        goal.setPriority(dto.getPriority());
-        goal.setProgress(dto.getProgress());
+        if (dto.getTitle() != null) goal.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) goal.setDescription(dto.getDescription());
+        if (dto.getDueDate() != null) goal.setDueDate(dto.getDueDate());
+        if (dto.getPriority() != null) goal.setPriority(dto.getPriority());
+        if (dto.getStatus() != null) goal.setStatus(dto.getStatus());
     }
 }

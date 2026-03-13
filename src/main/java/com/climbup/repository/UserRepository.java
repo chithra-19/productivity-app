@@ -12,41 +12,44 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // Find user by username
-    Optional<User> findByUsername(String username);
+    // ========================
+    // Basic Queries
+    // ========================
 
-    Optional<User> findByUsernameOrEmail(String username, String email);
+    Optional<User> findByEmail(String email);
+    
+  
+
+
+    boolean existsByEmail(String email);
 
     long countByLastLoginAtAfter(LocalDateTime dateTime);
 
-    // ✅ Changed to return Optional
-    Optional<User> findByEmail(String email);
 
-    // Check if username already exists
-    boolean existsByUsername(String username);
+    // ========================
+    // Fetch Optimized Queries
+    // ========================
 
-    // Check if email already exists
-    boolean existsByEmail(String email);
-    
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.tasks WHERE u.username = :username")
-    Optional<User> findUserWithTasks(@Param("username") String username);
-    
+    /**
+     * Fetch user along with tasks
+     */
     @Query("""
-    	    SELECT u FROM User u
-    	    LEFT JOIN FETCH u.tasks
-    	    LEFT JOIN FETCH u.goals
-    	    LEFT JOIN FETCH u.achievements
-    	  
-    	    WHERE u.username = :username
-    	""")
-    	Optional<User> findUserWithAllData(@Param("username") String username);
-    
-    @Query("""
-    	    SELECT u FROM User u
-    	    LEFT JOIN FETCH u.tasks
-    	    
-    	    WHERE u.username = :username
-    	""")
-    	Optional<User> findUserWithTasksAndChallenges(@Param("username") String username);
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN FETCH u.tasks
+            WHERE u.email = :email
+           """)
+    Optional<User> findUserWithTasks(@Param("email") String email);
 
+
+    /**
+     * Fetch user with all associated collections
+     */
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN FETCH u.tasks
+            LEFT JOIN FETCH u.goals
+            LEFT JOIN FETCH u.achievements
+            WHERE u.email = :email
+           """)
+    Optional<User> findUserWithAllData(@Param("email") String email);
 }

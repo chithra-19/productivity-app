@@ -14,7 +14,6 @@ import java.util.*;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "username"),
         @UniqueConstraint(columnNames = "email")
 })
 public class User implements UserDetails {
@@ -23,11 +22,8 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Basic Info
-    @NotBlank
-    @Size(min = 3, max = 50)
-    @Column(unique = true, nullable = false)
-    private String username;
+	@Column(nullable = false)
+    private String firstName;
 
     @NotBlank
     @Email
@@ -155,8 +151,8 @@ public class User implements UserDetails {
     // Constructors
     public User() {}
 
-    public User(String username, String email, String password) {
-        this.username = username;
+    public User( String email, String password) {
+      
         this.email = email;
         this.password = password;
     }
@@ -197,9 +193,14 @@ public class User implements UserDetails {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getFirstName() {
+  		return firstName;
+  	}
 
+  	public void setFirstName(String firstName) {
+  		this.firstName = firstName;
+  	}
+  	
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
@@ -245,11 +246,15 @@ public class User implements UserDetails {
     public void setAchievements(Set<Achievement> achievements) { this.achievements = achievements; }
 
 
-
-    // ========= SPRING SECURITY REQUIRED METHODS ========= //
+ // ========= SPRING SECURITY REQUIRED METHODS ========= //
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;   // 🔥 THIS is the important line
     }
 
     @Override
@@ -290,7 +295,6 @@ public class User implements UserDetails {
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 '}';
     }

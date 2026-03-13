@@ -46,7 +46,7 @@ public class UserController {
     // ---------- Get logged-in user profile ----------
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> getCurrentUser(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         return ResponseEntity.ok(UserMapper.toResponseDTO(user));
     }
 
@@ -80,7 +80,7 @@ public class UserController {
     
     @GetMapping("/stats")
     public ResponseEntity<UserStatsDTO> getStats(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
 
         int currentStreak = streakTrackerService.getCurrentStreak(user);
         int bestStreak = streakTrackerService.getBestStreak(user.getId());

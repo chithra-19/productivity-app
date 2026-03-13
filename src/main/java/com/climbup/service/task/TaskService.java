@@ -268,11 +268,16 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-	public Task markDone(Long id) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public Task markDone(Long id) {
 
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        task.setCompleted(true);
+        task.setCompletedDateTime(LocalDateTime.now());
+
+        return taskRepository.save(task);
+    }
    
    
 

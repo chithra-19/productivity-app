@@ -12,17 +12,24 @@ public class ProfileResponseDTO {
     private String bio;
     private String profilePictureUrl;
 
-    private int streak;
-    private int completedTasks;
-    private int productivityScore;
+    // Static / personal info
+    private Long userId;
     private LocalDate lastActiveDate;
 
+    // Achievements
     private boolean newAchievement;
     private List<String> achievementList;
 
-    private Long userId;
+    // Productivity & streak
+    private int productivityScore;
+    private long completedTasks;
+    private int currentStreak;
+    private int bestStreak;
 
-    
+    // XP & Level
+    private long xp;
+    private int level;
+    private int levelProgress; // 0-100% to next level
 
     // ---------------- Getters & Setters ----------------
 
@@ -44,14 +51,8 @@ public class ProfileResponseDTO {
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
-    public int getStreak() { return streak; }
-    public void setStreak(int streak) { this.streak = streak; }
-
-    public int getCompletedTasks() { return completedTasks; }
-    public void setCompletedTasks(int completedTasks) { this.completedTasks = completedTasks; }
-
-    public int getProductivityScore() { return productivityScore; }
-    public void setProductivityScore(int productivityScore) { this.productivityScore = productivityScore; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public LocalDate getLastActiveDate() { return lastActiveDate; }
     public void setLastActiveDate(LocalDate lastActiveDate) { this.lastActiveDate = lastActiveDate; }
@@ -62,7 +63,24 @@ public class ProfileResponseDTO {
     public List<String> getAchievementList() { return achievementList; }
     public void setAchievementList(List<String> achievementList) { this.achievementList = achievementList; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public int getProductivityScore() { return productivityScore; }
+    public void setProductivityScore(int productivityScore) { this.productivityScore = productivityScore; }
 
+    public long getCompletedTasks() { return completedTasks; }
+    public void setCompletedTasks(long completedTasks) { this.completedTasks = completedTasks; }
+
+    public int getCurrentStreak() { return currentStreak; }
+    public void setCurrentStreak(int currentStreak) { this.currentStreak = currentStreak; }
+
+    public int getBestStreak() { return bestStreak; }
+    public void setBestStreak(int bestStreak) { this.bestStreak = bestStreak; }
+
+    public long getXp() { return xp; }
+    public void setXp(long xp) { this.xp = xp; }
+
+    public int getLevel() { return level; }
+    public void setLevel(int level) { this.level = level; }
+
+    public int getLevelProgress() { return levelProgress; }
+    public void setLevelProgress(int levelProgress) { this.levelProgress = levelProgress; }
 }

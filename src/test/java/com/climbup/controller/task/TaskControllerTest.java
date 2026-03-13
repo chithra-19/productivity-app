@@ -66,9 +66,9 @@ class TaskControllerTest {
         response.setCompleted(false);
 
         User mockUser = new User();
-        mockUser.setUsername("testuser");
+        
 
-        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(userService.findByEmail("testuser")).thenReturn(mockUser);
         when(taskService.createTask(any(TaskRequestDTO.class), any(User.class))).thenReturn(response);
 
         mockMvc.perform(post("/tasks")
@@ -89,9 +89,9 @@ class TaskControllerTest {
         dto.setCompleted(false);
 
         User mockUser = new User();
-        mockUser.setUsername("testuser");
+       
 
-        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(userService.findByEmail("testuser")).thenReturn(mockUser);
         when(taskService.getTasksForUser(any(User.class))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/tasks"))
@@ -108,9 +108,9 @@ class TaskControllerTest {
         request.setTitle(""); // Empty title
 
         User mockUser = new User();
-        mockUser.setUsername("testuser");
+       
 
-        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(userService.findByEmail("testuser")).thenReturn(mockUser);
 
         mockMvc.perform(post("/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,9 +124,9 @@ class TaskControllerTest {
     @WithMockUser(username = "testuser")
     void getTasks_Empty_ShouldReturnEmptyArray() throws Exception {
         User mockUser = new User();
-        mockUser.setUsername("testuser");
+        
 
-        when(userService.findByUsername("testuser")).thenReturn(mockUser);
+        when(userService.findByEmail("testuser")).thenReturn(mockUser);
         when(taskService.getTasksForUser(any(User.class))).thenReturn(List.of()); // empty list
 
         mockMvc.perform(get("/tasks"))

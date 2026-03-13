@@ -49,7 +49,7 @@ public class TaskViewController {
             Model model,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        User user = userService.findByUsername(userDetails.getUsername());
+        User user = userService.findByEmail(userDetails.getUsername());
 
         Page<TaskResponseDTO> taskPage =
                 taskService.getTasksForUserPaginated(user, page, size);
@@ -66,7 +66,7 @@ public class TaskViewController {
     // =========================
     @GetMapping("/today")
     public String showTodayTasks(Model model, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         LocalDate today = LocalDate.now();
 
         List<TaskResponseDTO> todayTasks = taskService.getTasksForUser(user)
@@ -97,7 +97,7 @@ public class TaskViewController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            User user = userService.findByUsername(principal.getName());
+            User user = userService.findByEmail(principal.getName());
             taskService.createTask(taskDTO, user);
             redirectAttributes.addFlashAttribute("success", "Task added successfully!");
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public class TaskViewController {
     }
     @GetMapping("/edit/{id}")
     public String showEditTaskForm(@PathVariable Long id, Model model, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         TaskResponseDTO task = taskService.getTaskById(id, user);
         model.addAttribute("task", task);
         return "tasks/edit-task";
@@ -117,7 +117,7 @@ public class TaskViewController {
     @PostMapping("/update")
     public String updateTask(@ModelAttribute("task") TaskUpdateDTO taskDTO, Principal principal,
                              RedirectAttributes redirectAttributes) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         taskService.updateTask(taskDTO.getId(), taskDTO, user);
         redirectAttributes.addFlashAttribute("success", "Task updated successfully!");
         return "redirect:/tasks/all";
@@ -126,7 +126,7 @@ public class TaskViewController {
     @GetMapping("/delete/{id}")
     public String deleteTask(@PathVariable Long id, Principal principal,
                              RedirectAttributes redirectAttributes) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         taskService.deleteTask(id, user);
         redirectAttributes.addFlashAttribute("success", "Task deleted successfully!");
         return "redirect:/tasks/all";

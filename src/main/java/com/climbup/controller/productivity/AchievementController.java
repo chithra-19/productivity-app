@@ -32,6 +32,23 @@ public class AchievementController {
         this.userService = userService;
         this.achievementRepository = achievementRepository;
     }
+    
+ // ---------------- Refresh achievements (re-evaluate + return updated list) ----------------
+    @GetMapping("/refresh")
+    public ResponseEntity<List<AchievementResponseDTO>> refreshAchievements() {
+        User currentUser = userService.getCurrentUser();
+
+        // 🔑 Re-evaluate achievements for this user
+        achievementService.evaluateAchievements(currentUser);
+
+        List<Achievement> achievements = achievementRepository.findByUser(currentUser);
+
+        List<AchievementResponseDTO> dtoList = achievements.stream()
+                .map(AchievementMapper::toResponseDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
+    }
 
     // ---------------- Get all achievements for current user ----------------
     @GetMapping
@@ -70,9 +87,10 @@ public class AchievementController {
 
     // ---------------- Thymeleaf dashboard page ----------------
     @GetMapping("/dashboard")
-    public String achievementsPage(Model model,
-                                   @AuthenticationPrincipal User user) {
+    public String achievementsPage(Model model) {
 
+    	User user = userService.getCurrentUser();
+    	
         List<Achievement> achievements =
                 achievementRepository.findByUser(user);
 

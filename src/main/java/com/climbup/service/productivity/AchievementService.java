@@ -1,5 +1,6 @@
 package com.climbup.service.productivity;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import com.climbup.mapper.AchievementMapper;
 import com.climbup.model.Achievement;
 import com.climbup.model.Achievement.AchievementCode;
 import com.climbup.model.Goal;
+import com.climbup.model.GoalStatus;
 import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.repository.AchievementRepository;
@@ -38,13 +40,37 @@ public class AchievementService {
     public List<Achievement> getUserAchievements(User user) {
         return achievementRepository.findByUser(user);
     }
+    
+    public void seedAchievementsForGoal(Goal goal) {
+        // Check if achievement already exists for this user + goal
+        boolean exists = achievementRepository.existsByUserAndGoal(goal.getUser(), goal);
 
+        if (!exists) {
+            Achievement a = new Achievement();
+            a.setUser(goal.getUser());
+            a.setTitle("Complete Goal: " + goal.getTitle());
+            a.setDescription("Finish the goal: " + goal.getTitle());
+            a.setType(Achievement.Type.GOAL);
+            a.setIcon("bi-flag");
+            a.setGoal(goal);
+
+            achievementRepository.save(a);
+        }
+    }
+    
     // ================= INITIAL SEEDING =================
+ // ================= INITIAL SEEDING =================
     @Transactional
-    public void initializeAchievements(User user) {
-        if (achievementRepository.countByUser(user) > 0) return;
+    public List<AchievementResponseDTO> initializeAchievements(User user) {
+        // If user already has achievements, return them instead of doing nothing
+        if (achievementRepository.countByUser(user) > 0) {
+            return achievementRepository.findByUser(user)
+                    .stream()
+                    .map(AchievementMapper::toResponseDTO)
+                    .toList();
+        }
 
-        achievementRepository.saveAll(List.of(
+        List<Achievement> seeded = List.of(
                 create(user, AchievementCode.FIRST_STEP,
                         "First Step", "Complete your first task", Achievement.Type.TASK, "bi-check-circle"),
 
@@ -62,7 +88,13 @@ public class AchievementService {
 
                 create(user, AchievementCode.EARLY_BIRD,
                         "Early Bird", "Complete a task before 8 AM", Achievement.Type.TASK, "bi-sun")
-        ));
+        );
+
+        // Save and return as DTOs
+        return achievementRepository.saveAll(seeded)
+                .stream()
+                .map(AchievementMapper::toResponseDTO)
+                .toList();
     }
 
     private Achievement create(User user,
@@ -81,14 +113,17 @@ public class AchievementService {
         a.setIcon(icon);
         return a;
     }
+    
+    
 
     // ================= EVALUATE ACHIEVEMENTS =================
     @Transactional
     public void evaluateAchievements(User user) {
 
-        long completedGoals = goalRepository.findByUser(user)
-                .stream().filter(Goal::isCompleted).count();
-
+    	long completedGoals = goalRepository.findByUser(user)
+    	        .stream()
+    	        .filter(goal -> goal.getStatus() == GoalStatus.COMPLETED)
+    	        .count();
         long completedTasks = taskRepository.findByUser(user)
                 .stream().filter(Task::isCompleted).count();
 
@@ -110,15 +145,13 @@ public class AchievementService {
     private void unlockIfEligible(User user, AchievementCode code, boolean condition) {
         if (!condition) return;
 
-        Achievement achievement = achievementRepository
-                .findByUserAndCode(user, code)
-                .orElseThrow(() ->
-                        new IllegalStateException("Achievement not initialized: " + code));
-
-        if (!achievement.isUnlocked()) {
-            achievement.unlock();
-            achievementRepository.save(achievement);
-        }
+        achievementRepository.findByUserAndCode(user, code)
+            .ifPresent(achievement -> {
+                if (!achievement.isUnlocked()) {
+                    achievement.unlock();
+                    achievementRepository.save(achievement);
+                }
+            });
     }
 
     // ================= MARK AS SEEN =================

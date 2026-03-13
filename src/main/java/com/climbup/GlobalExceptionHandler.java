@@ -3,7 +3,9 @@ package com.climbup;
 import com.climbup.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,7 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 /**
  * Centralized exception handling for all controllers.
  */
-@RestControllerAdvice
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -56,4 +58,16 @@ public class GlobalExceptionHandler {
         model.addAttribute("error", "Unexpected error: " + ex.getMessage());
         return "error"; // generic error page
     }
+    
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationErrors(MethodArgumentNotValidException ex) {
+      String errorMessage = ex.getBindingResult()
+                              .getFieldErrors()
+                              .stream()
+                              .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                              .findFirst()
+                              .orElse("Validation failed");
+      return ResponseEntity.badRequest().body(errorMessage);
+    }
+
 }

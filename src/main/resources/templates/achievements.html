@@ -123,6 +123,16 @@
       color: #0056b3;
       transform: translateX(-4px);
     }
+	.achievement-card.newly-unlocked {
+	  animation: glowFade 5s ease-in-out;
+	  box-shadow: 0 0 15px 5px #FFD700;
+	}
+
+	@keyframes glowFade {
+	  0%   { box-shadow: 0 0 15px 5px #FFD700; }
+	  50%  { box-shadow: 0 0 10px 3px #FFB400; }
+	  100% { box-shadow: none; }
+	}
 
     @media (max-width: 768px) {
       .achievement-icon { font-size: 2.6rem; }
@@ -130,8 +140,8 @@
     }
   </style>
 </head>
-<body>
 
+<body>
 <div class="container">
 
   <a href="/dashboard" class="back-link">
@@ -146,19 +156,18 @@
 </div>
 
 <script>
-const token = localStorage.getItem('token');
-
 async function fetchAchievements() {
+  console.log("🔍 fetchAchievements() triggered");
+
   try {
     const res = await axios.get('/api/achievements', {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true // ✅ send session cookie
     });
     renderAchievements(res.data);
   } catch (err) {
     console.error('Error fetching achievements', err);
   }
 }
-
 function renderAchievements(achievements) {
   const allGrid = document.getElementById('all-achievements');
   const newGrid = document.getElementById('new-achievements');
@@ -174,38 +183,42 @@ function renderAchievements(achievements) {
     if (!a.unlocked) card.classList.add('locked');
     if (a.newlyUnlocked) card.classList.add('newly-unlocked');
 
-    const unlockedDate = a.unlockedDate
-      ? new Date(a.unlockedDate).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric'})
-      : null;
-
     card.innerHTML = `
       <div class="achievement-icon"><i class="bi ${a.icon}"></i></div>
       <div class="achievement-title">${a.title}</div>
       <div class="achievement-desc">${a.description}</div>
-      
+    `;
 
     col.appendChild(card);
 
+    // ✅ Highlight if this achievement is tied to the recently edited goal
+    if (window.lastEditedGoalId && a.relatedGoalId === window.lastEditedGoalId) {
+      card.classList.add('updated'); // CSS glow effect
+      setTimeout(() => card.classList.remove('updated'), 4000);
+    }
+
     if (a.newlyUnlocked) {
-      newGrid.appendChild(col);
-      // Confetti for newly unlocked
+      const newCol = col.cloneNode(true);
+      newGrid.appendChild(newCol);
+
       confetti({
         particleCount: 80,
         spread: 60,
         origin: { y: 0.6 },
         colors: ['#FFD700','#FFB400','#FF4500','#00BFFF','#7CFC00']
       });
-    } else allGrid.appendChild(col);
 
-    // Remove glow after 5s
-    if (a.newlyUnlocked) setTimeout(() => card.classList.remove('newly-unlocked'), 5000);
+      setTimeout(() => card.classList.remove('newly-unlocked'), 5000);
+    }
+
+    allGrid.appendChild(col);
   });
 }
 
 async function refreshAchievements() {
   try {
     const res = await axios.get('/api/achievements/refresh', {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true // ✅ send session cookie
     });
     renderAchievements(res.data);
   } catch (err) {
@@ -213,9 +226,25 @@ async function refreshAchievements() {
   }
 }
 
+async function fetchAchievements() {
+  try {
+    const res = await axios.get('/api/achievements', {
+      withCredentials: true
+    });
+
+    renderAchievements(res.data);
+
+    await axios.post('/api/achievements/mark-seen', {}, {
+      withCredentials: true
+    });
+
+  } catch (err) {
+    console.error('Error fetching achievements', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', fetchAchievements);
 window.updateAchievements = refreshAchievements;
 </script>
-
 </body>
 </html>

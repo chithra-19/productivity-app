@@ -6,6 +6,10 @@ import com.climbup.model.Profile;
 import com.climbup.model.User;
 import com.climbup.repository.ProfileRepository;
 import com.climbup.repository.UserRepository;
+import com.climbup.repository.TaskRepository;
+import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.productivity.XPService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,12 +29,23 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
+    private final StreakTrackerService streakTrackerService;
+    private final XPService xpService;
 
-    public ProfileServiceImpl(ProfileRepository profileRepository, UserRepository userRepository) {
+    public ProfileServiceImpl(ProfileRepository profileRepository,
+                              UserRepository userRepository,
+                              TaskRepository taskRepository,
+                              StreakTrackerService streakTrackerService,
+                              XPService xpService) {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
+        this.taskRepository = taskRepository;
+        this.streakTrackerService = streakTrackerService;
+        this.xpService = xpService;
     }
 
+    // ---------- Create Profile ----------
     @Override
     public ProfileResponseDTO createProfile(Long userId, ProfileRequestDTO dto) {
         User user = userRepository.findById(userId)
@@ -47,35 +62,52 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setBio(dto.getBio());
         profile.setUser(user);
 
-        // Initialize stats
-        profile.setStreak(0);
-        profile.setCompletedTasks(0);
-        profile.setProductivityScore(0);
+        // Initialize profile (static info only)
         profile.setLastActiveDate(LocalDate.now());
         profile.setNewAchievement(false);
         profile.setAchievementList(new ArrayList<>());
 
-        return toDTO(profileRepository.save(profile));
+        return toDTO(profileRepository.save(profile), user);
     }
 
+    // ---------- Get Profile ----------
     @Override
     public ProfileResponseDTO getProfile(Long userId) {
+        // --- Fetch user and profile (static info) ---
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Use getOrCreateProfile instead of strict find
         Profile profile = getOrCreateProfile(user);
 
-        return toDTO(profile);
+        // --- Aggregate dynamic stats ---
+        long completedTasks = taskRepository.countByUserAndCompletedTrue(user);
+        int currentStreak = streakTrackerService.getCurrentStreak(user);
+        int bestStreak = streakTrackerService.getBestStreak(user.getId());
+
+        long xp = xpService.getCurrentXP(user.getId());
+        int level = xpService.getLevel(user.getId());
+        int levelProgress = xpService.getProgressToNextLevel(xp); // 0-100%
+
+        // --- Build DTO ---
+        ProfileResponseDTO dto = toDTO(profile, user);
+        dto.setCompletedTasks(completedTasks);
+        dto.setCurrentStreak(currentStreak);
+        dto.setBestStreak(bestStreak);
+        dto.setXp(xp);
+        dto.setLevel(level);
+        dto.setLevelProgress(levelProgress);
+
+        return dto;
     }
 
 
+    // ---------- Update Profile ----------
     @Override
     public ProfileResponseDTO updateProfile(Long userId, ProfileRequestDTO dto) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Profile profile = getOrCreateProfile(user); // <-- safe now
+        Profile profile = getOrCreateProfile(user); // static info only
 
         profile.setFirstName(dto.getFirstName());
         profile.setLastName(dto.getLastName());
@@ -85,10 +117,11 @@ public class ProfileServiceImpl implements ProfileService {
 
         profileRepository.save(profile);
 
-        return toDTO(profile);
+        // Return fully aggregated data
+        return getProfile(userId);
     }
 
-
+    // ---------- Helper Methods ----------
     @Override
     public Profile findByUser(User user) {
         return profileRepository.findByUser(user)
@@ -104,9 +137,6 @@ public class ProfileServiceImpl implements ProfileService {
             profile.setEmail(user.getEmail());
             profile.setBio("No bio yet.");
             profile.setProfilePictureUrl(null);
-            profile.setStreak(0);
-            profile.setCompletedTasks(0);
-            profile.setProductivityScore(0);
             profile.setLastActiveDate(LocalDate.now());
             profile.setNewAchievement(false);
             profile.setAchievementList(new ArrayList<>());
@@ -114,50 +144,45 @@ public class ProfileServiceImpl implements ProfileService {
         });
     }
 
-    // Mapper
-    private ProfileResponseDTO toDTO(Profile profile) {
+    // ---------- Mapper ----------
+    private ProfileResponseDTO toDTO(Profile profile, User user) {
         ProfileResponseDTO dto = new ProfileResponseDTO();
         dto.setId(profile.getId());
         dto.setFirstName(profile.getFirstName());
         dto.setLastName(profile.getLastName());
         dto.setEmail(profile.getEmail());
         dto.setBio(profile.getBio());
-        dto.setUserId(profile.getUser().getId());
+        dto.setUserId(user.getId());
 
-        dto.setStreak(profile.getStreak());
-        dto.setCompletedTasks(profile.getCompletedTasks());
-        dto.setProductivityScore(profile.getProductivityScore());
+        // Static / placeholder stats (dynamic stats set separately)
+        dto.setCurrentStreak(0);
+        dto.setCompletedTasks(0);
+        dto.setProductivityScore(0);
         dto.setLastActiveDate(profile.getLastActiveDate());
         dto.setNewAchievement(profile.isNewAchievement());
         dto.setAchievementList(profile.getAchievementList() != null ? profile.getAchievementList() : new ArrayList<>());
 
         return dto;
     }
-    
+
+    // ---------- Profile Image Upload ----------
     @Override
     public String saveProfileImage(MultipartFile file) {
         if (file.isEmpty()) return null;
 
         try {
-            // Generate a unique filename
             String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-
-            // Folder to store images (create it if it doesn't exist)
             String uploadDir = "uploads/profile-images/";
             File dir = new File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
 
-            // Save the file locally
             Path filePath = Paths.get(uploadDir + filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Return the relative or absolute URL/path to store in DB
-            return "/" + uploadDir + filename; // Example: "/uploads/profile-images/12345_pic.png"
-
+            return "/" + uploadDir + filename;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
-
 }

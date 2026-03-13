@@ -4,7 +4,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     initSidebarToggle();
     initGreeting();
-    loadHeatmapAndStats();
     initMarkTaskButtons();
     initStatsAnimation();
     createQuickAddButton();
@@ -58,79 +57,6 @@ function initStatsAnimation() {
     ["productivityScore", "current-streak", "pendingCount"].forEach(id => animateCount(id));
 }
 
-// =============================================
-// HEATMAP & XP / STATS LOADING
-// =============================================
-document.addEventListener("DOMContentLoaded", () => {
-    const svg = document.getElementById("activityHeatmap");
-
-    const cellSize = 15;
-    const cellPadding = 3;
-    const weeks = 53;
-    const days = 7;
-
-    // Example activity data (Replace with real API data)
-    // Format: { "2025-01-04": 2, "2025-02-18": 5 }
-    const activityData = window.activityData || {};
-
-    // Color scale similar to LeetCode
-    function getColor(count) {
-        if (count === 0 || count === undefined) return "#ebedf0";
-        if (count <= 2) return "#9be9a8";
-        if (count <= 5) return "#40c463";
-        if (count <= 8) return "#30a14e";
-        return "#216e39";
-    }
-
-    // Generate all days of past 53 weeks
-    function getAllDates() {
-        const arr = [];
-        const today = new Date();
-
-        for (let w = 0; w < weeks; w++) {
-            for (let d = 0; d < days; d++) {
-                const date = new Date();
-                date.setDate(today.getDate() - (w * 7 + d));
-                arr.push({
-                    date: date,
-                    week: w,
-                    day: date.getDay()
-                });
-            }
-        }
-
-        return arr.reverse(); // left → right
-    }
-
-    const allDates = getAllDates();
-
-    // Set SVG width & height
-    svg.setAttribute("width", (cellSize + cellPadding) * weeks);
-    svg.setAttribute("height", (cellSize + cellPadding) * days);
-
-    // Draw cells
-    allDates.forEach((item) => {
-        const dateStr = item.date.toISOString().split("T")[0];
-        const count = activityData[dateStr] || 0;
-
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("class", "heatmap-cell");
-        rect.setAttribute("x", item.week * (cellSize + cellPadding));
-        rect.setAttribute("y", item.day * (cellSize + cellPadding));
-        rect.setAttribute("width", cellSize);
-        rect.setAttribute("height", cellSize);
-        rect.setAttribute("fill", getColor(count));
-
-        rect.setAttribute("data-date", dateStr);
-        rect.setAttribute("data-count", count);
-
-        rect.addEventListener("mouseover", () => {
-            rect.setAttribute("title", `${dateStr} — ${count} activities`);
-        });
-
-        svg.appendChild(rect);
-    });
-});
 
 
 // =============================================

@@ -54,7 +54,7 @@ public class TaskController {
     /** ✅ Create a new task */
     @PostMapping
     public ResponseEntity<TaskResponseDTO> createTask(@Valid @RequestBody TaskRequestDTO dto, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         TaskResponseDTO created = taskService.createTask(dto, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -62,7 +62,7 @@ public class TaskController {
     /** ✅ Get all tasks for user */
     @GetMapping
     public ResponseEntity<List<TaskResponseDTO>> getTasks(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
         return ResponseEntity.ok(tasks);
     }
@@ -124,7 +124,7 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> updateTask(@PathVariable Long taskId,
                                                       @RequestBody TaskUpdateDTO dto,
                                                       Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         TaskResponseDTO updated = taskService.updateTask(taskId, dto, user);
         return ResponseEntity.ok(updated);
     }
@@ -135,7 +135,7 @@ public class TaskController {
     /** ✅ Task stats */
     @GetMapping("/stats")
     public ResponseEntity<Map<LocalDate, Long>> getTaskStats(Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         Map<LocalDate, Long> stats = taskService.getTaskStats(user);
         return ResponseEntity.ok(stats);
     }
@@ -143,7 +143,7 @@ public class TaskController {
  // Fetch single task for editing
     @GetMapping("/single/{taskId}") 
     public ResponseEntity<TaskResponseDTO> getTask(@PathVariable Long taskId, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         TaskResponseDTO task = taskService.getTaskById(taskId, user);
         if(task == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         return ResponseEntity.ok(task);
@@ -155,7 +155,7 @@ public class TaskController {
             @PathVariable Long taskId,
             Principal principal) {
 
-        User user = userService.findByUsername(principal.getName());
+        User user = userService.findByEmail(principal.getName());
         taskService.deleteTask(taskId, user);
 
         int currentStreak = streakTrackerService.getCurrentStreak(user);

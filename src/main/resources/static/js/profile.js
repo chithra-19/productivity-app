@@ -1,147 +1,139 @@
-// ===== Store original form values =====
+// ===============================
+// PROFILE EDIT MODE
+// ===============================
+
+const editBtn = document.getElementById("editBtn");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+const profileInputs = document.querySelectorAll(".profile-input");
+
 let originalValues = {};
 
-// ===== Enable Edit Mode =====
-function enableEdit() {
-  document.querySelectorAll("#profileForm .form-control").forEach(el => {
-    originalValues[el.name] = el.value;
-    el.disabled = false;
-  });
-  document.getElementById("saveBtn").style.display = "inline-block";
-  document.getElementById("cancelBtn").style.display = "inline-block";
+// Enable Edit Mode
+function enableEditMode() {
+    profileInputs.forEach(input => {
+        originalValues[input.name] = input.value;
+        input.disabled = false;
+    });
 
-  // Show overlay on profile picture
-  document.querySelector(".overlay").style.display = "block";
-  document.getElementById("editBtn").style.display = "none";
+    saveBtn.classList.remove("d-none");
+    cancelBtn.classList.remove("d-none");
+    editBtn.classList.add("d-none");
 }
 
-// ===== Cancel Edit Mode =====
-function cancelEdit() {
-  Object.keys(originalValues).forEach(key => {
-    const el = document.querySelector(`[name="${key}"]`);
-    if (el) el.value = originalValues[key];
-  });
-  document.querySelectorAll("#profileForm .form-control").forEach(el => el.disabled = true);
+// Cancel Edit Mode
+function cancelEditMode() {
+    profileInputs.forEach(input => {
+        input.value = originalValues[input.name] || input.value;
+        input.disabled = true;
+    });
 
-  document.getElementById("saveBtn").style.display = "none";
-  document.getElementById("cancelBtn").style.display = "none";
-
-  // Hide overlay
-  document.querySelector(".overlay").style.display = "none";
-  document.getElementById("editBtn").style.display = "inline-block";
+    saveBtn.classList.add("d-none");
+    cancelBtn.classList.add("d-none");
+    editBtn.classList.remove("d-none");
 }
 
-// ===== Preview Profile Picture =====
+// Attach events safely
+if (editBtn) editBtn.addEventListener("click", enableEditMode);
+if (cancelBtn) cancelBtn.addEventListener("click", cancelEditMode);
+
+
+// ===============================
+// PROFILE IMAGE PREVIEW
+// ===============================
+
 function previewImage(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => document.getElementById('profilePreview').src = e.target.result;
-    reader.readAsDataURL(input.files[0]);
-  }
-}
-
-// ===== Update Stats Dynamically =====
-function updateStats(data) {
-  const currentStreak = document.getElementById('currentStreak');
-  const completedTasks = document.getElementById('completedTasks');
-  const tasksProgress = document.getElementById('tasksProgress');
-  const productivityScore = document.getElementById('productivityScore');
-  const badgesCount = document.getElementById('badgesCount');
-  const badgesContainer = document.querySelector('.badges');
-
-  if(currentStreak) currentStreak.innerText = data.streak;
-  if(completedTasks) completedTasks.innerText = data.completedTasks;
-  if(tasksProgress) tasksProgress.style.width = data.taskPercent + '%';
-  if(productivityScore) productivityScore.innerText = data.productivityScore;
-  if(badgesCount) badgesCount.innerText = data.badges.length;
-
-  if(badgesContainer) {
-    badgesContainer.innerHTML = '';
-    data.badges.forEach(b => {
-      const img = document.createElement('img');
-      img.src = b.src;
-      img.alt = b.name;
-      img.title = b.name;
-      img.classList.add('badge-img');
-      badgesContainer.appendChild(img);
-    });
-  }
-}
-
-// ===== Render Timeline =====
-function renderTimeline(activity) {
-  const timeline = document.getElementById('recent-activities');
-  if(!timeline) return;
-  timeline.innerHTML = '';
-  activity.forEach(a => {
-    const li = document.createElement('li');
-    li.classList.add("timeline-item");
-    li.innerHTML = `<span class="time">${a.time}</span> <span class="event">${a.event}</span>`;
-    timeline.appendChild(li);
-  });
-}
-
-// ===== Theme Toggle =====
-function initTheme() {
-  const themeSwitch = document.getElementById('themeSwitch');
-
-  // Load saved theme
-  if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-mode');
-    themeSwitch.checked = true;
-  }
-
-  // Toggle theme
-  themeSwitch.addEventListener('change', () => {
-    if (themeSwitch.checked) {
-      document.body.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const preview = document.getElementById("profilePreview");
+            if (preview) preview.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
     }
-  });
 }
 
-// ===== Initialize Page =====
-document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
 
-  // Example stats (remove if dynamic from backend)
-  updateStats({
-    streak: 15,
-    completedTasks: 52,
-    taskPercent: 80,
-    productivityScore: 135,
-    badges: [
-      {name: 'First Task Completed', src:'/images/badge1.png'},
-      {name: '7-Day Streak', src:'/images/badge2.png'},
-      {name: '100 Tasks Completed', src:'/images/badge3.png'},
-      {name: 'Daily Winner', src:'/images/badge4.png'}
-    ]
-  });
 
-  // Example timeline (remove if dynamic from backend)
-  const recentActivity = [
-    {time: 'Today', event: 'Completed task: “Build Profile Page” ✅'},
-    {time: 'Yesterday', event: 'Unlocked Achievement: “7-Day Streak” 🏆'},
-    {time: '2 days ago', event: 'Completed task: “Setup Heatmap” ✅'}
-  ];
-  renderTimeline(recentActivity);
+// ===============================
+// DYNAMIC STATS UPDATE (Optional)
+// ===============================
 
-  // Fetch dynamic recent activities if needed
-  fetch('/profile/recent')
-    .then(res => res.json())
-    .then(data => {
-      if(!data) return;
-      const list = document.getElementById("recent-activities");
-      if(!list) return;
-      list.innerHTML = "";
-      data.forEach(a => {
-        const item = document.createElement('li');
-        item.classList.add("timeline-item");
-        item.innerHTML = `<span class="time">${a.activityDate}</span> <span class="event">${a.category} — ${a.taskCount} tasks — ${a.focusMinutes}min</span>`;
-        list.appendChild(item);
-      });
+function updateStats(data) {
+    const streakEl = document.getElementById("streakValue");
+    const completedEl = document.getElementById("completedTasksValue");
+    const progressBar = document.getElementById("completionBar");
+    const productivityEl = document.getElementById("productivityValue");
+    const badgesContainer = document.getElementById("badgesContainer");
+
+    if (streakEl) streakEl.innerText = data.streak;
+    if (completedEl) completedEl.innerText = data.completedTasks;
+
+    if (progressBar) {
+        progressBar.style.width = data.completionPercentage + "%";
+        progressBar.innerText = data.completionPercentage + "%";
+    }
+
+    if (productivityEl) productivityEl.innerText = data.productivityScore;
+
+    if (badgesContainer && data.badges) {
+        badgesContainer.innerHTML = "";
+        data.badges.forEach(badge => {
+            const img = document.createElement("img");
+            img.src = badge.imageUrl || "/images/default-badge.png";
+            img.alt = badge.name;
+            img.title = badge.name;
+            img.classList.add("badge-img");
+            badgesContainer.appendChild(img);
+        });
+    }
+}
+
+
+// ===============================
+// TIMELINE RENDER (Optional AJAX)
+// ===============================
+
+function renderTimeline(activities) {
+    const timeline = document.getElementById("recentActivitiesList");
+    if (!timeline) return;
+
+    timeline.innerHTML = "";
+
+    activities.forEach(activity => {
+        const li = document.createElement("li");
+        li.classList.add("mb-3", "border-bottom", "pb-2");
+
+        li.innerHTML = `
+            <small class="text-muted">${activity.activityDate}</small>
+            <div>${activity.description}</div>
+        `;
+
+        timeline.appendChild(li);
     });
+}
+
+
+// ===============================
+// INITIALIZATION
+// ===============================
+
+document.addEventListener("DOMContentLoaded", () => {
+    initTheme();
+
+    // Optional: Fetch updated stats dynamically
+    /*
+    fetch("/api/profile/stats")
+        .then(res => res.json())
+        .then(data => updateStats(data))
+        .catch(err => console.error("Stats fetch error:", err));
+    */
+
+    // Optional: Fetch recent activities dynamically
+    /*
+    fetch("/api/profile/recent")
+        .then(res => res.json())
+        .then(data => renderTimeline(data))
+        .catch(err => console.error("Timeline fetch error:", err));
+    */
 });
