@@ -1,12 +1,16 @@
 package com.climbup.controller.user;
 
 import com.climbup.dto.request.UserRequestDTO;
+import com.climbup.dto.response.DailyProgressDTO;
+import com.climbup.dto.response.DailyStatsDTO;
 import com.climbup.dto.response.UserResponseDTO;
 import com.climbup.dto.response.UserStatsDTO;
 import com.climbup.mapper.UserMapper;
 import com.climbup.model.Task;
 import com.climbup.model.User;
+import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.AchievementService;
+import com.climbup.service.productivity.FocusSessionService;
 import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.user.UserService;
 import jakarta.validation.Valid;
@@ -25,15 +29,21 @@ public class UserController {
     private final UserService userService;
     private final AchievementService achievementService;
     private final StreakTrackerService streakTrackerService;
+    private final UserRepository userRepository;
+    private final FocusSessionService focusSessionService;
     
     @Autowired
     public UserController(AchievementService achievementService, 
     		StreakTrackerService streakTrackerService,
-    		UserService userService) {
+    		UserService userService,
+    		UserRepository userRepository,
+    		FocusSessionService focusSessionService) {
         this.achievementService = achievementService;
         this.userService = userService;
         this.streakTrackerService = streakTrackerService;
-    }
+        this.userRepository = userRepository;
+        this.focusSessionService = focusSessionService;
+        }
     
 
     // ---------- Register new user ----------
@@ -93,6 +103,42 @@ public class UserController {
         );
 
     }
+    
+    @PutMapping("/{id}/update-daily-goal")
+    public ResponseEntity<Void> updateDailyGoal(@PathVariable Long id, @RequestParam int goalMinutes) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
+        user.setDailyGoalMinutes(goalMinutes);
+        userRepository.save(user);
+
+        return 
+        		ResponseEntity.ok().build();
+    }
+
+
+    @GetMapping("/user/{userId}/daily-stats")
+    public ResponseEntity<DailyStatsDTO> getDailyStats(@PathVariable Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        int focusMinutes = user.getDailyGoalMinutes();
+        int goalMinutes = user.getDailyGoalMinutes();
+        long sessionCount = focusSessionService.getCompletedSessionsCount(user);
+
+        DailyStatsDTO stats = new DailyStatsDTO(focusMinutes, goalMinutes, sessionCount);
+        return ResponseEntity.ok(stats);
+    }
+    
+    @GetMapping("/{id}/daily-progress")
+    public DailyProgressDTO getDailyProgress(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new DailyProgressDTO(
+            user.getTotalFocusMinutes(),
+            user.getDailyGoalMinutes()
+        );
+    }
 
 }

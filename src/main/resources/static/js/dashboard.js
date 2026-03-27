@@ -157,3 +157,37 @@ function createQuickAddButton() {
     });
     document.body.appendChild(button);
 }
+
+
+async function renderDashboardTasks() {
+  const dashboardEl = document.getElementById("dashboardTasks");
+  dashboardEl.innerHTML = "";
+
+  try {
+    const response = await fetch("/tasks/today/json");
+    const tasks = await response.json();
+
+    const order = { HIGH: 1, MEDIUM: 2, LOW: 3 };
+    const sorted = tasks.sort((a, b) => order[a.priority] - order[b.priority]);
+    const topFive = sorted.slice(0, 5);
+
+    topFive.forEach(task => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+
+      li.innerHTML = `
+        <div>
+          <input type="checkbox" ${task.completed ? "checked" : ""} disabled>
+          <span class="task-title ${task.completed ? "completed" : ""}">${task.title}</span>
+        </div>
+        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+      `;
+
+      dashboardEl.appendChild(li);
+    });
+  } catch (err) {
+    dashboardEl.innerHTML = `<li class="list-group-item text-danger">Failed to load tasks</li>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", renderDashboardTasks);

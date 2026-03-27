@@ -18,7 +18,6 @@ const TIMER_KEYS = {
 };
 
 
-
 function checkNewDay() {
   const today = new Date().toDateString();
   const lastDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
@@ -34,7 +33,10 @@ function checkNewDay() {
     // Reset remaining goal
     const goal = Number(localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || 5;
     remainingGoalHours = goal;
-    remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+	const remainingMinutes = Math.max(remainingGoalHours * 60, 0);
+	const remainingHours = Math.floor(remainingMinutes / 60);
+	const remainingMins = remainingMinutes % 60;
+	remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
     updateGoalProgress();
 
     // Save resets in localStorage
@@ -56,8 +58,16 @@ let totalFocusedMinutes = Number(localStorage.getItem(STORAGE_KEYS.TOTAL_MINUTES
 let completedSessions = Number(localStorage.getItem(STORAGE_KEYS.SESSIONS)) || 0;
 
 // Session history & streak
-let sessionHistory = [];
+sessionHistory.push({
+  date: new Date().toISOString(), // ✅ ISO format
+  type: sessionType,
+  minutes: sessionMinutes
+});
+localStorage.setItem(STORAGE_KEYS.SESSION_HISTORY, JSON.stringify(sessionHistory));
 
+document.addEventListener("DOMContentLoaded", () => { 
+	syncStatsFromBackend(); 
+});
 
 const timerEl = document.getElementById("timer");
 const startBtn = document.getElementById("startBtn");
@@ -87,11 +97,30 @@ let dailyGoalHours = Number(document.getElementById('dailyGoal').value);
 let remainingGoalHours = dailyGoalHours;
 const remainingGoalEl = document.getElementById('remainingGoal');
 
+// ✅ Display remaining goal in "xh ym" format 
+function updateRemainingGoalDisplay() { 
+	const remainingMinutes = Math.max(dailyGoalHours * 60 - totalFocusedMinutes, 0);
+	 const remainingHours = Math.floor(remainingMinutes / 60);
+	  const remainingMins = remainingMinutes % 60;
+	  remainingGoalEl.textContent = ${remainingHours}h ${remainingMins}m;
+   }
+   // ✅ Initial display on page load
+  updateRemainingGoalDisplay();
+  // ✅ Update when goal changes
+  dailyGoalInput.addEventListener('change', () => { 
+	dailyGoalHours = Number(dailyGoalInput.value); 
+	remainingGoalHours = dailyGoalHours - totalFocusedMinutes / 60;
+  updateRemainingGoalDisplay(); });
+
+
 // Update remaining goal whenever goal changes
 document.getElementById('dailyGoal').addEventListener('change', () => {
   dailyGoalHours = Number(document.getElementById('dailyGoal').value);
   remainingGoalHours = dailyGoalHours - totalFocusedMinutes/60;
-  remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+  const remainingMinutes = Math.max(remainingGoalHours * 60, 0);
+  const remainingHours = Math.floor(remainingMinutes / 60);
+  const remainingMins = remainingMinutes % 60;
+  remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
 });
 
 function updateDisplay() {
@@ -99,6 +128,7 @@ function updateDisplay() {
   let sec = String(timerSeconds).padStart(2,'0');
   timerEl.textContent = `${min}:${sec}`;
 }
+
 
 function updateStats() {
   totalHoursEl.textContent = (totalFocusedMinutes / 60).toFixed(2);
@@ -199,7 +229,10 @@ function startTimer() {
       // goal logic
       remainingGoalHours -= sessionMinutes / 60;
       if (remainingGoalHours < 0) remainingGoalHours = 0;
-      remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+	  const remainingMinutes = Math.max(remainingGoalHours * 60, 0);
+	  const remainingHours = Math.floor(remainingMinutes / 60);
+	  const remainingMins = remainingMinutes % 60;
+	  remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
 
 	  updateDailyGoalDisplay();
       const percent =
@@ -226,17 +259,48 @@ function startTimer() {
   }, 1000);
 }
 
-function pauseTimer() {
-  running = false;
-  clearInterval(interval);
+function pauseTimer() { running = false; clearInterval(interval);
+// Save remaining time in ms 
+const remaining = (timerMinutes * 60 + timerSeconds) * 1000; localStorage.setItem(TIMER_KEYS.REMAINING, remaining);
+// Clear running flag and start time
+ localStorage.removeItem(TIMER_KEYS.RUNNING); localStorage.removeItem(TIMER_KEYS.START);
+  localStorage.removeItem(TIMER_KEYS.DURATION); } 
+  
+function continueTimer() { 
+	if (running) return; running = true;
+const remaining = Number(localStorage.getItem(TIMER_KEYS.REMAINING)); if (!remaining || remaining <= 0) return;
+// Set new start time and duration
+ localStorage.setItem(TIMER_KEYS.START, Date.now());
+  localStorage.setItem(TIMER_KEYS.DURATION, remaining); 
+  localStorage.setItem(TIMER_KEYS.RUNNING, "true");
+  
+  interval = setInterval(() => { const start = Number(localStorage.getItem(TIMER_KEYS.START)); 
+	const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION)); 
+	const elapsed = Date.now() - start; 
+	const left = duration - elapsed;
 
-  // 🧠 preserve remaining time
-  const remaining =
-    (timerMinutes * 60 + timerSeconds) * 1000;
+  if (left <= 0) {
+    clearInterval(interval);
+    running = false;
+    localStorage.removeItem(TIMER_KEYS.RUNNING);
+    timerMinutes = 0;
+    timerSeconds = 0;
+    updateDisplay();
+    progressCircle.style.strokeDashoffset = 0;
+    showToast("Session Complete! ✅");
+    completeSessionBackend();
+    return;
+  }
 
-  localStorage.setItem(TIMER_KEYS.START, Date.now());
-  localStorage.setItem(TIMER_KEYS.DURATION, remaining);
-}
+  const totalSeconds = Math.ceil(left / 1000); // ← use ceil instead of floor
+  timerMinutes = Math.floor(totalSeconds / 60);
+  timerSeconds = totalSeconds % 60;
+  updateDisplay();
+
+  const offset = circumference - (elapsed / duration) * circumference;
+  progressCircle.style.strokeDashoffset = Math.max(0, offset);
+  }, 1000); } 
+
 
 
 function resetTimer() {
@@ -344,7 +408,10 @@ dailyGoalInput.value = dailyGoalHours;
 remainingGoalHours = savedRemaining
   ? Number(savedRemaining)
   : Math.max(dailyGoalHours - totalFocusedMinutes / 60, 0);
-remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+  const remainingMinutes = Math.max(remainingGoalHours * 60, 0);
+  const remainingHours = Math.floor(remainingMinutes / 60);
+  const remainingMins = remainingMinutes % 60;
+  remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
 
 const updateGoalProgress = () => {
   const percent = ((dailyGoalHours - remainingGoalHours) / dailyGoalHours) * 100;
@@ -370,7 +437,10 @@ dailyGoalInput.addEventListener('change', () => {
 
   dailyGoalHours = newGoal;
   remainingGoalHours = Math.max(dailyGoalHours - totalFocusedMinutes / 60, 0);
-  remainingGoalEl.textContent = remainingGoalHours.toFixed(2);
+  const remainingMinutes = Math.max(remainingGoalHours * 60, 0);
+  const remainingHours = Math.floor(remainingMinutes / 60);
+  const remainingMins = remainingMinutes % 60;
+  remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
   updateDailyGoalDisplay();
   updateGoalProgress();
 
@@ -386,8 +456,114 @@ function showToast(message) {
 }
 
 // Update the 0h / Xh display
-function updateDailyGoalDisplay() {
-  document.getElementById('goalDone').textContent = (totalFocusedMinutes / 60).toFixed(2) + 'h';
-  document.getElementById('goalTotal').textContent = dailyGoalHours + 'h';
-}
+function updateDailyGoalDisplay() { 
+	const focusedMinutes = totalFocusedMinutes;
+	 const goalMinutes = dailyGoalHours * 60;
+	 const focusedHours = Math.floor(focusedMinutes / 60);
+	  const focusedMins = focusedMinutes % 60;
+	  const goalHours = Math.floor(goalMinutes / 60);
+	  document.getElementById('goalDone').textContent = ${focusedHours}h ${focusedMins}m; document.getElementById('goalTotal').textContent = ${goalHours}h; }
 
+	  const saveBtn = document.getElementById("saveGoalBtn");
+
+	  saveBtn.addEventListener("click", () => { 
+		const newGoal = Number(dailyGoalInput.value);
+		 if (!isNaN(newGoal) && newGoal > 0 && newGoal <= 24) { 
+			dailyGoalHours = newGoal; 
+			remainingGoalHours = Math.max(dailyGoalHours - totalFocusedMinutes / 60, 0);
+			localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, dailyGoalHours);
+			localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalHours);
+
+			updateDailyGoalDisplay(); // ✅ updates 0h / Xh
+			updateGoalProgress();     // ✅ updates progress bar
+			remainingGoalEl.textContent = remainingGoalHours.toFixed(2); // ✅ updates remaining
+			showToast("Goal updated! 🎯"); // ✅ shows toast
+			} 
+		});
+		
+function updateDailyProgress() {
+	 fetch(/api/users/${userId}/daily-progress)
+	  .then(res => res.json()) .then(progress => { 
+		const percent = (progress.dailyFocusMinutes / progress.dailyGoalMinutes) * 100; 
+		document.getElementById("goalProgressBar").style.width = ${percent}%; 
+		document.getElementById("goalText").textContent = ${Math.floor(progress.dailyFocusMinutes/60)}h ${progress.dailyFocusMinutes%60}m / ${progress.dailyGoalMinutes/60}h; 
+	});
+ }
+ document.addEventListener("DOMContentLoaded", () => {
+   updateDailyStats();
+ });
+
+function updateDailyStats() {
+	 fetch(/api/focus-sessions/user/${userId}/daily-stats) 
+	 .then(res => res.json()) .then(stats => { 
+		const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100; 
+		document.getElementById("goalProgressBar").style.width = ${percent}%;
+		document.getElementById("goalText").textContent = ${Math.floor(stats.dailyFocusMinutes/60)}h ${stats.dailyFocusMinutes%60}m / ${stats.dailyGoalMinutes/60}h;
+		document.getElementById("sessionCount").textContent = stats.sessionsCompletedToday;
+		document.getElementById("totalFocusHours").textContent =
+        (stats.totalFocusMinutes / 60).toFixed(2);
+		});
+	} 
+	
+function syncStatsFromBackend() {
+	 fetch(/api/focus-sessions/user/${userId}/daily-stats) 
+	 .then(res => res.json()) .then(stats => { 
+		totalFocusedMinutes = stats.dailyFocusMinutes;
+		completedSessions = stats.sessionsCompletedToday;
+		  updateStats(); // ✅ updates 0.83 and 2
+		  updateDailyGoalDisplay(); // ✅ updates 0h 50m / 13h
+		  updateGoalProgress(); // ✅ updates progress bar
+
+		  // Optional: sync localStorage
+		  localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, totalFocusedMinutes);
+		  localStorage.setItem(STORAGE_KEYS.SESSIONS, completedSessions);
+		});
+	}
+	
+	function updateDashboardStats() {
+	  fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
+	    .then(res => res.json())
+	    .then(stats => {
+	      const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100;
+	      document.getElementById("goalProgressBar").style.width = `${percent}%`;
+	      document.getElementById("goalText").textContent =
+	        `${Math.floor(stats.dailyFocusMinutes/60)}h ${stats.dailyFocusMinutes%60}m / ${stats.dailyGoalMinutes/60}h`;
+
+	      document.getElementById("sessionCount").textContent = stats.sessionsCompletedToday;
+	      document.getElementById("totalFocusHours").textContent =
+	        (stats.totalFocusMinutes / 60).toFixed(2);
+	    });
+	}
+
+
+async function completeSessionBackend() {
+  try {
+    const res = await fetch("/api/focus-sessions/complete", {
+      method: "POST"
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to complete session");
+    }
+
+    console.log("✅ Session saved to backend");
+
+    // ✅ Only update quota if session was Focus
+    if (currentSessionType === "focus") {
+      const prevFocusMinutes = Number(localStorage.getItem("focusMinutesToday")) || 0;
+      const sessionMinutes = timerMinutes + Math.floor(timerSeconds / 60);
+      const newTotal = prevFocusMinutes + sessionMinutes;
+
+      localStorage.setItem("focusMinutesToday", newTotal);
+      updateFocusProgressBar(newTotal); // ← your UI update function
+    }
+
+    // 🔥 Refresh backend history UI
+    if (typeof fetchSessions === "function") {
+      fetchSessions();
+    }
+
+  } catch (err) {
+    console.error("❌ Backend error:", err);
+  }
+}

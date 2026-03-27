@@ -5,8 +5,11 @@ import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.FocusSession;
 import com.climbup.model.User;
 import com.climbup.repository.FocusSessionRepository;
+import com.climbup.repository.UserRepository;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import jakarta.transaction.Transactional;
 
@@ -22,9 +25,13 @@ import java.util.stream.Collectors;
 public class FocusSessionService {
 
     private final FocusSessionRepository focusSessionRepository;
+    private final UserRepository userRepository;
+    
 
-    public FocusSessionService(FocusSessionRepository focusSessionRepository) {
+    public FocusSessionService(FocusSessionRepository focusSessionRepository,
+    		UserRepository userRepository) {
         this.focusSessionRepository = focusSessionRepository;
+        this.userRepository = userRepository;
     }
 
     // Fetch all sessions for today
@@ -97,16 +104,17 @@ public class FocusSessionService {
 
     @Transactional
     public FocusSessionResponseDTO completeSession(User user) {
-
         // Get active session or throw if none
         FocusSession session = focusSessionRepository.findActiveSession(user)
                 .orElseThrow(() -> new IllegalStateException("No active focus session"));
 
         // Complete the session
         session.completeSession();
-
-        // Save changes
         focusSessionRepository.save(session);
+
+        // ✅ Add session minutes to daily goal progress
+        user.addFocusMinutes(session.getDurationMinutes());
+        userRepository.save(user);
 
         return mapToResponse(session);
     }
@@ -159,18 +167,21 @@ public class FocusSessionService {
     }
 
 
-    @Transactional
-    public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, User user) {
+    public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, Long userId) {
         FocusSession session = focusSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
-
-        if (!session.getUser().equals(user)) {
-            throw new IllegalStateException("You cannot update another user's session");
-        }
+            .orElseThrow(() -> new RuntimeException("Session not found"));
 
         session.setSuccessful(true);
+        session.setEndTime(LocalDateTime.now());
         focusSessionRepository.save(session);
-        return mapToResponse(session);
+
+        // ✅ Update user’s daily focus minutes
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        user.addFocusMinutes(session.getDurationMinutes());
+        userRepository.save(user);
+
+        return FocusSessionResponseDTO.fromEntity(session);
     }
 
     @Transactional
@@ -192,5 +203,17 @@ public Page<FocusSessionResponseDTO> getUserSessions(User user, Pageable pageabl
 
 
 }
+//✅ Reset daily focus minutes at midnight
+@Scheduled(cron = "0 0 0 * * ?")
+@Transactional
+public void resetDailyFocusMinutes() {
+    List<User> users = userRepository.findAll();
+    for (User user : users) {
+        user.setDailyGoalMinutes(0);
+        userRepository.save(user);
+    }
+}
+
+
 
 }

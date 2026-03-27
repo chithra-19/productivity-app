@@ -71,7 +71,7 @@ public class FocusSessionController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        FocusSessionResponseDTO response = focusSessionService.markSessionSuccessful(sessionId, user);
+        FocusSessionResponseDTO response = focusSessionService.markSessionSuccessful(sessionId, user.getId());
         return ResponseEntity.ok(response);
     }
 
@@ -120,5 +120,11 @@ public class FocusSessionController {
 
         long count = focusSessionService.getSuccessfulSessionsCount(user);
         return ResponseEntity.ok(count);
+    }
+    @GetMapping("/api/users/{id}/completed-sessions-today")
+    public Long getCompletedSessionsToday(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        return focusSessionService.getCompletedSessionsCount(user);
     }
 }

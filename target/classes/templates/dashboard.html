@@ -95,56 +95,14 @@
         </div>
       </div>
 
-	  <!-- Today's Tasks Table -->
-	      <div class="card mb-4 animate-fade">
-	        <div class="card-body">
-	          <div class="d-flex justify-content-between align-items-center mb-3">
-	            <h5 class="card-title mb-0">🌤️ Today's Tasks</h5>
-	            <a th:href="@{/tasks/add}" class="btn btn-sm btn-primary">+ Add Task</a>
-	          </div>
-	          <p class="text-muted fst-italic mb-3">Stay consistent. Regret is more painful than consistency 💪</p>
-
-	          <div th:if="${todaysTasks != null and !todaysTasks.isEmpty()}">
-	            <table class="table table-hover align-middle">
-	              <thead class="table-light">
-	                <tr>
-	                  <th>Title</th>
-	                  <th>Description</th>
-	                  <th>Category</th>
-	                  <th>Status</th>
-	                  <th>Due</th>
-	                
-	                </tr>
-	              </thead>
-	              <tbody>
-	                <tr th:each="task : ${todaysTasks}">
-	                  <td th:text="${task.title != null ? task.title : 'Untitled'}">Title</td>
-	                  <td th:text="${task.description != null ? task.description : '-'}">Description</td>
-	                  <td th:text="${task.category != null ? task.category : '-'}">Category</td>
-	                  <td>
-	                    <span th:if="${task.completed}" class="text-success fw-semibold">Done</span>
-	                    <span th:if="${!task.completed}" class="text-warning fw-semibold">Pending</span>
-	                  </td>
-	                  <td th:text="${task.dueDate != null ? task.dueDate : '-'}">Due Date</td>
-	                  <td>
-	                    <button 
-	                      type="button" 
-	                      th:if="${!task.completed}" 
-	                      class="btn btn-sm btn-success mark-done-btn" 
-	                      th:attr="data-id=${task.id}">
-	                      Mark Done
-	                    </button>
-	                  </td>
-	                </tr>
-	              </tbody>
-	            </table>
-	          </div>
-
-	          <div th:if="${todaysTasks == null or todaysTasks.isEmpty()}">
-	            <p class="text-muted text-center">No tasks for today! Enjoy your day 🎉</p>
-	          </div>
-	        </div>
-	      </div>
+	  <div class="card shadow-sm mt-4">
+	    <div class="card-header bg-primary text-white">
+	      <i class="bi bi-list-check"></i> Top 5 Tasks
+	    </div>
+	    <ul class="list-group list-group-flush" id="dashboardTasks">
+	      <!-- Injected tasks -->
+	    </ul>
+	  </div>
 
       <!-- Stats Row -->
       <div class="row g-4 mb-4" id="statsRow">

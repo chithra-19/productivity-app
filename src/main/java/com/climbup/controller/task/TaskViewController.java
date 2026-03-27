@@ -9,6 +9,7 @@ import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -17,8 +18,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
@@ -131,6 +134,23 @@ public class TaskViewController {
         redirectAttributes.addFlashAttribute("success", "Task deleted successfully!");
         return "redirect:/tasks/all";
     }
+    @PostMapping("/update/json")
+    @ResponseBody
+    public ResponseEntity<?> updateTaskJson(@RequestBody TaskUpdateDTO taskDTO, Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        taskService.updateTask(taskDTO.getId(), taskDTO, user);
+        return ResponseEntity.ok("Task updated");
+    }
 
+    @GetMapping("/today/json")
+    @ResponseBody
+    public List<TaskResponseDTO> getTodayTasksJson(Principal principal) {
+        User user = userService.findByEmail(principal.getName());
+        LocalDate today = LocalDate.now();
+
+        return taskService.getTasksForUser(user).stream()
+            .filter(task -> today.equals(task.getDueDate()))
+            .collect(Collectors.toList());
+    }
 }
 

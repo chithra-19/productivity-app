@@ -89,9 +89,13 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private int level = 1;
+    
+    private int dailyGoalMinutes;
+    
+    private int totalFocusMinutes;
 
-
-    public int getXp() {
+   
+	public int getXp() {
         return xp;
     }
 
@@ -147,6 +151,19 @@ public class User implements UserDetails {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
+	
+	 public void addFocusMinutes(int minutes) {
+	        this.totalFocusMinutes += minutes;
+	    }
+
+	    public int getTotalFocusMinutes() {
+	        return totalFocusMinutes;
+	    }
+
+	    public void setTotalFocusMinutes(int totalFocusMinutes) {
+	        this.totalFocusMinutes = totalFocusMinutes;
+	    }
+
 
     // Constructors
     public User() {}
@@ -178,6 +195,17 @@ public class User implements UserDetails {
         achievements.add(achievement);
         achievement.setUser(this);
     }
+    
+
+
+    public int getDailyGoalMinutes() {
+		return dailyGoalMinutes;
+	}
+
+	public void setDailyGoalMinutes(int dailyGoalMinutes) {
+		this.dailyGoalMinutes = dailyGoalMinutes;
+	}
+
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FocusSession> focusSessions = new ArrayList<>();
@@ -237,7 +265,6 @@ public class User implements UserDetails {
 
     public Profile getProfile() { return profile; }
 
-    public Set<Task> getTasks() { return tasks; }
     public Set<Goal> getGoals() { return goals; }
     public Set<Achievement> getAchievements() { return achievements; }
 
@@ -298,4 +325,6 @@ public class User implements UserDetails {
                 ", email='" + email + '\'' +
                 '}';
     }
+
+
 }
