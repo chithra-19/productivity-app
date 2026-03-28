@@ -90,7 +90,7 @@ public class TaskController {
             taskRepository.save(task);
 
          // 1️⃣ Update streak (category-based)
-            streakTrackerService.evaluateToday(user, task.getCategory());
+            streakTrackerService.evaluateToday(user);
 
             // 2️⃣ Update XP
             xpService.handleTaskCompletion(user, task);
@@ -178,7 +178,7 @@ public class TaskController {
 
         User user = task.getUser(); // get the task owner
 
-        streakTrackerService.evaluateToday(user, task.getCategory());
+        streakTrackerService.evaluateToday(user);
         int currentStreak = streakTrackerService.getCurrentStreak(user);
 
 

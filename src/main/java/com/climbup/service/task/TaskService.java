@@ -226,30 +226,20 @@ public class TaskService {
 
     @Transactional
     public void completeTask(Long taskId, User user) {
-
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
         if (task.isCompleted()) return;
 
-        // 1️⃣ mark completed
+        // Always set both
         task.setCompleted(true);
         task.setCompletedDateTime(LocalDateTime.now());
 
-        // 2️⃣ streak
-        streakTrackerService.evaluateToday(user, "TASK");
-
-
-        // 3️⃣ XP
+        streakTrackerService.evaluateToday(user);
         xpService.handleTaskCompletion(user, task);
-
-        // 4️⃣ achievements
         achievementService.evaluateAchievements(user);
-
-        // 5️⃣ activity
         activityService.logTaskCompleted(task, user);
 
-        // 6️⃣ productivity score 🔥 (THIS WAS MISSING)
         int score = productivityService.calculate(user);
         user.setProductivityScore(score);
 

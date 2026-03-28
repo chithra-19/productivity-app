@@ -167,13 +167,7 @@ tr:hover td {
             <i class="message">Stay consistent. Regret is more painful than consistency 💪</i>
         </div>
     </div>
-	<div class="mb-3">
-	    Pending: <span id="pendingCount" th:text="${pendingTasks}">0</span> |
-	    Streak: <span id="streakCount" th:text="${streak}">0</span> |
-	    XP: <span id="xpCount" th:text="${xp}">0</span>
-	</div>
-
-
+	
 	<!-- Toast Container -->
 	<div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
 	    <div id="taskToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -319,7 +313,7 @@ document.querySelectorAll('.mark-done').forEach(btn => {
 
             // Update row to "Done"
             const row = btn.closest('tr');
-            row.querySelector('td:nth-child(4)').innerHTML = `<span class="status-done">Done</span>`;
+            row.querySelector('td:nth-child(5)').innerHTML = `<span class="status-done">Done</span>`;
             btn.remove(); // remove the "Mark Done" button
 
             // Update counters dynamically
@@ -360,21 +354,32 @@ document.querySelectorAll('.delete-btn').forEach(btn => {
 });
 
 // EDIT
-document.querySelectorAll('.edit-btn').forEach(btn => {
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('.edit-btn').forEach(btn => {
     btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id;
-        try {
-            const res = await fetch(`/tasks/single/${taskId}`);
-            const task = await res.json();
+      const taskId = this.dataset.id;
+      try {
+        const res = await fetch(`/tasks/single/${taskId}`);
+        const task = await res.json();
 
-            document.querySelector('#taskTitle').value = task.title;
-            document.querySelector('#taskDesc').value = task.description;
-            document.querySelector('#taskCategory').value = task.category;
-            document.querySelector('#taskId').value = task.id;
+        document.querySelector('#taskTitle').value = task.title;
+        document.querySelector('#taskDesc').value = task.description;
+        document.querySelector('#taskCategory').value = task.category;
+        document.querySelector('#taskId').value = task.id;
 
-            new bootstrap.Modal(document.getElementById('editTaskModal')).show();
-        } catch(err) { console.error(err); alert("Something went wrong!"); }
+		const modalEl = document.getElementById('editTaskModal');
+		if (!modalEl) {
+		  console.error("Edit modal not found in DOM");
+		  return;
+		}
+		const modal = new bootstrap.Modal(modalEl);
+		modal.show();
+      } catch(err) {
+        console.error(err);
+        alert("Something went wrong!");
+      }
     });
+  });
 });
 
 // SAVE EDIT

@@ -49,4 +49,11 @@ public class ActivityDTO {
             activity.getFocusMinutes()
         );
     }
+    
+    public static ActivityDTO toDTO(Activity activity) {
+        ActivityDTO dto = new ActivityDTO();
+        dto.setDescription(activity.getDescription());
+        dto.setTimestamp(activity.getTimestamp());
+        return dto;
+    }
 }

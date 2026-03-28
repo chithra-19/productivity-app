@@ -48,10 +48,8 @@ public class StreakTracker {
     /* ================= BUSINESS LOGIC ================= */
 
     public void updateForDay(LocalDate today, boolean qualifiedToday) {
-
         if (!qualifiedToday) {
-            currentStreak = 0;
-            return;
+            return; // don’t change streak if no task today
         }
 
         if (lastActiveDate == null) {
@@ -62,15 +60,12 @@ public class StreakTracker {
             if (days == 1) {
                 currentStreak++;
             } else if (days > 1) {
-                currentStreak = 1;
+                currentStreak = 1; // reset to 1, not 0
             }
-            // days == 0 → already counted today
+            // days == 0 → already counted
         }
 
-        if (currentStreak > longestStreak) {
-            longestStreak = currentStreak;
-        }
-
+        longestStreak = Math.max(longestStreak, currentStreak);
         lastActiveDate = today;
     }
 

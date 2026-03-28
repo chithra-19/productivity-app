@@ -49,6 +49,7 @@ public class DashboardController {
     private final GoalService goalService;
     private final DashboardService dashboardService;
     private final ActivityService activityService;
+    private final XPService xpService;
 
     
     @Autowired
@@ -59,7 +60,8 @@ public class DashboardController {
                                    FocusSessionService focusSessionService,
                                    GoalService goalService,
                                    DashboardService dashboardService,
-                                   ActivityService activityService) {
+                                   ActivityService activityService,
+                                   XPService xpService) {
         this.userService = userService;
         this.taskService = taskService;
         this.profileService = profileService;
@@ -68,6 +70,8 @@ public class DashboardController {
         this.goalService = goalService;
         this.dashboardService = dashboardService;
         this.activityService = activityService;
+        this.xpService = xpService;
+        
     }
     
 
@@ -92,6 +96,14 @@ public class DashboardController {
 
         User user = userService.getUserWithAllData(springUser.getUsername());
 
+        int xpInLevel = xpService.xpProgressInCurrentLevel(user);
+        int level = xpService.getLevel(user.getId());
+        double xpPercent = xpService.getXpPercentage(user.getId());
+
+        model.addAttribute("level", level);
+        model.addAttribute("xpInLevel", xpInLevel);
+        model.addAttribute("xpPercent", xpPercent);
+        
         // 🔥 CENTRALIZED DASHBOARD DATA
         DashboardSummaryDTO summary = dashboardService.getDashboardSummary(user);
         model.addAttribute("summary", summary);
@@ -109,6 +121,9 @@ public class DashboardController {
         model.addAttribute("pendingCount",
                 (int) today.stream().filter(t -> !t.isCompleted()).count());
 
+        List<ActivityDTO> recentActivities = activityService.getRecentActivities(user);
+        model.addAttribute("recentActivities", recentActivities);
+        
         // Heatmap
         Map<String, Integer> heatmapData = taskService.getTaskCountsByDate(user)
                 .entrySet().stream()

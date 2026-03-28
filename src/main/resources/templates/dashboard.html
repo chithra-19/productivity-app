@@ -136,36 +136,52 @@
         </div>
       </div>
 
-       
+	  <!-- XP Progress -->
+	  <div class="col-12 animate-fade">
+	    <div class="stat-card p-4 border rounded bg-light shadow-sm">
+	      <div class="d-flex justify-content-between align-items-center mb-3">
+	        <div class="d-flex align-items-center gap-2">
+	          <i class="bi bi-stars text-warning" style="font-size: 1.5rem;"></i>
+	          <h5 class="mb-0 text-muted">Level Progress</h5>
+	        </div>
+	        <span class="badge bg-warning text-dark fw-bold">Level <span th:text="${level}">1</span></span>
+	      </div>
 
-        <!-- XP Progress -->
-        <div class="col-md-6 animate-fade">
-          <div class="stat-card p-3 border rounded">
-            <h5 class="text-muted mb-2">Level / XP Progress</h5>
-            <h6>Level: <span th:text="${level != null ? level : 1}">1</span></h6>
-            <div class="progress">
-              <div class="progress-bar bg-warning" th:style="'width:' + (${xpProgress != null ? xpProgress : 0}) + '%;'">
-                <span th:text="${xpProgress != null ? xpProgress + '%' : '0%'}"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+	      <p class="text-muted mb-3">
+	        <strong th:text="${xpInLevel}">0</strong> XP earned in this level.
+	        <strong th:text="${100 - xpInLevel}">100</strong> XP to reach Level <strong th:text="${level + 1}">2</strong>.
+	      </p>
 
-      <!-- Recent Activities -->
-      <div class="card mb-4 animate-fade">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Recent Activities</h5>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item" th:each="act : ${recentActivities}">
-              <span th:text="${act}">Sample Activity</span>
-            </li>
-            <li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}" class="list-group-item text-muted text-center">
-              No recent activity yet.
-            </li>
-          </ul>
-        </div>
-      </div>
+	      <div class="px-0"> <!-- Remove horizontal padding -->
+	        <div class="progress" style="height: 36px; width: 100%;">
+	          <div class="progress-bar bg-warning text-dark fw-bold px-4"
+	               th:style="'width:' + ${xpPercent} + '%'">
+	            <span th:text="${xpPercent + '%'}">0%</span>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+	  </div>
+
+	  <!-- Recent Activities -->
+	  <div class="card mb-4 animate-fade">
+	    <div class="card-body">
+	      <h5 class="card-title mb-3">Recent Activities</h5>
+	      <ul class="list-group list-group-flush">
+			<li class="list-group-item" th:each="act : ${recentActivities}">
+			  <span th:text="${act.description}">Sample Activity</span>
+			  <small th:if="${act.timestamp != null}" class="text-muted"
+			         th:text="${#temporals.format(act.timestamp, 'dd MMM yyyy HH:mm')}">Timestamp</small>
+			  <small th:if="${act.focusMinutes != null}" class="text-muted">
+			    (Focus: <span th:text="${act.focusMinutes}">0</span> min)
+			  </small>
+			</li>
+	        <li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}" class="list-group-item text-muted text-center">
+	          No recent activity yet.
+	        </li>
+	      </ul>
+	    </div>
+	  </div>
 
     
     </div> <!-- main-content -->

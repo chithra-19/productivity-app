@@ -139,5 +139,21 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     	        @Param("category") String category,
     	        Pageable pageable
     	);
+    long countByUserAndCompletedTrueAndCompletedDateTimeBetween(
+    	    User user,
+    	    LocalDateTime start,
+    	    LocalDateTime end
+    	);
 
+    @Query("""
+    	    SELECT t.taskDate, COUNT(t) 
+    	    FROM Task t 
+    	    WHERE t.user = :user 
+    	      AND t.completed = true 
+    	    GROUP BY t.taskDate 
+    	    HAVING COUNT(t) >= 3 
+    	    ORDER BY t.taskDate DESC
+    	""")
+    	List<Object[]> findStreakEligibleDates(@Param("user") User user);
+    
 }

@@ -16,11 +16,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class StreakTrackerService {
 
+	 private static final String DEFAULT_CATEGORY = "GLOBAL";
+	
     private final StreakTrackerRepository streakTrackerRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
@@ -32,31 +35,33 @@ public class StreakTrackerService {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
     }
+    
+   
 
     // 🔹 Evaluate streak for TODAY (call after task completion)
     @Transactional
-    public void evaluateToday(User user, String category) {
+    public void evaluateToday(User user) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
 
-    	LocalDate today = LocalDate.now();
+        // Count completed tasks today
+        long completedTasks = taskRepository
+        	    .countByUserAndCompletedTrueAndCompletedDateTimeBetween(user, start, end);
 
-    	LocalDateTime start = today.atStartOfDay();
-    	LocalDateTime end = today.plusDays(1).atStartOfDay();
-
-    	long completedTasks =
-    	    taskRepository.countByUserAndCategoryAndCompletedTrueAndCompletedDateTimeBetween(
-    	        user, category, start, end
-    	    );
-
-    	boolean qualifiedToday = completedTasks > 0;
+        boolean qualifiedToday = completedTasks > 0;
 
         StreakTracker tracker = streakTrackerRepository
-                .findByUserAndCategory(user, category)
-                .orElseGet(() -> createTracker(user, category));
+            .findByUserAndCategory(user, DEFAULT_CATEGORY)
+            .orElseGet(() -> createTracker(user, DEFAULT_CATEGORY));
 
-        // 🧠 ENTITY handles streak rules
         tracker.updateForDay(today, qualifiedToday);
 
+        // Optional: weekly freeze logic
+        resetWeeklyFreezeIfNeeded(user, today);
+
         streakTrackerRepository.save(tracker);
+        userRepository.save(user);
     }
 
     private StreakTracker createTracker(User user, String category) {
@@ -78,7 +83,19 @@ public class StreakTrackerService {
         return streakTrackerRepository.findAllByUserId(userId);
     }
     
- 
+    public int calculateXP(User user) {
+        List<Task> completedTasks = taskRepository.findByUserAndCompletedTrue(user);
+
+        int xp = 0;
+        for (Task task : completedTasks) {
+            xp += 5; // base XP per task
+            if (task.getFocusHours() != null) {
+                xp += task.getFocusHours().intValue(); // bonus XP for focus
+            }
+        }
+
+        return xp;
+    }
 
 
     // 🔹 Heatmap data (completed tasks per day)
@@ -116,6 +133,28 @@ public class StreakTrackerService {
         streakTrackerRepository.save(tracker);
         return tracker;  // <-- return the updated entity
     }
+    
+    public int getBestStreak(User user) {
+        List<Object[]> streakDays = taskRepository.findStreakEligibleDates(user);
+        Set<LocalDate> eligibleDates = streakDays.stream()
+            .map(row -> (LocalDate) row[0])
+            .collect(Collectors.toSet());
+
+        int bestStreak = 0;
+        int currentStreak = 0;
+        LocalDate today = LocalDate.now();
+
+        for (LocalDate date = today; date.isAfter(today.minusDays(365)); date = date.minusDays(1)) {
+            if (eligibleDates.contains(date)) {
+                currentStreak++;
+                bestStreak = Math.max(bestStreak, currentStreak);
+            } else {
+                currentStreak = 0;
+            }
+        }
+
+        return bestStreak;
+    }
 
     // Overload for default qualifiedToday = true
     public StreakTracker updateStreak(User user, String category) {
@@ -135,7 +174,21 @@ public class StreakTrackerService {
     }
     
     public int getCurrentStreak(User user) {
-        return getCurrentStreak(user, "TASK");
+        List<Object[]> streakDays = taskRepository.findStreakEligibleDates(user);
+        int streak = 0;
+        LocalDate expectedDate = LocalDate.now();
+
+        for (Object[] row : streakDays) {
+            LocalDate date = (LocalDate) row[0];
+            if (date.equals(expectedDate)) {
+                streak++;
+                expectedDate = expectedDate.minusDays(1);
+            } else {
+                break;
+            }
+        }
+
+        return streak;
     }
 
 
