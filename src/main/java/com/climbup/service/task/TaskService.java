@@ -7,7 +7,7 @@ import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.mapper.TaskMapper;
 import com.climbup.model.Task;
 import com.climbup.model.User;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import com.climbup.repository.TaskRepository;
 import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.AchievementService;
@@ -58,6 +58,22 @@ public class TaskService {
         this.productivityService = productivityService;
 
     }
+    
+    private TaskResponseDTO convertToDTO(Task task) {
+        TaskResponseDTO dto = new TaskResponseDTO();
+
+        dto.setId(task.getId());
+        dto.setTitle(task.getTitle());
+        dto.setDescription(task.getDescription());
+        dto.setCategory(task.getCategory());
+        dto.setPriority(task.getPriority().name());
+        dto.setCompleted(task.isCompleted());
+        dto.setDueDate(task.getDueDate());
+        dto.setDueDate(task.getTaskDate());
+        dto.setCompletedDateTime(task.getCompletedDateTime());
+
+        return dto;
+    }
 
     // ➕ Create Task
     public TaskResponseDTO createTask(TaskRequestDTO dto, User user) {
@@ -75,7 +91,7 @@ public class TaskService {
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : Task.Priority.MEDIUM);
         task.setTaskDate(LocalDate.now());
         Task savedTask = taskRepository.save(task);
-        activityService.log("Created Task: " + savedTask.getTitle(), ActivityType.TASK, user);
+        
 
         return TaskMapper.toResponse(savedTask);
     }
@@ -116,12 +132,7 @@ public class TaskService {
         }
 
         Task updatedTask = taskRepository.save(task);
-        activityService.log(
-                "Updated Task: " + updatedTask.getTitle(),
-                ActivityType.TASK,
-                user
-        );
-
+      
         return TaskMapper.toResponse(updatedTask);
     }
 
@@ -132,7 +143,7 @@ public class TaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
 
         taskRepository.delete(task);
-        activityService.log("Deleted Task: " + task.getTitle(), ActivityType.TASK, user);
+       
     }
 
    
@@ -158,12 +169,15 @@ public class TaskService {
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
-        return taskRepository.findByUserAndTaskDate(user, today)
+
+        return taskRepository.findByUser(user)
                 .stream()
+                .filter(task ->
+                        task.getTaskDate() != null &&
+                        task.getTaskDate().equals(today))
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());
     }
-
 
     public Map<LocalDate, Long> getTaskStats(User user) {
         return taskRepository.findByUser(user).stream()
@@ -172,6 +186,13 @@ public class TaskService {
                         task -> task.getCreatedAt().toLocalDate(),
                         Collectors.counting()
                 ));
+    }
+    public List<TaskResponseDTO> getBacklogTasks(User user) {
+        return taskRepository.findByUser(user)
+                .stream()
+                .filter(task -> task.getTaskDate() == null)
+                .map(TaskMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
 
@@ -226,16 +247,29 @@ public class TaskService {
 
     @Transactional
     public void completeTask(Long taskId, User user) {
+
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
         if (task.isCompleted()) return;
 
-        // Always set both
+        // ✅ mark complete
         task.setCompleted(true);
         task.setCompletedDateTime(LocalDateTime.now());
 
-        streakTrackerService.evaluateToday(user);
+        // 🔥 COUNT today's completed tasks
+        LocalDate today = LocalDate.now();
+
+        long todayCompleted = taskRepository.countByUserAndCompletedTrueAndCompletedDateTimeBetween(
+                user,
+                today.atStartOfDay(),
+                today.plusDays(1).atStartOfDay()
+        );
+
+        // 🔥 NEW STREAK LOGIC
+        streakTrackerService.updateStreakAfterThreshold(user, todayCompleted);
+
+        // existing logic (keep everything)
         xpService.handleTaskCompletion(user, task);
         achievementService.evaluateAchievements(user);
         activityService.logTaskCompleted(task, user);
@@ -268,6 +302,14 @@ public class TaskService {
 
         return taskRepository.save(task);
     }
+    
+    public List<TaskResponseDTO> getTasksForUserByDate(User user, LocalDate date) {
+        return taskRepository.findByUserAndTaskDate(user, date)
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+    
    
    
 

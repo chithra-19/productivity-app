@@ -18,9 +18,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
     
-  
-
-
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.profile WHERE u.email = :email")
+    User getUserWithAllData(@Param("email") String email);
+    
+    @Query("SELECT u FROM User u JOIN FETCH u.profile WHERE u.email = :email")
+    Optional<User> findByEmailWithProfile(String email);
+ 
     boolean existsByEmail(String email);
 
     long countByLastLoginAtAfter(LocalDateTime dateTime);
@@ -45,11 +48,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Fetch user with all associated collections
      */
     @Query("""
-            SELECT DISTINCT u FROM User u
-            LEFT JOIN FETCH u.tasks
-            LEFT JOIN FETCH u.goals
-            LEFT JOIN FETCH u.achievements
-            WHERE u.email = :email
-           """)
-    Optional<User> findUserWithAllData(@Param("email") String email);
+    	    SELECT DISTINCT u FROM User u
+    	    LEFT JOIN FETCH u.profile
+    	    LEFT JOIN FETCH u.tasks
+    	    LEFT JOIN FETCH u.goals
+    	    LEFT JOIN FETCH u.achievements
+    	    WHERE u.email = :email
+    	""")
+    	Optional<User> findUserWithAllData(@Param("email") String email);
 }

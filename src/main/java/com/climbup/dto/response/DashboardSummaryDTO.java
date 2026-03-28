@@ -11,12 +11,22 @@ public class DashboardSummaryDTO {
     // 🔥 Streaks
     private int currentStreak;
     private int bestStreak;
+    
+    private String firstName;
 
     // 🔥 Task stats
     private Map<String, Integer> taskStats;
 
     // ===== getters & setters =====
 
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    
     public int getProductivityScore() {
         return productivityScore;
     }

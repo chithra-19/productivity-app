@@ -9,6 +9,7 @@ import com.climbup.dto.response.DashboardSummaryDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.mapper.ActivityMapper;
+import com.climbup.mapper.UserMapper;
 import com.climbup.model.FocusSession;
 import com.climbup.model.Goal;
 import com.climbup.model.Profile;
@@ -93,9 +94,17 @@ public class DashboardController {
     @GetMapping
     public String showDashboard(Model model,
                                 @AuthenticationPrincipal UserDetails springUser) {
+    	User user = userService.getUserWithAllData(springUser.getUsername());
 
-        User user = userService.getUserWithAllData(springUser.getUsername());
+    	String firstName = null;
+    	if (user.getProfile() != null) {
+    	    firstName = user.getProfile().getFirstName();
+    	}
 
+    	System.out.println("Resolved firstName: " + firstName); // ✅ Debug print
+
+    	model.addAttribute("firstName", firstName);
+    	
         int xpInLevel = xpService.xpProgressInCurrentLevel(user);
         int level = xpService.getLevel(user.getId());
         double xpPercent = xpService.getXpPercentage(user.getId());

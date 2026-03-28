@@ -69,13 +69,12 @@ public class TaskViewController {
     // =========================
     @GetMapping("/today")
     public String showTodayTasks(Model model, Principal principal) {
+
         User user = userService.findByEmail(principal.getName());
         LocalDate today = LocalDate.now();
 
-        List<TaskResponseDTO> todayTasks = taskService.getTasksForUser(user)
-                .stream()
-                .filter(task -> today.equals(task.getDueDate()))
-                .collect(Collectors.toList());
+        List<TaskResponseDTO> todayTasks =
+                taskService.getTasksForUserByDate(user, today);
 
         model.addAttribute("tasks", todayTasks);
         return "tasks/task-today";
@@ -142,15 +141,6 @@ public class TaskViewController {
         return ResponseEntity.ok("Task updated");
     }
 
-    @GetMapping("/today/json")
-    @ResponseBody
-    public List<TaskResponseDTO> getTodayTasksJson(Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        LocalDate today = LocalDate.now();
-
-        return taskService.getTasksForUser(user).stream()
-            .filter(task -> today.equals(task.getDueDate()))
-            .collect(Collectors.toList());
-    }
+   
 }
 

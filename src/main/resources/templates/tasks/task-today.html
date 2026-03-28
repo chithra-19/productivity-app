@@ -200,14 +200,22 @@ tr:hover td {
 	        <td th:text="${task.category}">Task Category</td>
 
 	        <!-- ✅ Priority Badge with null-safe check -->
-	        <td>
-	          <span th:if="${task.priority != null}"
-	                th:class="'badge ' + (task.priority == 'HIGH' ? 'bg-success text-white' : 
-	                                      task.priority == 'MEDIUM' ? 'bg-warning text-dark' : 
-	                                      'bg-danger text-white')"
-	                th:text="${task.priority}">Priority</span>
-	          <span th:if="${task.priority == null}" class="badge bg-secondary">None</span>
-	        </td>
+			<td>
+			  <span th:if="${task.priority == 'HIGH'}"
+			        class="badge bg-success text-white"
+			        th:text="${task.priority}"></span>
+
+			  <span th:if="${task.priority == 'MEDIUM'}"
+			        class="badge bg-warning text-dark"
+			        th:text="${task.priority}"></span>
+
+			  <span th:if="${task.priority == 'LOW'}"
+			        class="badge bg-danger text-white"
+			        th:text="${task.priority}"></span>
+
+			  <span th:if="${task.priority == null}"
+			        class="badge bg-secondary">None</span>
+			</td>
 
 	        <!-- Status -->
 	        <td>
@@ -289,126 +297,150 @@ tr:hover td {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-// HELPER: Update DOM counters dynamically
-function updateCounters(data) {
-    const pendingElem = document.getElementById('pendingCount');
-    const streakElem = document.getElementById('streakCount');
-    const xpElem = document.getElementById('xpCount');
-
-    if(pendingElem) pendingElem.textContent = data.pendingTasks;
-    if(streakElem) streakElem.textContent = data.streak;
-    if(xpElem) xpElem.textContent = data.xp;
-}
-
-// MARK DONE with Toast
-document.querySelectorAll('.mark-done').forEach(btn => {
-    btn.addEventListener('click', async function () {
-        const taskId = this.dataset.id;
-        try {
-            const res = await fetch(`/tasks/complete/${taskId}`, { method: "POST" });
-            const data = await res.json();
-
-            if(data.error) { alert(data.error); return; }
-
-            // Update row to "Done"
-            const row = btn.closest('tr');
-            row.querySelector('td:nth-child(5)').innerHTML = `<span class="status-done">Done</span>`;
-            btn.remove(); // remove the "Mark Done" button
-
-            // Update counters dynamically
-            updateCounters(data);
-
-            // Show toast message
-            const toastEl = document.getElementById('taskToast');
-            const toastMessage = document.getElementById('toastMessage');
-            toastMessage.textContent = `Task Completed! +${data.xpIncrement} XP | Streak: ${data.streak}`;
-            const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
-            toast.show();
-
-        } catch(err) { console.error(err); alert("Something went wrong!"); }
-    });
-});
-
-
-// DELETE
-document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const taskId = this.dataset.id;
-        if(!confirm("Are you sure you want to delete this task?")) return;
-
-        try {
-            const res = await fetch(`/tasks/delete/${taskId}`, { method: "DELETE" });
-            const data = await res.json(); // backend should return updated counters
-
-            if(res.ok) {
-                const row = btn.closest('tr');
-                row.style.transition = "opacity 0.5s";
-                row.style.opacity = 0;
-                setTimeout(() => row.remove(), 500);
-
-                updateCounters(data); // update pending/Xp/streak
-            }
-        } catch(err) { console.error(err); alert("Something went wrong!"); }
-    });
-});
-
-// EDIT
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', async function() {
-      const taskId = this.dataset.id;
-      try {
-        const res = await fetch(`/tasks/single/${taskId}`);
-        const task = await res.json();
 
-        document.querySelector('#taskTitle').value = task.title;
-        document.querySelector('#taskDesc').value = task.description;
-        document.querySelector('#taskCategory').value = task.category;
-        document.querySelector('#taskId').value = task.id;
+    function updateCounters(data) {
+		const pendingElem = document.getElementById('pendingCount');
+		const streakElem = document.getElementById('streakCount');
+		const xpElem = document.getElementById('xpCount');
 
-		const modalEl = document.getElementById('editTaskModal');
-		if (!modalEl) {
-		  console.error("Edit modal not found in DOM");
-		  return;
-		}
-		const modal = new bootstrap.Modal(modalEl);
-		modal.show();
-      } catch(err) {
-        console.error(err);
-        alert("Something went wrong!");
-      }
-    });
-  });
-});
-
-// SAVE EDIT
-document.getElementById("saveEditBtn").addEventListener("click", async () => {
-  const payload = {
-    id: document.getElementById("taskId").value,
-    title: document.getElementById("taskTitle").value,
-    description: document.getElementById("taskDesc").value,
-    category: document.getElementById("taskCategory").value,
-    priority: document.getElementById("taskPriority").value
-  };
-
-  try {
-    const response = await fetch("/tasks/update/json", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      alert("Task updated!");
-      location.reload(); // or refresh just the task row
-    } else {
-      alert("Update failed.");
+		if (pendingElem) pendingElem.textContent = data.pendingTasks;
+		if (streakElem) streakElem.textContent = data.streak;
+		if (xpElem) xpElem.textContent = data.xp;
     }
-  } catch (err) {
-    console.error("Error updating task:", err);
-    alert("Something went wrong.");
-  }
+
+    // ✅ MARK DONE
+    document.querySelectorAll('.mark-done').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const taskId = this.dataset.id;
+
+            try {
+                const res = await fetch(`/tasks/complete/${taskId}`, { method: "POST" });
+                const data = await res.json();
+
+                if (data.error) return alert(data.error);
+
+                const row = this.closest('tr');
+                row.querySelector('td:nth-child(5)').innerHTML =
+                    `<span class="status-done">Done</span>`;
+
+                this.remove();
+
+                updateCounters(data);
+
+                const toastEl = document.getElementById('taskToast');
+                if (toastEl) {
+                    document.getElementById('toastMessage').textContent =
+                        `Task Completed! +${data.xpIncrement} XP | Streak: ${data.streak}`;
+
+                    bootstrap.Toast.getOrCreateInstance(toastEl).show();
+                }
+				if (res.ok) {
+				                // ✅ SIMPLE FIX: reload page
+				                location.reload();
+				            } else {
+				                alert("Failed to mark task as done");
+				            }
+
+            } catch (err) {
+                console.error(err);
+                alert("Something went wrong!");
+            }
+        });
+    });
+
+    // ✅ DELETE
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            if (!confirm("Delete this task?")) return;
+
+            const taskId = this.dataset.id;
+
+            try {
+                const res = await fetch(`/tasks/delete/${taskId}`, { method: "DELETE" });
+                const data = await res.json();
+
+                if (!res.ok) return;
+
+                const row = this.closest('tr');
+                row.style.opacity = 0;
+                setTimeout(() => row.remove(), 400);
+
+                updateCounters(data);
+
+            } catch (err) {
+                console.error(err);
+                alert("Something went wrong!");
+            }
+        });
+    });
+
+    // ✅ EDIT (SAFE MODAL HANDLING)
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const taskId = this.dataset.id;
+
+            try {
+                const res = await fetch(`/tasks/single/${taskId}`);
+                const task = await res.json();
+
+                document.getElementById('taskTitle').value = task.title || "";
+                document.getElementById('taskDesc').value = task.description || "";
+                document.getElementById('taskCategory').value = task.category || "";
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('taskPriority').value = task.priority || "LOW";
+
+                const modalEl = document.getElementById('editTaskModal');
+
+                if (!modalEl) return console.error("Modal not found");
+
+                // 🔥 IMPORTANT FIX
+                let modal = bootstrap.Modal.getInstance(modalEl);
+                if (!modal) {
+                    modal = new bootstrap.Modal(modalEl);
+                }
+
+                modal.show();
+
+            } catch (err) {
+                console.error(err);
+                alert("Something went wrong!");
+            }
+        });
+    });
+
+    // ✅ SAVE EDIT
+    document.getElementById("saveEditBtn")?.addEventListener("click", async () => {
+
+        const payload = {
+            id: document.getElementById("taskId").value,
+            title: document.getElementById("taskTitle").value,
+            description: document.getElementById("taskDesc").value,
+            category: document.getElementById("taskCategory").value,
+            priority: document.getElementById("taskPriority").value
+        };
+
+        try {
+            const res = await fetch("/tasks/update/json", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert("Update failed");
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong!");
+        }
+    });
+
 });
 </script>
 

@@ -1,7 +1,7 @@
 package com.climbup.dto.response;
 
 import com.climbup.model.Activity;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import java.time.LocalDateTime;
 
 public class ActivityDTO {

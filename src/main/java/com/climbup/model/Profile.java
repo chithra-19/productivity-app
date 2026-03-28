@@ -19,14 +19,19 @@ public class Profile {
     private String bio;
     private String profilePictureUrl;
     private String email;
+    
 
     // ---------- Stats ----------
     private int streak;
     private long completedTasks;
     private int productivityScore;
     private LocalDate lastActiveDate;
+    
+    @Column(name = "streak_freeze_count")
+    private int streakFreezeCount = 1; // allow 1 freeze
 
-    // ---------- Achievements ----------
+
+	// ---------- Achievements ----------
     private boolean newAchievement;
 
     @ElementCollection
@@ -85,6 +90,15 @@ public class Profile {
 
     public List<String> getAchievementList() { return achievementList; }
     public void setAchievementList(List<String> achievementList) { this.achievementList = achievementList; }
+    
+
+    public int getStreakFreezeCount() {
+		return streakFreezeCount;
+	}
+
+	public void setStreakFreezeCount(int streakFreezeCount) {
+		this.streakFreezeCount = streakFreezeCount;
+	}
 
     public User getUser() { return user; }
 

@@ -22,9 +22,6 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-	@Column(nullable = false)
-    private String firstName;
-
     @NotBlank
     @Email
     @Column(unique = true, nullable = false)
@@ -70,8 +67,7 @@ public class User implements UserDetails {
     private String resetToken;
     private LocalDateTime resetTokenExpiry;
 
-    // Relationships
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Profile profile;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -220,15 +216,7 @@ public class User implements UserDetails {
     // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public String getFirstName() {
-  		return firstName;
-  	}
-
-  	public void setFirstName(String firstName) {
-  		this.firstName = firstName;
-  	}
-  	
+	
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 

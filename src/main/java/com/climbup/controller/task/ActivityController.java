@@ -3,7 +3,7 @@ package com.climbup.controller.task;
 import com.climbup.dto.response.ActivityDTO;
 import com.climbup.mapper.ActivityMapper;
 import com.climbup.model.Activity;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import com.climbup.model.User;
 import com.climbup.service.task.ActivityService;
 import com.climbup.service.user.UserService;

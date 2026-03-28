@@ -5,7 +5,7 @@ import com.climbup.mapper.ActivityMapper;
 import com.climbup.model.Activity;
 import com.climbup.model.User;
 import com.climbup.model.Task;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import com.climbup.repository.ActivityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -43,7 +43,7 @@ public class ActivityService {
     @Transactional
     public void logTaskCompleted(Task task, User user) {
         String msg = "Completed Task: " + task.getTitle();
-        log(msg, ActivityType.TASK, user);
+        log(msg, ActivityType.TASK_COMPLETED, user);
     }
 
     // ---------------- Fetch Activities ----------------

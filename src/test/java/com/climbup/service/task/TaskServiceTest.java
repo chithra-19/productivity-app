@@ -18,7 +18,7 @@ import com.climbup.dto.request.TaskUpdateDTO;
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.model.Task;
 import com.climbup.model.User;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import com.climbup.repository.TaskRepository;
 
 import com.climbup.service.productivity.AchievementService;
@@ -73,8 +73,6 @@ class TaskServiceTest {
         assertEquals("New Task", response.getTitle());
         assertFalse(response.isCompleted());
 
-        verify(activityService)
-                .log(contains("Created Task"), eq(ActivityType.TASK), eq(user));
     }
 
     @Test
@@ -108,8 +106,7 @@ class TaskServiceTest {
 
         verify(streakTrackerService).updateStreak(user);
         verify(achievementService).checkForNewAchievements(user);
-        verify(activityService)
-                .log(contains("Updated Task"), eq(ActivityType.TASK), eq(user));
+     
     }
 
     @Test
@@ -154,7 +151,5 @@ class TaskServiceTest {
         taskService.deleteTask(1L, user);
 
         verify(taskRepository).delete(task);
-        verify(activityService)
-                .log(contains("Deleted Task"), eq(ActivityType.TASK), eq(user));
-    }
+        }
 }

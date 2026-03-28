@@ -9,7 +9,7 @@ import com.climbup.model.User;
 import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.task.ActivityService;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ public class StreakTrackerServiceTest {
         StreakTracker updated = streakTrackerService.updateStreak(testUser, "Task");
 
         assertEquals(4, updated.getCurrentStreak());
-        verify(activityService).log(anyString(), eq(ActivityType.STREAK), eq(testUser));
+        verify(activityService).log(anyString(), eq(ActivityType.STREAK_UPDATED), eq(testUser));
         verify(repository).save(updated);
     }
 
@@ -71,7 +71,7 @@ public class StreakTrackerServiceTest {
         StreakTracker updated = streakTrackerService.updateStreak(testUser, "Task");
 
         assertEquals(1, updated.getCurrentStreak());
-        verify(activityService).log(anyString(), eq(ActivityType.STREAK), eq(testUser));
+        verify(activityService).log(anyString(), eq(ActivityType.STREAK_UPDATED), eq(testUser));
     }
 
     @Test
@@ -85,7 +85,7 @@ public class StreakTrackerServiceTest {
         assertEquals(1, newStreak.getCurrentStreak());
         assertEquals(1, newStreak.getLongestStreak());
         assertEquals(LocalDate.now(), newStreak.getLastActiveDate());
-        verify(activityService).log(contains("Started first streak"), eq(ActivityType.STREAK), eq(testUser));
+        verify(activityService).log(contains("Started first streak"), eq(ActivityType.STREAK_UPDATED), eq(testUser));
     }
 
     @Test

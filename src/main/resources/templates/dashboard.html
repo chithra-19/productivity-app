@@ -28,7 +28,7 @@
       <div class="dropdown">
         <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
           <i class="bi bi-person-circle me-1"></i>
-          <span th:text="${username != null ? username : 'User'}"></span>
+		  <span th:text="${firstName != null ? firstName : 'User'}"></span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" th:href="@{/dashboard/profile}"><i class="bi bi-person me-2"></i>Profile</a></li>
@@ -80,7 +80,7 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
 			<h2 class="fw-bold mb-1">
-			  Welcome back,<span th:text="${username != null ? username : 'User'}"></span>
+			  Welcome back,<span th:text="${firstName != null ? firstName : 'User'}"></span>
 			</h2>
           <h5 class="text-muted fs-6">Good <span id="greeting"></span>!</h5>
         </div>
@@ -176,9 +176,10 @@
 			    (Focus: <span th:text="${act.focusMinutes}">0</span> min)
 			  </small>
 			</li>
-	        <li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}" class="list-group-item text-muted text-center">
-	          No recent activity yet.
-	        </li>
+			<li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}"
+			    class="list-group-item text-muted text-center">
+			  <i class="bi bi-clock-history"></i> No recent activity yet.
+			</li>
 	      </ul>
 	    </div>
 	  </div>

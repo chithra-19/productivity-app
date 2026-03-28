@@ -2,7 +2,7 @@ package com.climbup.repository;
 
 import com.climbup.model.Activity;
 import com.climbup.model.User;
-import com.climbup.model.Activity.ActivityType;
+import com.climbup.model.ActivityType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

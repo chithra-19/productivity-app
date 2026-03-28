@@ -9,10 +9,15 @@ public class UserMapper {
     public static UserResponseDTO toResponseDTO(User user) {
         if (user == null) return null;
 
+        String firstName = null;
+        if (user.getProfile() != null) {
+            firstName = user.getProfile().getFirstName();
+        }
+
         return new UserResponseDTO(
-                user.getId(),
-                user.getFirstName(),
-                user.getEmail()
+            user.getId(),
+            firstName,
+            user.getEmail()
         );
     }
 
@@ -20,9 +25,9 @@ public class UserMapper {
         if (dto == null) return null;
 
         User user = new User();
-        user.setFirstName(dto.getFirstName());
         user.setEmail(dto.getEmail());
         user.setPassword(dto.getPassword()); // hashed in UserService
+        // No user.setFirstName() — name is stored in Profile
         return user;
     }
 }

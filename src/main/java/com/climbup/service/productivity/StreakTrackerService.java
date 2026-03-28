@@ -63,6 +63,40 @@ public class StreakTrackerService {
         streakTrackerRepository.save(tracker);
         userRepository.save(user);
     }
+    
+    public void updateStreakAfterThreshold(User user, long todayCompleted) {
+
+        LocalDate today = LocalDate.now();
+        var profile = user.getProfile();
+
+        LocalDate lastDate = profile.getLastActiveDate();
+
+        // ❌ already updated today
+        if (lastDate != null && lastDate.isEqual(today)) {
+            return;
+        }
+
+        if (todayCompleted >= 3) {
+
+            if (lastDate != null && lastDate.plusDays(1).isEqual(today)) {
+                // ✅ normal streak continuation
+                profile.setStreak(profile.getStreak() + 1);
+
+            } else if (lastDate != null && lastDate.plusDays(2).isEqual(today)
+                       && profile.getStreakFreezeCount() > 0) {
+
+                // 🧊 USE FREEZE
+                profile.setStreak(profile.getStreak() + 1);
+                profile.setStreakFreezeCount(profile.getStreakFreezeCount() - 1);
+
+            } else {
+                // ❌ reset streak
+                profile.setStreak(1);
+            }
+
+            profile.setLastActiveDate(today);
+        }
+    }
 
     private StreakTracker createTracker(User user, String category) {
         StreakTracker tracker = new StreakTracker();

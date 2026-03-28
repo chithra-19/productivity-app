@@ -47,10 +47,16 @@ public class DashboardService {
 
         DashboardSummaryDTO dto = new DashboardSummaryDTO();
 
+        // 🔥 ADD THIS BLOCK
+        String name = "User";
+        if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
+            name = user.getProfile().getFirstName();
+        }
+        dto.setFirstName(name);
+
         int score = user.getProductivityScore();
         dto.setProductivityScore(score);
 
-        // 🔥 Human-readable meaning
         if (score < 40) {
             dto.setProductivityLabel("LOW");
         } else if (score < 70) {
@@ -60,13 +66,12 @@ public class DashboardService {
         }
 
         dto.setCurrentStreak(
-        	    streakTrackerService.getCurrentStreak(user)
-        	);
+            streakTrackerService.getCurrentStreak(user)
+        );
 
-        	dto.setBestStreak(
-        	    streakTrackerService.getBestStreak(user.getId())
-        	);
-
+        dto.setBestStreak(
+            streakTrackerService.getBestStreak(user.getId())
+        );
 
         dto.setTaskStats(getTaskStats(user));
 

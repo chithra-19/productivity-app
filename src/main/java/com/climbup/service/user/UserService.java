@@ -165,10 +165,7 @@ public class UserService implements UserDetailsService {
     }
     
     public User getUserWithAllData(String login) {
-        // Try with username first, then email
-        return userRepository.findUserWithAllData(login)
-            .or(() -> userRepository.findByEmail(login))
-            .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + login));
+        return userRepository.getUserWithAllData(login); // ✅ use the correct method
     }
 
     

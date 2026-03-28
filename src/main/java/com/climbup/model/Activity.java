@@ -18,24 +18,21 @@ public class Activity {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ActivityType type;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ActivityType type;
 
     @Column(nullable = false)
     private Integer focusMinutes = 0;
 
-    public enum ActivityType {
-        TASK, GOAL, CHALLENGE, FOCUS_SESSION, ACHIEVEMENT, LOGIN, OTHER, STREAK
-    }
-
+ 
     // Constructors
     public Activity() {}
 
@@ -62,14 +59,6 @@ public class Activity {
 		this.description = description;
 	}
 
-	public ActivityType getType() {
-		return type;
-	}
-
-	public void setType(ActivityType type) {
-		this.type = type;
-	}
-
 	public LocalDateTime getTimestamp() {
 		return timestamp;
 	}
@@ -94,6 +83,15 @@ public class Activity {
 		this.focusMinutes = focusMinutes;
 	}
 
+	// Getter
+	public ActivityType getType() {
+	    return type;
+	}
+
+	// Setter
+	public void setType(ActivityType type) {
+	    this.type = type;
+	}
 
 
     // equals & hashCode
