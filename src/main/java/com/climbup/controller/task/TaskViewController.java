@@ -3,8 +3,10 @@ package com.climbup.controller.task;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
 import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.mapper.TaskMapper;
 import com.climbup.model.Task;
 import com.climbup.model.User;
+import com.climbup.repository.TaskRepository;
 import com.climbup.service.task.TaskService;
 import com.climbup.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,11 +38,14 @@ public class TaskViewController {
 
     private final TaskService taskService;
     private final UserService userService;
+    private final TaskRepository taskRepository;
 
     @Autowired
-    public TaskViewController(TaskService taskService, UserService userService) {
+    public TaskViewController(TaskService taskService, UserService userService,
+    							TaskRepository taskRepository) {
         this.taskService = taskService;
         this.userService = userService;
+        this.taskRepository = taskRepository;
     }
 
     // =========================
@@ -140,7 +146,18 @@ public class TaskViewController {
         taskService.updateTask(taskDTO.getId(), taskDTO, user);
         return ResponseEntity.ok("Task updated");
     }
+    @GetMapping("/dashboard/top5")
+    @ResponseBody
+    public List<TaskResponseDTO> top5(Principal principal) {
 
-   
+        User user = userService.findByEmail(principal.getName());
+        LocalDate today = LocalDate.now();
+        return taskRepository.findByUserAndTaskDate(user, today)
+                .stream()
+                .sorted(Comparator.comparing(Task::getPriority))
+                .limit(5)
+                .map(TaskMapper::toResponse)
+                .toList();
+    }
 }
 

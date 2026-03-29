@@ -312,44 +312,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ✅ MARK DONE
-    document.querySelectorAll('.mark-done').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const taskId = this.dataset.id;
+	document.querySelectorAll('.mark-done').forEach(btn => {
+	    btn.addEventListener('click', async function () {
 
-            try {
-                const res = await fetch(`/tasks/complete/${taskId}`, { method: "POST" });
-                const data = await res.json();
+	        const taskId = this.dataset.id;
 
-                if (data.error) return alert(data.error);
+	        try {
+	            const res = await fetch(`/tasks/complete/${taskId}`, {
+	                method: "POST"
+	            });
 
-                const row = this.closest('tr');
-                row.querySelector('td:nth-child(5)').innerHTML =
-                    `<span class="status-done">Done</span>`;
+	            const data = await res.json();
 
-                this.remove();
+	            if (!res.ok || data.error) {
+	                alert(data.error || "Failed to mark task as done");
+	                return;
+	            }
 
-                updateCounters(data);
+	            const row = this.closest('tr');
 
-                const toastEl = document.getElementById('taskToast');
-                if (toastEl) {
-                    document.getElementById('toastMessage').textContent =
-                        `Task Completed! +${data.xpIncrement} XP | Streak: ${data.streak}`;
+	            // ✅ update status instantly
+	            row.querySelector('td:nth-child(5)').innerHTML =
+	                `<span class="status-done">Done</span>`;
 
-                    bootstrap.Toast.getOrCreateInstance(toastEl).show();
-                }
-				if (res.ok) {
-				                // ✅ SIMPLE FIX: reload page
-				                location.reload();
-				            } else {
-				                alert("Failed to mark task as done");
-				            }
+	            // ✅ remove button
+	            this.remove();
 
-            } catch (err) {
-                console.error(err);
-                alert("Something went wrong!");
-            }
-        });
-    });
+	            // ✅ update counters
+	            updateCounters(data);
+
+	            // ✅ toast
+	            const toastEl = document.getElementById('taskToast');
+	            if (toastEl) {
+	                document.getElementById('toastMessage').textContent =
+	                    `Task Completed! +${data.xpIncrement} XP | Streak: ${data.streak}`;
+
+	                bootstrap.Toast.getOrCreateInstance(toastEl).show();
+	            }
+
+	        } catch (err) {
+	            console.error(err);
+	            alert("Something went wrong!");
+	        }
+	    });
+	});
 
     // ✅ DELETE
     document.querySelectorAll('.delete-btn').forEach(btn => {

@@ -164,7 +164,7 @@ async function renderDashboardTasks() {
   dashboardEl.innerHTML = "";
 
   try {
-    const response = await fetch("/tasks/today/json");
+    const response = await fetch("/tasks/dashboard/top5");
     const tasks = await response.json();
 
     const order = { HIGH: 1, MEDIUM: 2, LOW: 3 };

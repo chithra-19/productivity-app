@@ -29,7 +29,7 @@
 
 	        <svg class="progress-ring" width="180" height="180">
 	          <circle
-	            class="progress-ring__circle"
+	            class="progress-ring-circle"
 	            stroke="#9f6cff"
 	            stroke-width="8"
 	            fill="transparent"
@@ -45,6 +45,7 @@
 	      <!-- Controls -->
 	      <div class="controls">
 	        <button id="startBtn">Start</button>
+			<button id ="continueBtn">Continue</button>
 	        <button id="pauseBtn">Pause</button>
 	        <button id="resetBtn">Reset</button>
 	      </div>
@@ -54,17 +55,9 @@
 	    <div class="card session-card">
 	      <div class="session-types">
 
-	        <div class="session-type active" data-minutes="25">
-	          Focus<br>25 min
-	        </div>
-
-	        <div class="session-type" data-minutes="5">
-	          Short Break<br>5 min
-	        </div>
-
-	        <div class="session-type" data-minutes="30">
-	          Long Break<br>30 min
-	        </div>
+			<button class="session-type active" data-minutes="25" data-type="FOCUS">Focus</button>
+			<button class="session-type" data-minutes="5" data-type="BREAK">Break</button>
+			<button class="session-type" data-minutes="15" data-type="LONG_BREAK">Long Break</button>
 
 	        <div class="session-custom">
 	          Custom<br>
@@ -92,19 +85,20 @@
 		  <div class="goal-input-row">
 		    <input type="number" id="dailyGoalHours" min="0" max="24" value="5"> h
 		    <input type="number" id="dailyGoalMins" min="0" max="59" value="30"> m
-		    <button id="saveGoalBtn" class="btn btn-sm btn-primary">Save Goal</button>
+		    <button id="saveBtn" class="btn btn-sm btn-primary">Save Goal</button>
 		  </div>
 
-		  <div class="goal-text">
-		    <span id="goalDone">0.00h</span> /
-		    <span id="goalTotal">5h</span>
+		  <div class="goal-summary-pill">
+		    <span id="goalDone">0h 0m</span> /
+		    <span id="goalTotal">5h 30m</span>
 		  </div>
+		  
 
 		  <div class="progress-bar">
 		    <div class="progress-fill" id="goalProgress"></div>
 		  </div>
 
-		  <div id="remainingGoal" class="goal-remaining-text">0h 0m</div>
+		  <div id="remainingGoal" class="goal-remaining-text">5h 30m remaining</div>
 
 		  <div class="goal-status" id="goalStatus">Let’s get started 🚀</div>
 		</div>
@@ -112,7 +106,7 @@
 	    <!-- Stats Card -->
 	    <div class="card stats-card">
 	      <div class="stats-bar">
-
+			
 	        <div class="stat">
 	          <h2 id="sessionsCompleted">0</h2>
 	          <p>Sessions Completed Today</p>
@@ -130,5 +124,5 @@
 	</div>
 	</div><div id="toast" class="toast">Session Complete! ✅</div>
 	<!-- JS -->
-	<script src="/js/focusmode.js"></script>
+	<script src="/js/focus-mode.js"></script>
 	</body></html>

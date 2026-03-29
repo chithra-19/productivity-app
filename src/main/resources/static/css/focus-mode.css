@@ -194,6 +194,17 @@ body.dark .card { background: rgba(255,255,255,0.05); }
 .card p { opacity: 0.8; }
 
 
+.goal-summary-pill {
+  background-color: #f0eaff;
+  color: #5a2fc2;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-align: center;
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 1rem;
+}
 .goal-card {
   background: rgba(255,255,255,0.1);
   padding: 20px;

@@ -91,8 +91,7 @@ public class TaskService {
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : Task.Priority.MEDIUM);
         task.setTaskDate(LocalDate.now());
         Task savedTask = taskRepository.save(task);
-        
-
+       
         return TaskMapper.toResponse(savedTask);
     }
 
@@ -135,8 +134,6 @@ public class TaskService {
       
         return TaskMapper.toResponse(updatedTask);
     }
-
-
     // ❌ Delete Task
     public void deleteTask(Long taskId, User user) {
         Task task = taskRepository.findByIdAndUser(taskId, user)
@@ -146,7 +143,6 @@ public class TaskService {
        
     }
 
-   
     // 🔹 Completed task count
     public long getCompletedTaskCount(User user) {
         return taskRepository.countByUserAndCompleted(user, true);
@@ -163,9 +159,7 @@ public class TaskService {
                                 task -> task.getFocusHours() != null ? task.getFocusHours() : 0.0
                         )
                 ));
-    }
-
-    
+    }    
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
@@ -194,9 +188,6 @@ public class TaskService {
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());
     }
-
-
-
     public int countCompletedTasks(Long userId) {
         User user = new User();
         user.setId(userId);
@@ -220,10 +211,7 @@ public class TaskService {
         completeTask(taskId, user);
         return true;
     }
-
-
-    
-    public Map<LocalDate, Long> getTaskCountsByDate(User user) {
+  public Map<LocalDate, Long> getTaskCountsByDate(User user) {
         List<Task> tasks = taskRepository.findByUser(user);
         return tasks.stream()
                     .collect(Collectors.groupingBy(Task::getDueDate, Collectors.counting()));
@@ -310,6 +298,15 @@ public class TaskService {
                 .toList();
     }
     
+    public List<TaskResponseDTO> getTop5TodayTasks(User user) {
+
+        return taskRepository.findByUserAndTaskDate(user, LocalDate.now())
+                .stream()
+                .sorted(Comparator.comparing(Task::getPriority).reversed())
+                .limit(5)
+                .map(TaskMapper::toResponse)
+                .toList();
+    }
    
    
 

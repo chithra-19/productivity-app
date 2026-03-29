@@ -449,16 +449,6 @@ function resetTimer() {
     }, 60 * 1000);
   }
 
-  // ===== Page load =====
-  document.addEventListener("DOMContentLoaded", () => {
-    restoreStats();                // Step 1: restore local stats
-    checkNewDay();                 // Step 2: reset if needed
-    updateRemainingGoalDisplay();  // Step 3: update UI
-    setupDailyReset();             // Step 4: auto-reset at midnight
-    updateDisplay();
-    updateStats();
-  });
-  
   // ===== Streak tracking =====
   function updateStreak(today) {
     const lastDateStr = localStorage.getItem(STORAGE_KEYS.LAST_SESSION_DATE);
