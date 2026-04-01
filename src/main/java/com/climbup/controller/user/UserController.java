@@ -93,7 +93,7 @@ public class UserController {
         User user = userService.findByEmail(principal.getName());
 
         int currentStreak = streakTrackerService.getCurrentStreak(user);
-        int bestStreak = streakTrackerService.getBestStreak(user.getId());
+        int bestStreak = streakTrackerService.getBestStreak(user);
 
         return ResponseEntity.ok(
             new UserStatsDTO(

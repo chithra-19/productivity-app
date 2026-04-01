@@ -70,7 +70,7 @@ public class StreakTrackerControllerTest {
 
         // return User directly, not Optional
         when(userService.getCurrentUser()).thenReturn(testUser);
-        when(streakTrackerService.updateStreak(testUser, "Task")).thenReturn(testStreak);
+        
 
         mockMvc.perform(post("/api/streaks/update")
                         .contentType(MediaType.APPLICATION_JSON)

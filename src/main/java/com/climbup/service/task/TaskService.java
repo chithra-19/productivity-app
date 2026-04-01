@@ -40,6 +40,7 @@ public class TaskService {
     private final UserRepository userRepository;
     private final XPService xpService;
     private final ProductivityService productivityService;
+    
 
     @Autowired
     public TaskService(TaskRepository taskRepository,
@@ -56,6 +57,7 @@ public class TaskService {
         this.userRepository = userRepository;
         this.xpService = xpService;
         this.productivityService = productivityService;
+     
 
     }
     
@@ -69,7 +71,6 @@ public class TaskService {
         dto.setPriority(task.getPriority().name());
         dto.setCompleted(task.isCompleted());
         dto.setDueDate(task.getDueDate());
-        dto.setDueDate(task.getTaskDate());
         dto.setCompletedDateTime(task.getCompletedDateTime());
 
         return dto;
@@ -77,6 +78,7 @@ public class TaskService {
 
     // ➕ Create Task
     public TaskResponseDTO createTask(TaskRequestDTO dto, User user) {
+
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Task title cannot be empty");
         }
@@ -90,16 +92,23 @@ public class TaskService {
         task.setDueDate(dto.getDueDate());
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : Task.Priority.MEDIUM);
         task.setTaskDate(LocalDate.now());
-        Task savedTask = taskRepository.save(task);
-       
-        return TaskMapper.toResponse(savedTask);
-    }
 
+        Task savedTask = taskRepository.save(task);
+
+        // 🔥 ADD THIS
+        activityService.log(
+            "Created task: " + savedTask.getTitle(),
+            ActivityType.TASK_CREATED,
+            user
+        );
+
+        return TaskMapper.toResponse(savedTask, getPriorityPoints(savedTask.getPriority()));
+    }
     // 📋 Get all tasks for a user
     public List<TaskResponseDTO> getTasksForUser(User user) {
         return taskRepository.findByUser(user)
                 .stream()
-                .map(TaskMapper::toResponse)
+                .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task.getPriority())))
                 .collect(Collectors.toList());
     }
 
@@ -118,11 +127,6 @@ public class TaskService {
         Optional.ofNullable(dto.getPriority()).ifPresent(task::setPriority);
         Optional.ofNullable(dto.getCategory()).ifPresent(task::setCategory);
 
-        // ✅ Completion logic (single source of truth)
-        if (Boolean.TRUE.equals(dto.getCompleted()) && !task.isCompleted()) {
-            completeTask(task.getId(), user);
-            return TaskMapper.toResponse(task); // already saved inside completeTask
-        }
 
         // ↩️ Mark as incomplete (explicit false)
         if (Boolean.FALSE.equals(dto.getCompleted())) {
@@ -132,12 +136,13 @@ public class TaskService {
 
         Task updatedTask = taskRepository.save(task);
       
-        return TaskMapper.toResponse(updatedTask);
+        return TaskMapper.toResponse(updatedTask, getPriorityPoints(updatedTask.getPriority()));
     }
     // ❌ Delete Task
     public void deleteTask(Long taskId, User user) {
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
 
         taskRepository.delete(task);
        
@@ -169,7 +174,7 @@ public class TaskService {
                 .filter(task ->
                         task.getTaskDate() != null &&
                         task.getTaskDate().equals(today))
-                .map(TaskMapper::toResponse)
+                .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task.getPriority())))
                 .collect(Collectors.toList());
     }
 
@@ -185,7 +190,7 @@ public class TaskService {
         return taskRepository.findByUser(user)
                 .stream()
                 .filter(task -> task.getTaskDate() == null)
-                .map(TaskMapper::toResponse)
+                .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task.getPriority())))
                 .collect(Collectors.toList());
     }
     public int countCompletedTasks(Long userId) {
@@ -209,6 +214,7 @@ public class TaskService {
         if (task.isCompleted()) return false;
 
         completeTask(taskId, user);
+    
         return true;
     }
   public Map<LocalDate, Long> getTaskCountsByDate(User user) {
@@ -230,7 +236,7 @@ public class TaskService {
 
         return taskRepository
                 .findByUser(user, pageable)
-                .map(TaskMapper::toResponse);
+                .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task.getPriority())));
     }
 
     @Transactional
@@ -245,27 +251,35 @@ public class TaskService {
         task.setCompleted(true);
         task.setCompletedDateTime(LocalDateTime.now());
 
-        // 🔥 COUNT today's completed tasks
+        // 🔥 critical fix
+        if (task.getTaskDate() == null) {
+            task.setTaskDate(LocalDate.now());
+        }
+
+        taskRepository.save(task);
+
+     // 🔥 ADD THIS LINE
+     activityService.logTaskCompleted(task, user);
+      
+        
+        // 🔥 FIXED LOGIC
         LocalDate today = LocalDate.now();
 
-        long todayCompleted = taskRepository.countByUserAndCompletedTrueAndCompletedDateTimeBetween(
-                user,
-                today.atStartOfDay(),
-                today.plusDays(1).atStartOfDay()
-        );
+        boolean qualifiedToday = taskRepository
+                .findByUserAndTaskDate(user, today)
+                .stream()
+                .anyMatch(Task::isCompleted);
 
-        // 🔥 NEW STREAK LOGIC
-        streakTrackerService.updateStreakAfterThreshold(user, todayCompleted);
+        streakTrackerService.refreshUserStreak(user);
+        userRepository.save(user);
 
-        // existing logic (keep everything)
-        xpService.handleTaskCompletion(user, task);
+        xpService.handleTaskCompletion(user, getPriorityPoints(task.getPriority()));
         achievementService.evaluateAchievements(user);
-        activityService.logTaskCompleted(task, user);
+     
 
         int score = productivityService.calculate(user);
         user.setProductivityScore(score);
 
-        taskRepository.save(task);
         userRepository.save(user);
     }
 
@@ -273,22 +287,19 @@ public class TaskService {
     public TaskResponseDTO getTaskById(Long taskId, User user) {
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
-        return TaskMapper.toResponse(task);
+        return TaskMapper.toResponse(task, getPriorityPoints(task.getPriority()));
     }
 
     public Task save(Task task) {
         return taskRepository.save(task);
     }
 
-    public Task markDone(Long id) {
+    public Task markDone(Long id, User user) {
 
-        Task task = taskRepository.findById(id)
+        completeTask(id, user); // 🔥 reuse full logic
+
+        return taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
-
-        task.setCompleted(true);
-        task.setCompletedDateTime(LocalDateTime.now());
-
-        return taskRepository.save(task);
     }
     
     public List<TaskResponseDTO> getTasksForUserByDate(User user, LocalDate date) {
@@ -304,10 +315,16 @@ public class TaskService {
                 .stream()
                 .sorted(Comparator.comparing(Task::getPriority).reversed())
                 .limit(5)
-                .map(TaskMapper::toResponse)
+                .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task.getPriority())))
                 .toList();
     }
    
-   
+    public int getPriorityPoints(Task.Priority priority) {
+        return switch (priority) {
+            case LOW -> 1;
+            case MEDIUM -> 3;
+            case HIGH -> 5;
+        };
+    }
 
 }

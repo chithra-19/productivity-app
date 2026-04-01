@@ -6,8 +6,12 @@ import com.climbup.model.Achievement;
 import com.climbup.model.Achievement.Type;
 import com.climbup.model.User;
 import com.climbup.repository.AchievementRepository;
+import com.climbup.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.time.LocalDate;
@@ -18,16 +22,22 @@ import static org.mockito.Mockito.*;
 
 class AchievementServiceTest {
 
-    private AchievementRepository achievementRepository;
-    private AchievementService achievementService;
+	@Mock
+	AchievementRepository achievementRepository;
+
+	@Mock
+	XPService xpService;
+
+	@Mock
+	UserRepository userRepository;
+
+	@InjectMocks
+	AchievementService achievementService;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        achievementRepository = mock(AchievementRepository.class);
-        achievementService = new AchievementService(achievementRepository, null, null);
-
         testUser = new User("test@example.com", "password");
         testUser.setId(1L);
     }

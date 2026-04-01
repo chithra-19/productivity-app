@@ -25,6 +25,7 @@ public class TaskResponseDTO {
 
     private String iconUrl; // Optional icon for visual representation in UI
 
+	private int xpEarned;
  
     private LocalDateTime completedDateTime; // Precise timestamp for analytics/logs
 
@@ -80,7 +81,14 @@ public class TaskResponseDTO {
     public String getIconUrl() { return iconUrl; }
     public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
 
-  
+
+    public int getXpEarned() {
+		return xpEarned;
+	}
+
+	public void setXpEarned(int xpEarned) {
+		this.xpEarned = xpEarned;
+	}
     public LocalDateTime getCompletedDateTime() { return completedDateTime; }
     public void setCompletedDateTime(LocalDateTime completedDateTime) { this.completedDateTime = completedDateTime; }
 }

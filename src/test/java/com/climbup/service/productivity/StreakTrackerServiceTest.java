@@ -48,46 +48,9 @@ public class StreakTrackerServiceTest {
         streak.setLastActiveDate(LocalDate.now().minusDays(1));
     }
 
-    @Test
-    void updateStreak_ShouldContinueStreak() {
-        when(repository.findByUserIdAndCategory(testUser.getId(), "Task"))
-                .thenReturn(Optional.of(streak));
-        when(repository.save(any(StreakTracker.class))).thenAnswer(invocation -> invocation.getArgument(0));
+   
 
-        StreakTracker updated = streakTrackerService.updateStreak(testUser, "Task");
-
-        assertEquals(4, updated.getCurrentStreak());
-        verify(activityService).log(anyString(), eq(ActivityType.STREAK_UPDATED), eq(testUser));
-        verify(repository).save(updated);
-    }
-
-    @Test
-    void updateStreak_ShouldResetStreak() {
-        streak.setLastActiveDate(LocalDate.now().minusDays(3));
-        when(repository.findByUserIdAndCategory(testUser.getId(), "Task"))
-                .thenReturn(Optional.of(streak));
-        when(repository.save(any(StreakTracker.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        StreakTracker updated = streakTrackerService.updateStreak(testUser, "Task");
-
-        assertEquals(1, updated.getCurrentStreak());
-        verify(activityService).log(anyString(), eq(ActivityType.STREAK_UPDATED), eq(testUser));
-    }
-
-    @Test
-    void updateStreak_ShouldCreateNewStreakIfNotExist() {
-        when(repository.findByUserIdAndCategory(testUser.getId(), "Task"))
-                .thenReturn(Optional.empty());
-        when(repository.save(any(StreakTracker.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        StreakTracker newStreak = streakTrackerService.updateStreak(testUser, "Task");
-
-        assertEquals(1, newStreak.getCurrentStreak());
-        assertEquals(1, newStreak.getLongestStreak());
-        assertEquals(LocalDate.now(), newStreak.getLastActiveDate());
-        verify(activityService).log(contains("Started first streak"), eq(ActivityType.STREAK_UPDATED), eq(testUser));
-    }
-
+    
     @Test
     void getStreakByUserAndCategory_ShouldReturnStreak() {
         when(repository.findByUserIdAndCategory(testUser.getId(), "Task"))

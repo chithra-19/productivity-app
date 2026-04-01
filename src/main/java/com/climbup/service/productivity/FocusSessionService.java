@@ -37,31 +37,27 @@ public class FocusSessionService {
     // Fetch all sessions for today
     public List<FocusSession> getTodaySessions(User user) {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        return focusSessionRepository.findTodaySessions(user, todayStart);
+        return focusSessionRepository.findTodaySessions(user.getId() ,todayStart);
     }
 
     // Count successful sessions today
     public Long getCompletedSessionsCount(User user) {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        return focusSessionRepository.countCompletedToday(user, todayStart);
+        return focusSessionRepository.countCompletedToday(user.getId(), todayStart);
     }
 
     // Get the current active session (endTime == null)
     public FocusSession getCurrentSession(User user) {
-        List<FocusSession> sessions = focusSessionRepository.findCurrentSessions(user);
-
-        if (sessions.isEmpty()) {
-            return null;
-        }
-
-        return sessions.get(0); // latest active session
+        return focusSessionRepository
+                .findTopByUserIdAndEndTimeIsNullOrderByStartTimeDesc(user.getId())
+                .orElse(null);
     }
     
     @Transactional
     public FocusSessionResponseDTO startSession(FocusSessionRequestDTO dto, User user) {
 
         // Check if there’s already an active session
-        if (focusSessionRepository.findActiveSession(user).isPresent()) {
+        if (focusSessionRepository.findActiveSession(user.getId()).isPresent()) {
             throw new IllegalStateException("You already have an active focus session");
         }
 
@@ -83,7 +79,7 @@ public class FocusSessionService {
         FocusSession session = focusSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        if (!session.getUser().equals(user)) {
+        if (!session.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("You cannot update another user's session");
         }
 
@@ -105,7 +101,7 @@ public class FocusSessionService {
     @Transactional
     public FocusSessionResponseDTO completeSession(User user) {
         // Get active session or throw if none
-        FocusSession session = focusSessionRepository.findActiveSession(user)
+        FocusSession session = focusSessionRepository.findActiveSession(user.getId())
                 .orElseThrow(() -> new IllegalStateException("No active focus session"));
 
         // Complete the session
@@ -113,9 +109,11 @@ public class FocusSessionService {
         focusSessionRepository.save(session);
 
         // ✅ Add session minutes to daily goal progress
-        user.addFocusMinutes(session.getDurationMinutes());
-        userRepository.save(user);
+        User managedUser = userRepository.findById(user.getId())
+                .orElseThrow();
 
+        managedUser.addFocusMinutes(session.getDurationMinutes());
+        userRepository.save(managedUser);
         return mapToResponse(session);
     }
 
@@ -132,20 +130,16 @@ public class FocusSessionService {
 
     // Get total focus minutes for a user
     public int getTotalFocusMinutes(User user) {
-        List<FocusSession> sessions = focusSessionRepository.findAll()
+        return focusSessionRepository
+                .findByUserIdAndSuccessfulTrue(user.getId())
                 .stream()
-                .filter(s -> s.getUser().equals(user) && s.isSuccessful())
-                .collect(Collectors.toList());
-
-        return sessions.stream().mapToInt(FocusSession::getDurationMinutes).sum();
+                .mapToInt(FocusSession::getDurationMinutes)
+                .sum();
     }
 
     // Get count of successful sessions
     public long getSuccessfulSessionsCount(User user) {
-        return focusSessionRepository.findAll()
-                .stream()
-                .filter(s -> s.getUser().equals(user) && s.isSuccessful())
-                .count();
+        return focusSessionRepository.countByUserIdAndSuccessfulTrue(user.getId());
     }
 
     // Utility: map FocusSession → Response DTO
@@ -167,17 +161,22 @@ public class FocusSessionService {
     }
 
 
-    public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, Long userId) {
-        FocusSession session = focusSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+    public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, User user) {
 
+        FocusSession session = focusSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        // ownership check
+        if (!session.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("Unauthorized");
+        }
+
+        // mark session complete
         session.setSuccessful(true);
         session.setEndTime(LocalDateTime.now());
         focusSessionRepository.save(session);
 
-        // ✅ Update user’s daily focus minutes
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        // update user progress (NO DB FETCH NEEDED)
         user.addFocusMinutes(session.getDurationMinutes());
         userRepository.save(user);
 
@@ -189,16 +188,20 @@ public class FocusSessionService {
         FocusSession session = focusSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (!session.getUser().equals(user)) {
+        if (!session.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("You cannot delete another user's session");
         }
 
         focusSessionRepository.delete(session);
     }
+    public Page<FocusSessionResponseDTO> getAllSessions(Pageable pageable) {
+        return focusSessionRepository.findAll(pageable)
+                .map(this::mapToResponse);
+    }
     
 
 public Page<FocusSessionResponseDTO> getUserSessions(User user, Pageable pageable) {
-    return focusSessionRepository.findByUser(user, pageable)
+    return focusSessionRepository.findByUserId(user.getId(), pageable)
                                  .map(this::mapToResponse);
 
 
@@ -212,6 +215,20 @@ public void resetDailyFocusMinutes() {
         user.setDailyGoalMinutes(0);
         userRepository.save(user);
     }
+}
+
+@Transactional
+public FocusSessionResponseDTO abortSession(User user) {
+
+    FocusSession session = focusSessionRepository.findActiveSession(user.getId())
+            .orElseThrow(() -> new IllegalStateException("No active session"));
+
+    session.setSuccessful(false); // explicitly aborted
+    session.setEndTime(LocalDateTime.now());
+
+    focusSessionRepository.save(session);
+
+    return mapToResponse(session);
 }
 
 

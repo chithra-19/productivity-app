@@ -28,7 +28,6 @@
 	  color: #333;
 	}
 
-    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -94,6 +93,11 @@
     .link a:hover {
       text-decoration: underline;
     }
+	#msg {
+	  padding: 10px;
+	  border-radius: 8px;
+	  font-weight: 500;
+	}
 	@media (min-width: 768px) {
 	  .container {
 	    max-width: 600px;   /* bigger card on tablets/desktops */
@@ -111,6 +115,7 @@
 </head>
 <body>
   <div class="container">
+	<div id="msg" style="text-align:center; margin-bottom:15px; font-size:14px;"></div>
     <h2>Welcome Back 👋</h2>
     <div class="quote">Loading inspiration...</div>
 	<form action="/perform_login" method="post">
@@ -159,6 +164,19 @@
     const quoteEl = document.querySelector(".quote");
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     quoteEl.textContent = `“${randomQuote}”`;
+	
+	const params = new URLSearchParams(window.location.search);
+	const msg = document.getElementById("msg");
+
+	if (params.has("error")) {
+	  msg.textContent = "❌ Incorrect email or password";
+	  msg.style.color = "red";
+	}
+
+	if (params.has("logout")) {
+	  msg.textContent = "✅ Logged out successfully";
+	  msg.style.color = "green";
+	}
   </script>
 </body>
 </html>

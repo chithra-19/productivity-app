@@ -145,6 +145,10 @@ public class FocusSession {
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
+    public void abortSession() {
+        this.successful = false;
+        this.endTime = LocalDateTime.now(); // 🔥 THIS IS MISSING
+    }
     // Equals & HashCode
     @Override
     public boolean equals(Object o) {

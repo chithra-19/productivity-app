@@ -26,7 +26,7 @@ public class Activity {
     private User user;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "type")
     private ActivityType type;
 
     @Column(nullable = false)

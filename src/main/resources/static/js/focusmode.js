@@ -5,8 +5,8 @@ const STORAGE_KEYS = {
   SESSIONS: "focus_sessions_today",
   THEME: "focus_theme",
   LAST_DATE: "focus_last_date",
+
   SESSION_HISTORY: "focus_session_history",
-  STREAK: "focus_streak",
   LAST_SESSION_DATE: "focus_last_session_date"
 };
 
@@ -14,292 +14,298 @@ const TIMER_KEYS = {
   START: "focus_timer_start",
   DURATION: "focus_timer_duration",
   RUNNING: "focus_timer_running",
-  REMAINING: "focus_timer_remaining"
-
+  REMAINING: "focus_timer_remaining" 
 };
 
-let timerMinutes = 25;
-let timerSeconds = 0;
-let interval = null;
-let running = false;
 
-// Stats
-let totalFocusedMinutes = Number(localStorage.getItem(STORAGE_KEYS.TOTAL_MINUTES)) || 0;
-let completedSessions = Number(localStorage.getItem(STORAGE_KEYS.SESSIONS)) || 0;
-let sessionHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY)) || [];
-
-// DOM elements
-const timerEl = document.getElementById("timer");
-const goalProgressEl = document.getElementById("goalProgress");
-const goalDoneEl = document.getElementById("goalDone");
-const goalTotalEl = document.getElementById("goalTotal");
-const goalStatusEl = document.getElementById("goalStatus");
-const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const resetBtn = document.getElementById("resetBtn");
-const sessionTypes = document.querySelectorAll(".session-type");
-const customInput = document.getElementById("customDuration");
-const sessionsCompletedEl = document.getElementById("sessionsCompleted");
-const streakEl = document.getElementById("streakCount");
-const dailyGoalHoursInput = document.getElementById("dailyGoalHours");
-const dailyGoalMinsInput = document.getElementById("dailyGoalMins");
-const body = document.body;
-const lightBtn = document.getElementById("lightBtn");
-const darkBtn = document.getElementById("darkBtn");
-const remainingGoalEl = document.getElementById("remainingGoal");
-
-// Progress ring setup
-const progressCircle = document.querySelector('.progress-ring__circle');
-const radius = progressCircle.r.baseVal.value;
+const progressCircle = document.querySelector(".progress-ring-circle");
+const radius = progressCircle ? progressCircle.r.baseVal.value : 0;
 const circumference = 2 * Math.PI * radius;
-progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-progressCircle.style.strokeDashoffset = circumference;
 
-// Initialize goal
-let dailyGoalHours = dailyGoalHoursInput ? Number(dailyGoalHoursInput.value) : 0;
-let dailyGoalMinutes = dailyGoalMinsInput ? Number(dailyGoalMinsInput.value) : 0;
 
-// ===== Functions =====
-function updateDisplay() {
-  let min = String(timerMinutes).padStart(2, '0');
-  let sec = String(timerSeconds).padStart(2, '0');
-  timerEl.textContent = `${min}:${sec}`;
+let timerEl, startBtn, pauseBtn, resetBtn, continueBtn;
+let hoursInput, minsInput, remainingGoalEl, totalHoursEl, sessionsCompletedEl;
+let remainingGoalMinutes = 0;
+let customDurationInput;
+
+function getStoredDailyGoal() {
+  return Number(localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || 5 * 60;
 }
 
-function updateStats() {
-  if (sessionsCompletedEl) {
-    sessionsCompletedEl.textContent = completedSessions;
-  }
+let dailyGoalMinutes = getStoredDailyGoal();
+
+let state = {
+  timerMinutes: 25,
+  timerSeconds: 0,
+  interval: null,
+  running: false,
+
+  totalFocusedMinutes:
+    Number(localStorage.getItem(STORAGE_KEYS.TOTAL_MINUTES)) || 0,
+
+  completedSessions:
+    Number(localStorage.getItem(STORAGE_KEYS.SESSIONS)) || 0,
+
+  sessionHistory: JSON.parse(
+    localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
+  ),
+
+  sessionType: "FOCUS",
+
+  startTime: null
+};
+
+
+// ✅ Helper to format minutes into "xh ym"
+function formatMinutesToHM(minutes) {
+  const hrs = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return `${hrs}h ${mins}m`;
+}
+function getUserId() {
+  return localStorage.getItem("userId");
 }
 
-function updateGoalProgress() {
-  const remainingMinutes = Math.max(dailyGoalMinutes - totalFocusedMinutes, 0);
-  const remainingHours = Math.floor(remainingMinutes / 60);
-  const remainingMins = remainingMinutes % 60;
-
-  if (remainingGoalEl) {
-    remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
-  }
-
-  const percent = dailyGoalMinutes > 0
-    ? (totalFocusedMinutes / dailyGoalMinutes) * 100
-    : 0;
-
-  if (goalProgressEl) {
-    goalProgressEl.style.width = `${Math.min(percent, 100)}%`;
-  }
-
-  if (goalDoneEl) {
-    const doneHours = Math.floor(totalFocusedMinutes / 60);
-    const doneMins = Math.round(totalFocusedMinutes % 60);
-    goalDoneEl.textContent = `${doneHours}h ${doneMins}m`;
-  }
-
-  if (goalTotalEl) {
-    const totalHours = Math.floor(dailyGoalMinutes / 60);
-    const totalMins = dailyGoalMinutes % 60;
-    goalTotalEl.textContent = `${totalHours}h ${totalMins}m`;
-  }
-
-  if (goalStatusEl) {
-    if (percent >= 100) {
-      goalStatusEl.textContent = "Goal achieved! 🎉";
-    } else if (percent > 0) {
-      goalStatusEl.textContent = "Keep going 💪";
-    } else {
-      goalStatusEl.textContent = "Let’s get started 🚀";
-    }
-  }
-}
-
-function updateRemainingGoalDisplay() {
-  const remainingMinutes = Math.max(dailyGoalMinutes - totalFocusedMinutes, 0);
-  const remainingHours = Math.floor(remainingMinutes / 60);
-  const remainingMins = remainingMinutes % 60;
-  remainingGoalEl.textContent = `${remainingHours}h ${remainingMins}m`;
-}
-
-function restoreStats() {
-  const savedMinutes = localStorage.getItem(STORAGE_KEYS.TOTAL_MINUTES);
-  const savedSessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
-
-  totalFocusedMinutes = Number(savedMinutes) || 0;
-  completedSessions = Number(savedSessions) || 0;
-
-  if (sessionsCompletedEl) {
-    sessionsCompletedEl.textContent = completedSessions;
-  }
-
-  updateStats();
-  updateGoalProgress();
-  updateRemainingGoalDisplay();
-}
 
 function checkNewDay() {
   const today = new Date().toDateString();
   const lastDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
 
-  if (lastDate === today) return;
+  if (lastDate !== today) {
+    localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
 
-  localStorage.setItem(STORAGE_KEYS.LAST_DATE, today);
+    // Reset daily stats
+    state.totalFocusedMinutes = 0;
+    state.completedSessions = 0;
+    updateStats();
 
-  totalFocusedMinutes = 0;
-  completedSessions = 0;
-  localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, "0");
-  localStorage.setItem(STORAGE_KEYS.SESSIONS, "0");
+	// Reset remaining goal (in minutes)
+	   const goalMinutes = Number(localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || (5 * 60);
+	   remainingGoalMinutes = goalMinutes;
+	   remainingGoalEl.textContent = formatMinutesToHM(remainingGoalMinutes);
+	   updateGoalProgress();
 
-  updateStats();
-
-  const goal = Number(localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || 5;
-  dailyGoalMinutes = goal * 60;
-  updateGoalProgress();
+	   // Save resets in localStorage
+	   localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, "0");
+	   localStorage.setItem(STORAGE_KEYS.SESSIONS, "0");
+	   localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalMinutes.toString());
+	 }
+	 updateDailyGoalDisplay();
+	 updateGoalProgress();
 }
 
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+function getDailyGoalMinutes() {
+  const h = Number(document.getElementById('dailyGoalHours')?.value) || 0;
+  const m = Number(document.getElementById('dailyGoalMins')?.value) || 0;
+  return (h * 60) + m;
+}
+
+function updateRemainingGoalDisplay() {
+  if (!remainingGoalEl) return;
+
+  const dailyGoalMinutes = getDailyGoalMinutes();
+  const remaining = Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
+
+  remainingGoalEl.textContent = formatMinutesToHM(remaining);
+}
+
+function updateDisplay() {
+  let min = String(state.timerMinutes).padStart(2, '0');
+  let sec = String(state.timerSeconds).padStart(2, '0');
+  if (timerEl) {
+    timerEl.textContent = `${min}:${sec}`;
+  }
+}
+function updateStats() {
+	if(totalHoursEl){
+		totalHoursEl.textContent = (state.totalFocusedMinutes / 60).toFixed(2);
+	}
+	if(sessionsCompletedEl){
+		sessionsCompletedEl.textContent = state.completedSessions;
+	}
+}
+
+// Auto-reset daily stats at midnight
+function setupDailyReset() {
+  setInterval(() => {
+    const now = new Date();
+    const todayStr = now.toDateString();
+
+    if (window.lastResetDate !== todayStr) {
+      // Reset daily stats
+      state.totalFocusedMinutes = 0;
+      state.completedSessions = 0;
+      updateStats();
+
+      // Reset progress circle
+	  if (progressCircle) {
+		progressCircle.style.strokeDashoffset = circumference;
+	  }
+      
+
+      // Update last reset date
+      window.lastResetDate = todayStr;
+    }
+  }, 60 * 1000); // check every minute
 }
 
 function startTimer() {
-  if (running) return;
-  running = true;
+  if (state.running) return;
 
-  const activeType = document.querySelector(".session-type.active");
-  const sessionMinutes = Number(activeType?.dataset.minutes || customInput.value);
+  state.running = true;
 
   if (!localStorage.getItem(TIMER_KEYS.RUNNING)) {
+    const sessionTotal =
+      Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
+
     localStorage.setItem(TIMER_KEYS.START, Date.now());
-    localStorage.setItem(TIMER_KEYS.DURATION, sessionMinutes * 60 * 1000);
+    localStorage.setItem(TIMER_KEYS.DURATION, sessionTotal * 60 * 1000);
     localStorage.setItem(TIMER_KEYS.RUNNING, "true");
   }
 
-  interval = setInterval(() => {
+  state.interval = setInterval(() => {
     const start = Number(localStorage.getItem(TIMER_KEYS.START));
-    const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
+	const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION)) || 0;
+	const sessionMinutes = duration > 0 ? duration / 60000 : state.timerMinutes;
     const elapsed = Date.now() - start;
     const remaining = duration - elapsed;
 
     if (remaining <= 0) {
-      clearInterval(interval);
-      running = false;
+      clearInterval(state.interval);
+      state.running = false;
+
       localStorage.removeItem(TIMER_KEYS.RUNNING);
 
-      timerMinutes = 0;
-      timerSeconds = 0;
+      state.timerMinutes = 0;
+      state.timerSeconds = 0;
       updateDisplay();
-      progressCircle.style.strokeDashoffset = 0;
+	  if (progressCircle) {
+		progressCircle.style.strokeDashoffset = 0;
+	  }
+      
 
       showToast("Session Complete! ✅");
-
-      const sessionMinutes = duration / 60000;
-      totalFocusedMinutes += sessionMinutes;
-      completedSessions++;
-
-      localStorage.setItem(STORAGE_KEYS.SESSIONS, completedSessions);
-      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, totalFocusedMinutes);
-      localStorage.setItem("lastSessionDate", new Date().toDateString());
+      state.totalFocusedMinutes += sessionMinutes;
+      state.completedSessions++;
 
       updateStats();
-      updateGoalProgress();
+      addSessionToHistory(
+        document.querySelector(".session-type.active")?.textContent || "Custom",
+        sessionMinutes
+      );
+
+      const remainingMinutes = Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
+      if(remainingGoalEl){
+	   remainingGoalEl.textContent = formatMinutesToHM(remainingMinutes);
+		}
       updateDailyGoalDisplay();
 
-      const sessionType = activeType?.textContent || "Custom";
-      sessionHistory.push({
-        date: new Date().toISOString(),
-        type: sessionType,
-        minutes: sessionMinutes
-      });
-      localStorage.setItem(STORAGE_KEYS.SESSION_HISTORY, JSON.stringify(sessionHistory));
+      const percent = ((dailyGoalMinutes - remainingMinutes) / dailyGoalMinutes) * 100;
+      document.getElementById("goalProgress").style.width = percent + "%";
 
-      completeSessionBackend();
+      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
+      localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingMinutes);
       return;
     }
 
     const totalSeconds = Math.floor(remaining / 1000);
-    timerMinutes = Math.floor(totalSeconds / 60);
-    timerSeconds = totalSeconds % 60;
+    state.timerMinutes = Math.floor(totalSeconds / 60);
+    state.timerSeconds = totalSeconds % 60;
+
     updateDisplay();
 
     const offset = circumference - (elapsed / duration) * circumference;
-    progressCircle.style.strokeDashoffset = Math.max(0, offset);
+	if (progressCircle) {
+		progressCircle.style.strokeDashoffset = Math.max(0, offset);
+	}
+    
   }, 1000);
 }
-
 function pauseTimer() {
-  running = false;
-  clearInterval(interval);
+  if (!state.running) return;
 
-  const remaining = (timerMinutes * 60 + timerSeconds) * 1000;
-  localStorage.setItem(TIMER_KEYS.REMAINING, remaining);
+  clearInterval(state.interval);
+  state.running = false;
 
-  localStorage.removeItem(TIMER_KEYS.RUNNING);
-  localStorage.removeItem(TIMER_KEYS.START);
-  localStorage.removeItem(TIMER_KEYS.DURATION);
+  const remainingSeconds = state.timerMinutes * 60 + state.timerSeconds;
+
+  localStorage.setItem(TIMER_KEYS.REMAINING, remainingSeconds);
+
+  console.log("Paused at:", remainingSeconds);
 }
+  
+function resetTimer() {
+  pauseTimer();
 
-function continueTimer() {
-  if (running) return;
-  running = true;
+  const sessionTotal =
+    Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
 
-  const remaining = Number(localStorage.getItem(TIMER_KEYS.REMAINING));
-  if (!remaining || remaining <= 0) return;
-
-  const start = Date.now();
-  localStorage.setItem(TIMER_KEYS.START, start);
-  localStorage.setItem(TIMER_KEYS.DURATION, remaining);
-  localStorage.setItem(TIMER_KEYS.RUNNING, "true");
-
-  // ✅ Show paused time immediately
-  const totalSeconds = Math.floor(remaining / 1000);
-  timerMinutes = Math.floor(totalSeconds / 60);
-  timerSeconds = totalSeconds % 60;
+  state.timerMinutes = sessionTotal;
+  state.timerSeconds = 0;
   updateDisplay();
 
-  interval = setInterval(() => {
-    const elapsed = Date.now() - start;
-    const left = remaining - elapsed;
+  if (progressCircle) {
+	progressCircle.style.strokeDashoffset = circumference;
+  }
+  
 
-    if (left <= 0) {
-      clearInterval(interval);
-      running = false;
-      localStorage.removeItem(TIMER_KEYS.RUNNING);
-      timerMinutes = 0;
-      timerSeconds = 0;
+  localStorage.removeItem(TIMER_KEYS.START);
+  localStorage.removeItem(TIMER_KEYS.DURATION);
+  localStorage.removeItem(TIMER_KEYS.RUNNING); // ✅ ADD THIS
+}
+function continueTimer() {
+  if (state.running) return;
+
+  const remainingSeconds = Number(localStorage.getItem(TIMER_KEYS.REMAINING));
+  if (!remainingSeconds || remainingSeconds <= 0) return;
+
+  state.running = true;
+
+  state.timerMinutes = Math.floor(remainingSeconds / 60);
+  state.timerSeconds = remainingSeconds % 60;
+  updateDisplay();
+
+  let secondsLeft = remainingSeconds;
+
+  state.interval = setInterval(() => {
+    secondsLeft--;
+
+    // 🔴 IMPORTANT: keep updating localStorage while running
+    localStorage.setItem(TIMER_KEYS.REMAINING, secondsLeft);
+
+    if (secondsLeft <= 0) {
+      clearInterval(state.interval);
+      state.running = false;
+
+      localStorage.removeItem(TIMER_KEYS.REMAINING);
+
+      state.timerMinutes = 0;
+      state.timerSeconds = 0;
       updateDisplay();
-      progressCircle.style.strokeDashoffset = 0;
+
+	  if (progressCircle) {
+		progressCircle.style.strokeDashoffset = 0;
+	  }
+      
       showToast("Session Complete! ✅");
       completeSessionBackend();
       return;
     }
 
-    const totalSeconds = Math.floor(left / 1000);
-    timerMinutes = Math.floor(totalSeconds / 60);
-    timerSeconds = totalSeconds % 60;
+    state.timerMinutes = Math.floor(secondsLeft / 60);
+    state.timerSeconds = secondsLeft % 60;
     updateDisplay();
 
-    const offset = circumference - (elapsed / remaining) * circumference;
-    progressCircle.style.strokeDashoffset = Math.max(0, offset);
+    const offset =
+      circumference -
+      ((remainingSeconds - secondsLeft) / remainingSeconds) * circumference;
+
+	  if (progressCircle) {
+	  		progressCircle.style.strokeDashoffset = Math.max(0, offset);
+	  	}
+	
   }, 1000);
-}
-
-function resetTimer() {
-  pauseTimer();
-
-  const activeType = document.querySelector(".session-type.active");
-  const sessionMinutes = Number(activeType?.dataset.minutes || customInput.value);
-
-  timerMinutes = sessionMinutes;
-  timerSeconds = 0;
-  updateDisplay();
-
-  progressCircle.style.strokeDashoffset = circumference;
-
-  localStorage.removeItem(TIMER_KEYS.START);
-  localStorage.removeItem(TIMER_KEYS.DURATION);
-  localStorage.removeItem(TIMER_KEYS.RUNNING);
-  localStorage.removeItem(TIMER_KEYS.REMAINING);
 }
 
 (function restoreRunningTimer() {
@@ -315,280 +321,383 @@ function resetTimer() {
   }
 
   const totalSeconds = Math.floor(remaining / 1000);
-  timerMinutes = Math.floor(totalSeconds / 60);
-  timerSeconds = totalSeconds % 60;
+  state.timerMinutes = Math.floor(totalSeconds / 60);
+  state.timerSeconds = totalSeconds % 60;
 
   updateDisplay();
-  startTimer();
+  startTimer(); // auto resume
 })();
-  // ===== Restore running timer if page reloads =====
-  (function restoreRunningTimer() {
-    if (!localStorage.getItem(TIMER_KEYS.RUNNING)) return;
 
-    const start = Number(localStorage.getItem(TIMER_KEYS.START));
-    const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
-    const remaining = duration - (Date.now() - start);
+// Theme toggle
+lightBtn.addEventListener("click", () => {
+  body.classList.remove("dark"); body.classList.add("light");
+  lightBtn.classList.add("active"); darkBtn.classList.remove("active");
+});
+darkBtn.addEventListener("click", () => {
+  body.classList.remove("light"); body.classList.add("dark");
+  darkBtn.classList.add("active"); lightBtn.classList.remove("active");
+});
 
-    if (remaining <= 0) {
-      localStorage.removeItem(TIMER_KEYS.RUNNING);
-      return;
+function initState() {
+  // ✅ restore daily goal
+  dailyGoalMinutes = getStoredDailyGoal();
+
+  // ✅ restore inputs
+  if (hoursInput && minsInput) {
+    hoursInput.value = Math.floor(dailyGoalMinutes / 60);
+    minsInput.value = dailyGoalMinutes % 60;
+  }
+
+  // ✅ restore remaining goal
+  remainingGoalMinutes =
+    Number(localStorage.getItem(STORAGE_KEYS.REMAINING_GOAL)) ||
+    Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
+
+  if (remainingGoalEl) {
+    remainingGoalEl.textContent = formatMinutesToHM(remainingGoalMinutes);
+  }
+
+  // ✅ restore stats UI
+  updateStats();
+
+  // ✅ restore goal UI
+  updateDailyGoalDisplay();
+  updateGoalProgress();
+
+  // ✅ restore timer display
+  updateDisplay();
+ }
+
+const body = document.body;
+
+const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || "light";
+
+if (savedTheme === "dark") {
+  body.classList.add("dark");
+  body.classList.remove("light");
+} else {
+  body.classList.add("light");
+  body.classList.remove("dark");
+}
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500); // hide after 2.5s
+}
+
+// Update the 0h / Xh display
+function updateDailyGoalDisplay() {
+  document.getElementById('goalDone').textContent = formatMinutesToHM(state.totalFocusedMinutes);
+  document.getElementById('goalTotal').textContent = formatMinutesToHM(dailyGoalMinutes);
+}
+
+function updateGoalProgress() {
+  const goalProgress = document.getElementById("goalProgress");
+  if (!goalProgress) return;
+
+  const percent =
+    dailyGoalMinutes > 0
+      ? (state.totalFocusedMinutes / dailyGoalMinutes) * 100
+      : 0;
+
+  goalProgress.style.width = percent + "%";
+}
+function addSessionToHistory(type, minutes) {
+  try {
+    const history = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
+    );
+
+    const newSession = {
+      type: type?.toUpperCase() || "FOCUS",   // normalize
+      duration: Math.round(minutes),          // clean value
+      date: new Date().toISOString()
+    };
+
+    // Add newest session on top
+    history.unshift(newSession);
+
+    // Keep only last 50 sessions (avoid storage overload)
+    const trimmedHistory = history.slice(0, 50);
+
+    localStorage.setItem(
+      STORAGE_KEYS.SESSION_HISTORY,
+      JSON.stringify(trimmedHistory)
+    );
+
+    // Update UI instantly
+    renderSessionHistory(trimmedHistory);
+
+
+  } catch (err) {
+    console.error("❌ Failed to save session history:", err);
+  }
+}
+
+
+function renderSessionHistory(history) {
+  const container = document.getElementById("sessionHistory");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (history.length === 0) {
+    container.innerHTML = "<p>No sessions yet. Start grinding 💪</p>";
+    return;
+  }
+
+  history.forEach(session => {
+    const item = document.createElement("div");
+    item.className = "session-item";
+
+    const date = new Date(session.date).toLocaleString();
+
+    const icon = session.type === "FOCUS" ? "🧠" : "☕";
+
+    item.innerHTML = `
+      <div class="session-row">
+        <span>${icon} ${session.type}</span>
+        <span>${session.duration} min</span>
+      </div>
+      <small>${date}</small>
+    `;
+
+    container.appendChild(item);
+  });
+}
+		
+function updateDailyProgress() {
+	const userId = getUserId();
+	if (!userId) return;
+
+	fetch(`/api/users/${userId}/daily-progress`)
+    .then(res => res.json())
+    .then(progress => {
+      const percent = (progress.dailyFocusMinutes / progress.dailyGoalMinutes) * 100;
+      document.getElementById("goalProgressBar").style.width = `${percent}%`;
+      document.getElementById("goalText").textContent =
+        `${formatMinutesToHM(progress.dailyFocusMinutes)} / ${formatMinutesToHM(progress.dailyGoalMinutes)}`;
+    });
+}
+
+function updateDailyStats() {
+  const userId = getUserId();
+  if (!userId) return;
+
+  fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
+    .then(res => res.json())
+    .then(stats => {
+      const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100;
+
+      document.getElementById("goalProgressBar").style.width = `${percent}%`;
+      document.getElementById("goalText").textContent =
+        `${formatMinutesToHM(stats.dailyFocusMinutes)} / ${formatMinutesToHM(stats.dailyGoalMinutes)}`;
+
+      document.getElementById("sessionCount").textContent =
+        stats.sessionsCompletedToday;
+
+      document.getElementById("totalFocusHours").textContent =
+        (stats.totalFocusMinutes / 60).toFixed(2);
+    });
+}
+
+function syncStatsFromBackend() {
+  const userId = getUserId();
+  if (!userId) return;
+  fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
+    .then(res => res.json())
+    .then(stats => {
+      state.totalFocusedMinutes = stats.dailyFocusMinutes;
+      state.completedSessions = stats.sessionsCompletedToday;
+
+      updateStats();
+      updateDailyGoalDisplay();
+      updateGoalProgress();
+
+      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
+    });
+}
+
+function updateDashboardStats() {
+	const userId = getUserId();
+	if (!userId) return;
+    fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
+    .then(res => res.json())
+    .then(stats => {
+      const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100;
+      document.getElementById("goalProgressBar").style.width = `${percent}%`;
+      document.getElementById("goalText").textContent =
+        `${formatMinutesToHM(stats.dailyFocusMinutes)} / ${formatMinutesToHM(stats.dailyGoalMinutes)}`;
+      document.getElementById("sessionCount").textContent = stats.sessionsCompletedToday;
+      document.getElementById("totalFocusHours").textContent =
+        (stats.totalFocusMinutes / 60).toFixed(2);
+    });
+}
+function waitForUserAndSync() {
+  const userId = localStorage.getItem("userId");
+
+  if (userId) {
+    syncStatsFromBackend();
+  } else {
+    setTimeout(waitForUserAndSync, 500);
+  }
+}
+async function completeSessionBackend() {
+  try {
+    const res = await fetch("/api/focus-sessions/complete", {
+      method: "POST"
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to complete session");
     }
 
-    const totalSeconds = Math.floor(remaining / 1000);
-    timerMinutes = Math.floor(totalSeconds / 60);
-    timerSeconds = totalSeconds % 60;
+    console.log("✅ Session saved to backend");
 
-    updateDisplay();
-    startTimer();
-  })();
+    // ✅ Only update quota if session was Focus
+    if (state.sessionType === "FOCUS") {
+      const prevFocusMinutes = Number(localStorage.getItem("focusMinutesToday")) || 0;
+	  const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
+	  const sessionMinutes = duration / 60000;
+      const newTotal = prevFocusMinutes + sessionMinutes;
 
-  // ===== Session type selection =====
-  sessionTypes.forEach(type => {
+      localStorage.setItem("focusMinutesToday", newTotal);
+	  if (typeof updateFocusProgressBar === "function") {
+	    updateFocusProgressBar(newTotal);
+	  }
+    }
+
+    // 🔥 Refresh backend history UI
+    if (typeof fetchSessions === "function") {
+      fetchSessions();
+    }
+
+  } catch (err) {
+    console.error("❌ Backend error:", err);
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+
+  timerEl = document.getElementById("timer");
+  startBtn = document.getElementById("startBtn");
+  pauseBtn = document.getElementById("pauseBtn");
+  resetBtn = document.getElementById("resetBtn");
+  continueBtn = document.getElementById("continueBtn");
+  const saveBtn = document.getElementById("saveBtn");
+
+  hoursInput = document.getElementById("dailyGoalHours");
+  minsInput = document.getElementById("dailyGoalMins");
+  remainingGoalEl = document.getElementById("remainingGoal");
+  totalHoursEl = document.getElementById("totalHours");
+  sessionsCompletedEl = document.getElementById("sessionsCompleted");
+  sessionType = document.querySelectorAll(".session-type");
+  customInput = document.getElementById("customDuration");
+
+  initState();      // 🔥 first restore everything
+  checkNewDay();    // then check reset logic
+  waitForUserAndSync();
+
+  // listeners
+  startBtn?.addEventListener("click", startTimer);
+  pauseBtn?.addEventListener("click", pauseTimer);
+  resetBtn?.addEventListener("click", resetTimer);
+  continueBtn?.addEventListener("click", continueTimer);
+
+  hoursInput?.addEventListener("input", updateRemainingGoalDisplay);
+  minsInput?.addEventListener("input", updateRemainingGoalDisplay);
+ 
+  sessionType.forEach(type => {
     type.addEventListener("click", () => {
-      sessionTypes.forEach(t => t.classList.remove("active"));
+      sessionType.forEach(t => t.classList.remove("active"));
       type.classList.add("active");
-      timerMinutes = Number(type.dataset.minutes);
-      timerSeconds = 0;
+
+      state.timerMinutes = Number(type.dataset.minutes);
+      state.timerSeconds = 0;
+
+      // ✅ THIS LINE IS CRITICAL
+      state.sessionType = type.dataset.type || "FOCUS";
+
       updateDisplay();
-      progressCircle.style.strokeDashoffset = circumference;
+
+      if (progressCircle) {
+        progressCircle.style.strokeDashoffset = circumference;
+      }
     });
   });
+  
+  const storedGoal = Number(localStorage.getItem("focus_daily_goal"));
+
+  if (storedGoal) {
+    const h = Math.floor(storedGoal / 60);
+    const m = storedGoal % 60;
+
+    hoursInput.value = h;
+    minsInput.value = m;
+  }
+  
+  const savedHistory = JSON.parse(
+    localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
+  );
+  renderSessionHistory(savedHistory);
+  
 
   customInput.addEventListener("change", () => {
-    timerMinutes = Number(customInput.value);
-    timerSeconds = 0;
-    sessionTypes.forEach(t => t.classList.remove("active"));
+    state.timerMinutes = Number(customInput.value);
+    state.timerSeconds = 0;
+
+    state.sessionType = "CUSTOM"; // 🔥 important
+
+    sessionType.forEach(t => t.classList.remove("active"));
+
     updateDisplay();
-    progressCircle.style.strokeDashoffset = circumference;
+
+    if (progressCircle) {
+      progressCircle.style.strokeDashoffset = circumference;
+    }
   });
 
-  // ===== Button controls =====
-  startBtn.addEventListener("click", startTimer);
-  pauseBtn.addEventListener("click", pauseTimer);
-  resetBtn.addEventListener("click", resetTimer);
-
-  // ===== Theme toggle =====
   lightBtn.addEventListener("click", () => {
     body.classList.remove("dark");
     body.classList.add("light");
-    lightBtn.classList.add("active");
-    darkBtn.classList.remove("active");
+
+    localStorage.setItem(STORAGE_KEYS.THEME, "light"); // ✅ save
   });
+
   darkBtn.addEventListener("click", () => {
     body.classList.remove("light");
     body.classList.add("dark");
-    darkBtn.classList.add("active");
-    lightBtn.classList.remove("active");
-  });
 
-  function showToast(message) {
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.classList.add("visible");
-    }, 100);
-
-    setTimeout(() => {
-      toast.classList.remove("visible");
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  }
-
-  function updateStats() {
-    const sessionsEl = document.getElementById("completedSessions");
-    const minutesEl = document.getElementById("totalMinutes");
-
-    sessionsEl.textContent = completedSessions;
-    minutesEl.textContent = totalFocusedMinutes;
-  }
-
-  function updateGoalProgress() {
-    const goalBar = document.getElementById("goalProgressBar");
-    const goalMinutes = Number(localStorage.getItem("dailyGoalMinutes") || 0);
-
-    if (goalMinutes > 0) {
-      const progress = Math.min(100, (totalFocusedMinutes / goalMinutes) * 100);
-      goalBar.style.width = `${progress}%`;
-    }
-  }
-
-  function updateDailyGoalDisplay() {
-    const goalDisplay = document.getElementById("dailyGoalDisplay");
-    const goalMinutes = Number(localStorage.getItem("dailyGoalMinutes") || 0);
-
-    if (goalMinutes > 0) {
-      goalDisplay.textContent = `${totalFocusedMinutes}/${goalMinutes} min`;
-    } else {
-      goalDisplay.textContent = `${totalFocusedMinutes} min`;
-    }
-  }
-  // ===== Daily reset at midnight =====
-  function setupDailyReset() {
-    setInterval(() => {
-      const now = new Date();
-      const todayStr = now.toDateString();
-      const lastDate = localStorage.getItem(STORAGE_KEYS.LAST_DATE);
-
-      if (lastDate !== todayStr) {
-        localStorage.setItem(STORAGE_KEYS.LAST_DATE, todayStr);
-
-        totalFocusedMinutes = 0;
-        completedSessions = 0;
-        localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, "0");
-        localStorage.setItem(STORAGE_KEYS.SESSIONS, "0");
-
-        updateStats();
-        updateGoalProgress();
-        updateRemainingGoalDisplay();
-
-        progressCircle.style.strokeDashoffset = circumference;
-      }
-    }, 60 * 1000);
-  }
-
-  // ===== Streak tracking =====
-  function updateStreak(today) {
-    const lastDateStr = localStorage.getItem(STORAGE_KEYS.LAST_SESSION_DATE);
-    let streak = Number(localStorage.getItem(STORAGE_KEYS.STREAK)) || 0;
-
-    if (!lastDateStr) {
-      streak = 1;
-    } else {
-      const lastDate = new Date(lastDateStr);
-      const diffDays =
-        (today.setHours(0,0,0,0) - lastDate.setHours(0,0,0,0)) /
-        (1000 * 60 * 60 * 24);
-
-      if (diffDays === 1) streak++;
-      else if (diffDays > 1) streak = 1;
-    }
-
-    localStorage.setItem(STORAGE_KEYS.STREAK, streak);
-    localStorage.setItem(STORAGE_KEYS.LAST_SESSION_DATE, new Date().toISOString());
-
-    if (streakEl) {
-      streakEl.textContent = `${streak} 🔥`;
-    }
-  }
-
-  // ===== Page load =====
-  document.addEventListener("DOMContentLoaded", () => {
-    restoreStats();                // Step 1: restore local stats
-    checkNewDay();                 // Step 2: reset if needed
-    updateRemainingGoalDisplay();  // Step 3: update UI
-    setupDailyReset();             // Step 4: auto-reset at midnight
-    updateDisplay();
-    updateStats();
+    localStorage.setItem(STORAGE_KEYS.THEME, "dark"); // ✅ save
   });
   
-  function completeSessionBackend() {
-    const activeType = document.querySelector(".session-type.active");
-    const sessionType = activeType?.textContent || "Custom";
-    const sessionMinutes = Number(localStorage.getItem(TIMER_KEYS.DURATION)) / 60000;
+	if (saveBtn) {
+	  saveBtn.addEventListener("click", () => {
+	    const hours = Number(document.getElementById("dailyGoalHours").value) || 0;
+	    const mins = Number(document.getElementById("dailyGoalMins").value) || 0;
 
-    // Save to local history
-    sessionHistory.push({
-      date: new Date().toISOString(),
-      type: sessionType,
-      minutes: sessionMinutes
-    });
-    localStorage.setItem(STORAGE_KEYS.SESSION_HISTORY, JSON.stringify(sessionHistory));
+	    const totalMinutes = hours * 60 + mins;
 
-    // Send to backend (example API call)
-    fetch("/api/sessions/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: sessionType,
-        minutes: sessionMinutes,
-        date: new Date().toISOString()
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      console.log("Session saved:", data);
-    })
-    .catch(err => {
-      console.error("Failed to save session:", err);
-    });
-  }
+	    if (totalMinutes <= 0 || totalMinutes > 1440) {
+	      showToast("Invalid goal time ⛔");
+	      return;
+	    }
 
-  function renderSessionHistory() {
-    const historyContainer = document.getElementById("sessionHistory");
-    historyContainer.innerHTML = "";
+	    dailyGoalMinutes = totalMinutes;
+	    remainingGoalMinutes = Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
 
-    sessionHistory.forEach(session => {
-      const item = document.createElement("div");
-      item.className = "session-item";
-      item.textContent = `${session.type} — ${session.minutes} min (${new Date(session.date).toLocaleTimeString()})`;
-      historyContainer.appendChild(item);
-    });
-  }
-  function renderTasks() {
-    const taskContainer = document.getElementById("taskContainer");
-    taskContainer.innerHTML = "";
+	    localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, totalMinutes);
+	    localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingGoalMinutes);
 
-    tasks.forEach(task => {
-      const card = document.createElement("div");
-      card.className = "task-card";
+	    updateDailyGoalDisplay();
+	    updateGoalProgress();
 
-      // Title
-      const title = document.createElement("h4");
-      title.textContent = task.title;
-      if (task.completed) {
-        title.classList.add("completed");
-      }
-      card.appendChild(title);
+	    if (remainingGoalEl) {
+	      remainingGoalEl.textContent = formatMinutesToHM(remainingGoalMinutes);
+	    }
 
-      // Priority badge
-      const badge = document.createElement("span");
-      badge.className = `priority-badge priority-${task.priority}`;
-      badge.textContent = task.priority;
-      card.appendChild(badge);
-
-      // Editable priority
-      const prioritySelect = document.createElement("select");
-      ["High", "Medium", "Low"].forEach(level => {
-        const option = document.createElement("option");
-        option.value = level;
-        option.textContent = level;
-        if (task.priority === level) option.selected = true;
-        prioritySelect.appendChild(option);
-      });
-      prioritySelect.addEventListener("change", e => {
-        task.priority = e.target.value;
-        saveTasks();
-        renderTasks();
-      });
-      card.appendChild(prioritySelect);
-
-      // Complete toggle
-      const toggle = document.createElement("button");
-      toggle.textContent = task.completed ? "Undo" : "Done";
-      toggle.addEventListener("click", () => {
-        task.completed = !task.completed;
-        saveTasks();
-        renderTasks();
-      });
-      card.appendChild(toggle);
-
-      taskContainer.appendChild(card);
-    });
-  }
-
-  function dayEndRefresh() {
-    const today = new Date().toDateString();
-    const lastRefresh = localStorage.getItem("lastRefreshDate");
-
-    if (lastRefresh !== today) {
-      tasks.forEach(task => {
-        task.completed = false;
-      });
-      saveTasks();
-      localStorage.setItem("lastRefreshDate", today);
-      renderTasks();
-    }
-  }
+	    showToast("Goal updated! 🎯");
+	  });
+	}
+});

@@ -165,7 +165,8 @@ public class UserService implements UserDetailsService {
     }
     
     public User getUserWithAllData(String login) {
-        return userRepository.getUserWithAllData(login); // ✅ use the correct method
+        return userRepository.findUserWithAllData(login)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + login));
     }
 
     

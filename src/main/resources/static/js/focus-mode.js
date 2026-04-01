@@ -189,10 +189,7 @@ function startTimer() {
       state.completedSessions++;
 
       updateStats();
-      addSessionToHistory(
-        document.querySelector(".session-type.active")?.textContent || "Custom",
-        sessionMinutes
-      );
+      
 
       const remainingMinutes = Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
       if(remainingGoalEl){
@@ -403,70 +400,7 @@ function updateGoalProgress() {
 
   goalProgress.style.width = percent + "%";
 }
-function addSessionToHistory(type, minutes) {
-  try {
-    const history = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
-    );
 
-    const newSession = {
-      type: type?.toUpperCase() || "FOCUS",   // normalize
-      duration: Math.round(minutes),          // clean value
-      date: new Date().toISOString()
-    };
-
-    // Add newest session on top
-    history.unshift(newSession);
-
-    // Keep only last 50 sessions (avoid storage overload)
-    const trimmedHistory = history.slice(0, 50);
-
-    localStorage.setItem(
-      STORAGE_KEYS.SESSION_HISTORY,
-      JSON.stringify(trimmedHistory)
-    );
-
-    // Update UI instantly
-    renderSessionHistory(trimmedHistory);
-
-
-  } catch (err) {
-    console.error("❌ Failed to save session history:", err);
-  }
-}
-
-
-function renderSessionHistory(history) {
-  const container = document.getElementById("sessionHistory");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  if (history.length === 0) {
-    container.innerHTML = "<p>No sessions yet. Start grinding 💪</p>";
-    return;
-  }
-
-  history.forEach(session => {
-    const item = document.createElement("div");
-    item.className = "session-item";
-
-    const date = new Date(session.date).toLocaleString();
-
-    const icon = session.type === "FOCUS" ? "🧠" : "☕";
-
-    item.innerHTML = `
-      <div class="session-row">
-        <span>${icon} ${session.type}</span>
-        <span>${session.duration} min</span>
-      </div>
-      <small>${date}</small>
-    `;
-
-    container.appendChild(item);
-  });
-}
-		
 function updateDailyProgress() {
 	const userId = getUserId();
 	if (!userId) return;
@@ -535,6 +469,23 @@ function updateDashboardStats() {
         (stats.totalFocusMinutes / 60).toFixed(2);
     });
 }
+
+async function loadSessions() {
+  try {
+    const res = await fetch("/focus-sessions", {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    console.log("FULL RESPONSE:", data);
+
+    renderSessionHistory(data.content || []);
+  } catch (err) {
+    console.error("Failed to load sessions", err);
+  }
+}
+
 function waitForUserAndSync() {
   const userId = localStorage.getItem("userId");
 
@@ -547,37 +498,38 @@ function waitForUserAndSync() {
 async function completeSessionBackend() {
   try {
     const res = await fetch("/api/focus-sessions/complete", {
-      method: "POST"
+      method: "POST",
+      credentials: "include"
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to complete session");
-    }
+    if (!res.ok) throw new Error("Failed");
 
-    console.log("✅ Session saved to backend");
-
-    // ✅ Only update quota if session was Focus
-    if (state.sessionType === "FOCUS") {
-      const prevFocusMinutes = Number(localStorage.getItem("focusMinutesToday")) || 0;
-	  const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
-	  const sessionMinutes = duration / 60000;
-      const newTotal = prevFocusMinutes + sessionMinutes;
-
-      localStorage.setItem("focusMinutesToday", newTotal);
-	  if (typeof updateFocusProgressBar === "function") {
-	    updateFocusProgressBar(newTotal);
-	  }
-    }
-
-    // 🔥 Refresh backend history UI
-    if (typeof fetchSessions === "function") {
-      fetchSessions();
-    }
-
+    console.log("Session completed in backend");
   } catch (err) {
-    console.error("❌ Backend error:", err);
+    console.error(err);
   }
 }
+function renderSessionHistory(sessions) {
+    const container = document.getElementById("sessionHistory");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    sessions.forEach(s => {
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+            <div><b>${s.sessionType}</b></div>
+            <div>${s.durationMinutes} min</div>
+            <div>${s.successful ? "Done" : "Failed"}</div>
+            <div>${new Date(s.startTime).toLocaleString()}</div>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
   timerEl = document.getElementById("timer");
@@ -635,14 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     hoursInput.value = h;
     minsInput.value = m;
-  }
-  
-  const savedHistory = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
-  );
-  renderSessionHistory(savedHistory);
-  
-
+}
   customInput.addEventListener("change", () => {
     state.timerMinutes = Number(customInput.value);
     state.timerSeconds = 0;
@@ -700,4 +645,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	    showToast("Goal updated! 🎯");
 	  });
 	}
+	
+	loadSessions();
 });

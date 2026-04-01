@@ -12,24 +12,32 @@ const pageInfo = document.getElementById("pageInfo");
 async function fetchSessions(page = 0) {
   try {
     const res = await fetch(
-      `/api/focus-sessions?page=${page}&size=${pageSize}`
+      `/api/focus-sessions/me?page=${page}&size=${pageSize}`,
+      {
+        method: "GET",
+        credentials: "include" // 🔥 IMPORTANT
+      }
     );
 
     if (!res.ok) {
       throw new Error("Failed to fetch sessions");
     }
 
-    const data = await res.json();
+    const data = await res.json(); // clean direct parse
 
-    renderSessions(data.content);
-    updatePagination(data);
+	const sessions = Array.isArray(data) ? data : data.content;
+
+	renderSessions(sessions);
+
+	if (data.number !== undefined) {
+	  updatePagination(data);
+	}
   } catch (err) {
     console.error(err);
     sessionList.innerHTML =
       `<div class="empty-state">Failed to load sessions</div>`;
   }
 }
-
 /* =============================
    Render sessions
 ============================= */
@@ -54,12 +62,17 @@ function renderSessions(sessions) {
       ? "Completed"
       : "Aborted";
 
+    // 🔥 FIX: handle null endTime properly
+    const timeText = session.successful && session.endTime
+      ? `${formatDate(session.startTime)} → ${formatDate(session.endTime)}`
+      : `${formatDate(session.startTime)}`;
+
     div.innerHTML = `
       <div class="session-title">
         Focus Session (${session.durationMinutes} min)
       </div>
       <div class="session-time">
-        ${formatDate(session.startTime)} → ${formatDate(session.endTime)}
+        ${timeText}
       </div>
       <div class="session-status ${statusClass}">
         ${statusText}
@@ -96,7 +109,7 @@ nextBtn.addEventListener("click", () => {
    Utils
 ============================= */
 function formatDate(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "";
 
   const date = new Date(dateStr);
   return date.toLocaleString("en-IN", {

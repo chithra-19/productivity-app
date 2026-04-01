@@ -156,7 +156,8 @@ public class TaskViewController {
                 .stream()
                 .sorted(Comparator.comparing(Task::getPriority))
                 .limit(5)
-                .map(TaskMapper::toResponse)
+                .map(task -> TaskMapper.toResponse(task, 
+                		taskService.getPriorityPoints(task.getPriority())))
                 .toList();
     }
 }

@@ -47,6 +47,9 @@ public class DashboardService {
 
         DashboardSummaryDTO dto = new DashboardSummaryDTO();
 
+        dto.setCurrentStreak(user.getCurrentStreak());
+        dto.setBestStreak(user.getBestStreak());
+
         // 🔥 ADD THIS BLOCK
         String name = "User";
         if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
@@ -70,7 +73,7 @@ public class DashboardService {
         );
 
         dto.setBestStreak(
-            streakTrackerService.getBestStreak(user.getId())
+            streakTrackerService.getBestStreak(user)
         );
 
         dto.setTaskStats(getTaskStats(user));

@@ -16,32 +16,44 @@ import java.util.Optional;
 public interface FocusSessionRepository extends JpaRepository<FocusSession, Long> {
 
     // Get all sessions for a user that started today
-    @Query("SELECT f FROM FocusSession f WHERE f.user = :user AND f.startTime >= :todayStart")
-    List<FocusSession> findTodaySessions(@Param("user") User user, @Param("todayStart") LocalDateTime todayStart);
-
+	@Query("""
+		    SELECT f FROM FocusSession f
+		    WHERE f.user.id = :userId AND f.startTime >= :todayStart
+		""")
+		List<FocusSession> findTodaySessions(Long userId, LocalDateTime todayStart);
+	
     // Count successful sessions for today
-    @Query("SELECT COUNT(f) FROM FocusSession f WHERE f.user = :user AND f.successful = true AND f.startTime >= :todayStart")
-    Long countCompletedToday(@Param("user") User user, @Param("todayStart") LocalDateTime todayStart);
+	@Query("""
+		    SELECT COUNT(f) FROM FocusSession f
+		    WHERE f.user.id = :userId 
+		    AND f.successful = true 
+		    AND f.startTime >= :todayStart
+		""")
+		Long countCompletedToday(Long userId, LocalDateTime todayStart);
+	
+	@Query("""
+		    SELECT f FROM FocusSession f
+		    WHERE f.user.id = :userId AND f.successful = false
+		    ORDER BY f.startTime DESC
+		""")
+		List<FocusSession> findCurrentSessions( Long userId);
 
-    @Query("""
-    		SELECT f FROM FocusSession f
-    		WHERE f.user = :user AND f.successful = false
-    		ORDER BY f.startTime DESC
-    		""")
-    		List<FocusSession> findCurrentSessions(@Param("user") User user);
-
-    List<FocusSession> findByUser(User user);
-    
     
     @Query("""
     	    SELECT f FROM FocusSession f
-    	    WHERE f.user = :user AND f.endTime IS NULL
+    	    WHERE f.user.id = :userId AND f.endTime IS NULL
     	    ORDER BY f.startTime DESC
     	""")
-    	Optional<FocusSession> findActiveSession(@Param("user") User user);
-
-    Page<FocusSession> findByUser(User user, Pageable pageable);
+    	Optional<FocusSession> findActiveSession(Long userId);
     
+    List<FocusSession> findByUserId(Long userId);
+    
+    Page<FocusSession> findByUserId(Long userId, Pageable pageable);
+    
+    List<FocusSession> findByUserIdAndSuccessfulTrue(Long userId);
     
 
-}
+    long countByUserIdAndSuccessfulTrue(Long userId);
+    
+    Optional<FocusSession> findTopByUserIdAndEndTimeIsNullOrderByStartTimeDesc(Long userId);
+    }

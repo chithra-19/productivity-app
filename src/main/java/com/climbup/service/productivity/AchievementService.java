@@ -10,6 +10,7 @@ import com.climbup.dto.response.AchievementResponseDTO;
 import com.climbup.mapper.AchievementMapper;
 import com.climbup.model.Achievement;
 import com.climbup.model.Achievement.AchievementCode;
+import com.climbup.model.ActivityType;
 import com.climbup.model.Goal;
 import com.climbup.model.GoalStatus;
 import com.climbup.model.Task;
@@ -17,6 +18,8 @@ import com.climbup.model.User;
 import com.climbup.repository.AchievementRepository;
 import com.climbup.repository.GoalRepository;
 import com.climbup.repository.TaskRepository;
+import com.climbup.service.task.ActivityService;
+
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -27,13 +30,16 @@ public class AchievementService {
     private final AchievementRepository achievementRepository;
     private final GoalRepository goalRepository;
     private final TaskRepository taskRepository;
+    private final ActivityService activityService;
 
     public AchievementService(AchievementRepository achievementRepository,
                               GoalRepository goalRepository,
-                              TaskRepository taskRepository) {
+                              TaskRepository taskRepository,
+                              ActivityService activityService) {
         this.achievementRepository = achievementRepository;
         this.goalRepository = goalRepository;
         this.taskRepository = taskRepository;
+        this.activityService = activityService;
     }
 
     // ================= GET USER ACHIEVEMENTS =================
@@ -204,6 +210,12 @@ public class AchievementService {
             achievement.unlock();
             achievementRepository.save(achievement);
         }
+       
+        activityService.log(
+        	    "🏆 Achievement unlocked: " + achievement.getTitle(),
+        	    ActivityType.ACHIEVEMENT_UNLOCKED,
+        	    user
+        	);
 
         return AchievementMapper.toResponseDTO(achievement);
     }

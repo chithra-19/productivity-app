@@ -4,6 +4,7 @@ import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.response.ProfileResponseDTO;
 import com.climbup.model.ActivityLog;
 import com.climbup.model.Badge;
+import com.climbup.model.StreakTracker;
 import com.climbup.model.User;
 import com.climbup.service.productivity.*;
 import com.climbup.service.task.TaskService;
@@ -55,8 +56,11 @@ public class ProfileViewController {
         ProfileResponseDTO profile = profileService.getProfile(userId);
 
         // ----------------- Dynamic stats -----------------
-        int currentStreak = streakService.getCurrentStreak(user);
-        int bestStreak = streakService.getBestStreak(userId);
+        
+        StreakTracker tracker = streakService.getStreakByUserAndCategory(user.getId(), "GLOBAL");
+
+        int currentStreak = tracker != null ? tracker.getCurrentStreak() : 0;
+        int bestStreak = tracker != null ? tracker.getLongestStreak() : 0;
         int completedTasks = taskService.countCompletedTasks(userId);
         int productivityScore = profile.getProductivityScore(); // optional
 

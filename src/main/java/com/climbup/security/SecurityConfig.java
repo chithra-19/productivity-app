@@ -26,7 +26,9 @@ public class SecurityConfig {
     		    .ignoringRequestMatchers(
     		        new AntPathRequestMatcher("/goals/**"),
     		        new AntPathRequestMatcher("/tasks/**"),
-    		        new AntPathRequestMatcher("/api/**")
+    		        new AntPathRequestMatcher("/api/**"),
+    		        new AntPathRequestMatcher("/logout") 
+    		        
     		    )
     		)
 
@@ -78,6 +80,8 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )
+            
+           
             .sessionManagement(session -> session
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)

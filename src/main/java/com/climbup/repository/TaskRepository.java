@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -146,14 +147,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     	);
 
     @Query("""
-    	    SELECT t.taskDate, COUNT(t) 
-    	    FROM Task t 
-    	    WHERE t.user = :user 
-    	      AND t.completed = true 
-    	    GROUP BY t.taskDate 
-    	    HAVING COUNT(t) >= 3 
-    	    ORDER BY t.taskDate DESC
+    	    SELECT DISTINCT t.taskDate
+    	    FROM Task t
+    	    WHERE t.user = :user
+    	    AND t.completed = true
+    	    AND t.taskDate IS NOT NULL
+    	    ORDER BY t.taskDate
     	""")
-    	List<Object[]> findStreakEligibleDates(@Param("user") User user);
+    	List<LocalDate> findCompletedDates(User user);
     
-}
+    
+   }

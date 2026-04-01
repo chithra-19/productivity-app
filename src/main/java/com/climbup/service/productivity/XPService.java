@@ -12,40 +12,28 @@ public class XPService {
     private final UserRepository userRepository;
     private final StreakTrackerService streakTrackerService;
 
-    // ===== XP RULES (DAY 1) =====
-    private static final int XP_PER_TASK = 10;
-    private static final int XP_PER_GOAL = 50;     // future-ready
-    private static final int XP_PER_STREAK_DAY = 5;
 
-    // Optional level system (kept dead simple)
+
+    // Level system
     private static final int BASE_XP_FOR_LEVEL = 100;
 
     public XPService(UserRepository userRepository,
-    		StreakTrackerService streakTrackerService) {
+                     StreakTrackerService streakTrackerService) {
         this.userRepository = userRepository;
         this.streakTrackerService = streakTrackerService;
     }
 
     /**
      * Call this ONLY when a task is completed
+     * NOW: priority-based XP system
      */
     @Transactional
-    public void handleTaskCompletion(User user, Task task) {
+    public void handleTaskCompletion(User user, int xpEarned) {
 
-        if (user == null || task == null) return;
-
-        int xpEarned = XP_PER_TASK;
-
-        // 🔥 streak bonus (simple + visible impact)
-        int streak = streakTrackerService.getCurrentStreak(user, task.getCategory());
-        if (streak > 0) {
-            xpEarned += XP_PER_STREAK_DAY;
-        }
-
+        if (user == null) return;
 
         addXp(user, xpEarned);
     }
-
     /**
      * Core XP logic (single source of truth)
      */
@@ -57,7 +45,6 @@ public class XPService {
         int updatedXp = user.getXp() + xpToAdd;
         user.setXp(updatedXp);
 
-        // Optional level logic (does NOT affect dashboard today)
         int oldLevel = user.getLevel();
         int newLevel = calculateLevel(updatedXp);
 
@@ -70,14 +57,14 @@ public class XPService {
     }
 
     /**
-     * Very predictable leveling
+     * Level calculation
      */
     public int calculateLevel(int totalXp) {
         return (totalXp / BASE_XP_FOR_LEVEL) + 1;
     }
 
     /**
-     * XP needed to reach next level
+     * XP needed for next level
      */
     public int xpForNextLevel(User user) {
         int nextLevel = user.getLevel() + 1;
@@ -85,7 +72,7 @@ public class XPService {
     }
 
     /**
-     * XP earned inside current level
+     * XP progress inside current level
      */
     public int xpProgressInCurrentLevel(User user) {
         int currentLevelStartXp = (user.getLevel() - 1) * BASE_XP_FOR_LEVEL;
@@ -93,71 +80,64 @@ public class XPService {
     }
 
     /**
-     * Hook for future rewards
+     * Hook for future gamification
      */
     private void onLevelUp(User user, int oldLevel, int newLevel) {
-        // Future:
-        // - achievements
-        // - notifications
-        // - animations
-        // - rewards
-
-        // Day 1: do nothing (but logic is interview gold)
+        // future: badges, animations, rewards
     }
 
-	public int calculateXpProgress(User user) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	
-	// =============================
-	// READ METHODS (For Dashboard)
-	// =============================
+    // =============================
+    // READ METHODS (Dashboard)
+    // =============================
 
-	public int getCurrentXP(Long userId) {
-	    User user = userRepository.findById(userId)
-	            .orElseThrow(() -> new RuntimeException("User not found"));
-	    return user.getXp();
-	}
+    public int getCurrentXP(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getXp();
+    }
 
-	public int getLevel(Long userId) {
-	    User user = userRepository.findById(userId)
-	            .orElseThrow(() -> new RuntimeException("User not found"));
-	    return user.getLevel();
-	}
+    public int getLevel(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getLevel();
+    }
 
-	public int getXpForNextLevel(Long userId) {
-	    User user = userRepository.findById(userId)
-	            .orElseThrow(() -> new RuntimeException("User not found"));
-	    return xpForNextLevel(user);
-	}
+    public int getXpForNextLevel(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return xpForNextLevel(user);
+    }
 
-	public double getXpPercentage(Long userId) {
-	    User user = userRepository.findById(userId)
-	            .orElseThrow(() -> new RuntimeException("User not found"));
+    public double getXpPercentage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-	    int progress = xpProgressInCurrentLevel(user);
-	    int required = BASE_XP_FOR_LEVEL;
+        int progress = xpProgressInCurrentLevel(user);
+        int required = BASE_XP_FOR_LEVEL;
 
-	    return (progress * 100.0) / required;
-	}
+        return (progress * 100.0) / required;
+    }
 
+    /**
+     * Total XP required to reach a level
+     */
+    private int xpForLevel(int level) {
+        return (level - 1) * BASE_XP_FOR_LEVEL;
+    }
 
-	/**
-	 * Total XP required to reach a given level
-	 */
-	private int xpForLevel(int level) {
-	    return (level - 1) * BASE_XP_FOR_LEVEL;
-	}
+    public int getProgressToNextLevel(long xp) {
+        int currentLevel = calculateLevel((int) xp);
 
-	public int getProgressToNextLevel(long xp) {
-	    int currentLevel = calculateLevel((int) xp); // calculateLevel can still use int
-	    int xpForCurrentLevel = xpForLevel(currentLevel);
-	    int xpForNextLevel = xpForLevel(currentLevel + 1);
+        int xpForCurrentLevel = xpForLevel(currentLevel);
+        int xpForNextLevel = xpForLevel(currentLevel + 1);
 
-	    int progress = (int)(((double)(xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100);
-	    return Math.min(progress, 100);
-	}
+        int progress = (int) (((double) (xp - xpForCurrentLevel)
+                / (xpForNextLevel - xpForCurrentLevel)) * 100);
 
+        return Math.min(progress, 100);
+    }
 
+    public int calculateXpProgress(User user) {
+        return xpProgressInCurrentLevel(user);
+    }
 }

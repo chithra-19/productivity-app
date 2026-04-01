@@ -35,7 +35,13 @@
           <li><a class="dropdown-item" th:href="@{/dashboard/goals}"><i class="bi bi-bullseye me-2"></i>Goals</a></li>
           <li><a class="dropdown-item" th:href="@{/tasks/all}"><i class="bi bi-list-task me-2"></i>All Tasks</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" th:href="@{/logout}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+		  <li>
+		      <form th:action="@{/logout}" method="post" style="margin:0;">
+		          <button type="submit" class="dropdown-item text-danger">
+		              <i class="bi bi-box-arrow-right me-2"></i> Logout
+		          </button>
+		      </form>
+		  </li>
         </ul>
       </div>
     </div>
@@ -112,7 +118,8 @@
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-success mb-2"><i class="bi bi-fire"></i></div>
             <h5 class="text-muted">Current Streak</h5>
-            <h3 class="stat-value" th:text="${summary.currentStreak}">0</h3>
+			<h3 class="stat-value"
+			    th:text="${summary != null ? summary.currentStreak : 0}">0</h3>
           </div>
         </div>
 
@@ -121,8 +128,9 @@
           <div class="stat-card text-center p-3 border rounded">
             <div class="stat-icon text-primary mb-2"><i class="bi bi-trophy"></i></div>
             <h5 class="text-muted">Best Streak</h5>
-            <h3 class="stat-value" th:text="${summary.bestStreak}"
->0</h3>
+
+			<h3 class="stat-value"
+			    th:text="${summary != null ? summary.bestStreak : 0}">0</h3>
           </div>
         </div>
 
@@ -155,7 +163,7 @@
 	      <div class="px-0"> <!-- Remove horizontal padding -->
 	        <div class="progress" style="height: 36px; width: 100%;">
 	          <div class="progress-bar bg-warning text-dark fw-bold px-4"
-	               th:style="'width:' + ${xpPercent} + '%'">
+			  th:style="'width:' + (${xpPercent != null ? xpPercent : 0}) + '%'"
 	            <span th:text="${xpPercent + '%'}">0%</span>
 	          </div>
 	        </div>
@@ -169,12 +177,10 @@
 	      <h5 class="card-title mb-3">Recent Activities</h5>
 	      <ul class="list-group list-group-flush">
 			<li class="list-group-item" th:each="act : ${recentActivities}">
-			  <span th:text="${act.description}">Sample Activity</span>
+				<span th:text="${act.description != null ? act.description : 'No description'}"></span>
 			  <small th:if="${act.timestamp != null}" class="text-muted"
 			         th:text="${#temporals.format(act.timestamp, 'dd MMM yyyy HH:mm')}">Timestamp</small>
-			  <small th:if="${act.focusMinutes != null}" class="text-muted">
-			    (Focus: <span th:text="${act.focusMinutes}">0</span> min)
-			  </small>
+			 
 			</li>
 			<li th:if="${recentActivities == null or #lists.isEmpty(recentActivities)}"
 			    class="list-group-item text-muted text-center">

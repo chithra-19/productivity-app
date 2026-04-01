@@ -134,5 +134,7 @@ public class ActivityLog {
     public LocalDateTime getLoggedAt() {
         return loggedAt;
     }
-   
+
+    
+    
 }

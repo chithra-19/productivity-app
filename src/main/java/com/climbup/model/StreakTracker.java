@@ -45,30 +45,6 @@ public class StreakTracker {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    /* ================= BUSINESS LOGIC ================= */
-
-    public void updateForDay(LocalDate today, boolean qualifiedToday) {
-        if (!qualifiedToday) {
-            return; // don’t change streak if no task today
-        }
-
-        if (lastActiveDate == null) {
-            currentStreak = 1;
-        } else {
-            long days = ChronoUnit.DAYS.between(lastActiveDate, today);
-
-            if (days == 1) {
-                currentStreak++;
-            } else if (days > 1) {
-                currentStreak = 1; // reset to 1, not 0
-            }
-            // days == 0 → already counted
-        }
-
-        longestStreak = Math.max(longestStreak, currentStreak);
-        lastActiveDate = today;
-    }
-
     /* ================= GETTERS / SETTERS ================= */
 
     public Long getId() {

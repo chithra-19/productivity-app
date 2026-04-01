@@ -94,7 +94,7 @@ public class GoalService {
         Achievement achievement = new Achievement();
         achievement.setUser(user);
         achievement.setGoal(saved);
-        achievement.setCode(AchievementCode.GOAL_COMPLETED); // or generate unique code
+        //achievement.setCode(AchievementCode.GOAL_COMPLETED); // or generate unique code
         achievement.setTitle("Complete Goal: " + saved.getTitle());
         achievement.setDescription("Finish the goal: " + saved.getTitle());
         achievement.setType(Achievement.Type.GOAL);

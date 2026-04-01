@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,14 +36,19 @@ public class StreakTrackerController {
     /**
      * Mark/update a streak for a category
      */
-    @PostMapping("/update")
-    public ResponseEntity<StreakTrackerResponseDTO> updateStreak(@RequestBody StreakTrackerRequestDTO request) {
-        User currentUser = userService.getCurrentUser(); // implement this in UserService
-        StreakTracker tracker = streakService.updateStreak(currentUser, request.getCategory());
+    @GetMapping
+    public ResponseEntity<?> getStreak() {
 
-        return ResponseEntity.ok(mapToResponseDTO(tracker));
+        User currentUser = userService.getCurrentUser();
+
+        int current = streakService.getCurrentStreak(currentUser);
+        int best = streakService.getBestStreak(currentUser);
+
+        return ResponseEntity.ok(Map.of(
+            "currentStreak", current,
+            "bestStreak", best
+        ));
     }
-
     /**
      * Get streak by category for current user
      */
@@ -52,21 +58,6 @@ public class StreakTrackerController {
         StreakTracker tracker = streakService.getStreakByUserAndCategory(currentUser.getId(), category);
 
         return ResponseEntity.ok(mapToResponseDTO(tracker));
-    }
-
-    /**
-     * Get all streaks for current user
-     */
-    @GetMapping
-    public ResponseEntity<List<StreakTrackerResponseDTO>> getAllStreaks() {
-        User currentUser = userService.getCurrentUser();
-        List<StreakTracker> streaks = streakService.getAllStreaksForUser(currentUser.getId());
-
-        List<StreakTrackerResponseDTO> responseList = streaks.stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(responseList);
     }
 
     /**
@@ -82,14 +73,20 @@ public class StreakTrackerController {
         return dto;
     }
     
-    @GetMapping("/{category}/badges")
-    public ResponseEntity<List<String>> getBadges(@PathVariable String category) {
+    @GetMapping("/badges")
+    public ResponseEntity<List<String>> getBadges() {
         User currentUser = userService.getCurrentUser();
-        StreakTracker tracker = streakService.getStreakByUserAndCategory(currentUser.getId(), category);
-        List<String> badges = streakService.getBadgeLabels(tracker);
+
+        int best = streakService.getBestStreak(currentUser);
+
+        List<String> badges = new ArrayList<>();
+
+        if (best >= 50) badges.add("50-Day Consistency Badge 🟢");
+        if (best >= 100) badges.add("100-Day Consistency Badge 🔵");
+        if (best >= 365) badges.add("365-Day Consistency Badge 🏆");
+
         return ResponseEntity.ok(badges);
     }
-    
     @GetMapping("/heatmap-data")
     public ResponseEntity<Map<String, Integer>> getHeatmapData() {
         User currentUser = userService.getCurrentUser();

@@ -18,11 +18,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
     
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.profile WHERE u.email = :email")
-    User getUserWithAllData(@Param("email") String email);
-    
+//    @Query("SELECT u FROM User u LEFT JOIN FETCH u.profile WHERE u.email = :email")
+//    User getUserWithAllData(@Param("email") String email);
+//    
     @Query("SELECT u FROM User u JOIN FETCH u.profile WHERE u.email = :email")
-    Optional<User> findByEmailWithProfile(String email);
+    Optional<User> findByEmailWithProfile(@Param("email") String email);
  
     boolean existsByEmail(String email);
 

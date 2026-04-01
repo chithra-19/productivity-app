@@ -89,12 +89,10 @@ public class TaskController {
             task.setCompleted(true);
             taskRepository.save(task);
 
-         // 1️⃣ Update streak (category-based)
-            streakTrackerService.evaluateToday(user);
 
             // 2️⃣ Update XP
-            xpService.handleTaskCompletion(user, task);
-
+            int points = taskService.getPriorityPoints(task.getPriority());
+            xpService.handleTaskCompletion(user, points);
             // 3️⃣ Get fresh streak value
             int currentStreak = streakTrackerService.getCurrentStreak(user);
 
@@ -173,26 +171,20 @@ public class TaskController {
 
     @PutMapping("/mark-done/{id}")
     public ResponseEntity<Map<String, Object>> markTaskDone(@PathVariable Long id) {
-        // Mark task as completed
-        Task task = taskService.markDone(id); // sets task.completed = true
 
-        User user = task.getUser(); // get the task owner
+        User user = userService.getCurrentUser(); // 🔥 REQUIRED
 
-        streakTrackerService.evaluateToday(user);
+        Task task = taskService.markDone(id, user); // ✅ correct call
+
         int currentStreak = streakTrackerService.getCurrentStreak(user);
-
-
-        // XP is the user's current productivity score
         int xp = user.getProductivityScore();
-
-        // Pending tasks
         long pendingCount = taskRepository.countByUserAndCompletedFalse(user);
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("streak", currentStreak);
         resp.put("xp", xp);
         resp.put("pendingCount", pendingCount);
-        resp.put("xpIncrement", 10); // optional, for toast message
+        resp.put("xpIncrement", 10);
 
         return ResponseEntity.ok(resp);
     }

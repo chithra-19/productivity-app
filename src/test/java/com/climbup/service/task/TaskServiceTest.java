@@ -104,7 +104,7 @@ class TaskServiceTest {
         assertTrue(response.isCompleted());
         assertNotNull(response.getCompletedDateTime());
 
-        verify(streakTrackerService).updateStreak(user);
+        
         verify(achievementService).checkForNewAchievements(user);
      
     }
@@ -125,7 +125,7 @@ class TaskServiceTest {
         assertTrue(response.isCompleted());
         assertEquals(task.getCompletedDateTime(), response.getCompletedDateTime());
 
-        verify(streakTrackerService, never()).updateStreak(any());
+        
         verify(achievementService, never()).checkForNewAchievements(any());
     }
 

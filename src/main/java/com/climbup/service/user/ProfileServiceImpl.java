@@ -2,6 +2,7 @@ package com.climbup.service.user;
 
 import com.climbup.dto.request.ProfileRequestDTO;
 import com.climbup.dto.response.ProfileResponseDTO;
+import com.climbup.model.ActivityType;
 import com.climbup.model.Profile;
 import com.climbup.model.User;
 import com.climbup.repository.ProfileRepository;
@@ -9,6 +10,7 @@ import com.climbup.repository.UserRepository;
 import com.climbup.repository.TaskRepository;
 import com.climbup.service.productivity.StreakTrackerService;
 import com.climbup.service.productivity.XPService;
+import com.climbup.service.task.ActivityService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,17 +34,20 @@ public class ProfileServiceImpl implements ProfileService {
     private final TaskRepository taskRepository;
     private final StreakTrackerService streakTrackerService;
     private final XPService xpService;
-
+    private final ActivityService activityService;
+    
     public ProfileServiceImpl(ProfileRepository profileRepository,
                               UserRepository userRepository,
                               TaskRepository taskRepository,
                               StreakTrackerService streakTrackerService,
-                              XPService xpService) {
+                              XPService xpService,
+                              ActivityService activityService) {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
         this.taskRepository = taskRepository;
         this.streakTrackerService = streakTrackerService;
         this.xpService = xpService;
+        this.activityService = activityService;
     }
 
     // ---------- Create Profile ----------
@@ -82,7 +87,7 @@ public class ProfileServiceImpl implements ProfileService {
         // --- Aggregate dynamic stats ---
         long completedTasks = taskRepository.countByUserAndCompletedTrue(user);
         int currentStreak = streakTrackerService.getCurrentStreak(user);
-        int bestStreak = streakTrackerService.getBestStreak(user.getId());
+        int bestStreak = streakTrackerService.getBestStreak(user);
 
         long xp = xpService.getCurrentXP(user.getId());
         int level = xpService.getLevel(user.getId());
@@ -116,7 +121,11 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setProfilePictureUrl(dto.getProfilePictureUrl());
 
         profileRepository.save(profile);
-
+        activityService.log(
+        	    "👤 Profile updated",
+        	    ActivityType.PROFILE_UPDATED,
+        	    user
+        	);
         // Return fully aggregated data
         return getProfile(userId);
     }

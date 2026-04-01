@@ -51,6 +51,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final ActivityService activityService;
     private final XPService xpService;
+    private final StreakTrackerService streakTrackerService;
 
     
     @Autowired
@@ -62,7 +63,8 @@ public class DashboardController {
                                    GoalService goalService,
                                    DashboardService dashboardService,
                                    ActivityService activityService,
-                                   XPService xpService) {
+                                   XPService xpService,
+                                   StreakTrackerService streakTrackerService) {
         this.userService = userService;
         this.taskService = taskService;
         this.profileService = profileService;
@@ -72,10 +74,9 @@ public class DashboardController {
         this.dashboardService = dashboardService;
         this.activityService = activityService;
         this.xpService = xpService;
+        this.streakTrackerService = streakTrackerService;
         
     }
-    
-
 
     // Load common items
     @ModelAttribute
@@ -94,6 +95,11 @@ public class DashboardController {
     @GetMapping
     public String showDashboard(Model model,
                                 @AuthenticationPrincipal UserDetails springUser) {
+    	
+
+        if (springUser == null) {
+            return "redirect:/login"; // 🔥 prevent crash
+        }
     	User user = userService.getUserWithAllData(springUser.getUsername());
 
     	String firstName = null;
@@ -115,34 +121,33 @@ public class DashboardController {
         
         // 🔥 CENTRALIZED DASHBOARD DATA
         DashboardSummaryDTO summary = dashboardService.getDashboardSummary(user);
-        model.addAttribute("summary", summary);
 
+        if (summary == null) {
+            summary = new DashboardSummaryDTO();
+            summary.setCurrentStreak(0);
+            summary.setBestStreak(0);
+        }
+
+        model.addAttribute("summary", summary);
         // Motivation
         model.addAttribute("quote", motivationService.getRandomQuote());
 
-        // Goals
-        model.addAttribute("goals", goalService.getGoalsForUser(user));
+        model.addAttribute("goals", 
+            goalService.getGoalsForUser(user) != null ? 
+            goalService.getGoalsForUser(user) : List.of());
 
+       
         // Tasks
         List<Task> today = taskService.getTasksDueOn(user, LocalDate.now());
-        model.addAttribute("todaysTasks", today);
+        model.addAttribute("todaysTasks", today != null ? today : List.of());
+       
         model.addAttribute("todaysCount", today.size());
         model.addAttribute("pendingCount",
                 (int) today.stream().filter(t -> !t.isCompleted()).count());
 
         List<ActivityDTO> recentActivities = activityService.getRecentActivities(user);
-        model.addAttribute("recentActivities", recentActivities);
-        
-        // Heatmap
-        Map<String, Integer> heatmapData = taskService.getTaskCountsByDate(user)
-                .entrySet().stream()
-                .filter(e -> e.getKey() != null)
-                .collect(Collectors.toMap(
-                        e -> e.getKey().toString(),
-                        e -> e.getValue().intValue()
-                ));
-
-        model.addAttribute("heatmapData", heatmapData);
+        model.addAttribute("recentActivities", 
+                recentActivities != null ? recentActivities : List.of());
 
         // Focus
         FocusSession currentSession = focusSessionService.getCurrentSession(user);
@@ -185,8 +190,7 @@ public class DashboardController {
 
         return "redirect:/dashboard/goals";
     }
-   
-
+    
     @GetMapping("/streaks")
     public String showStreaksPage(HttpServletRequest request, Model model) {
         model.addAttribute("currentPath", request.getRequestURI());
@@ -258,19 +262,13 @@ public class DashboardController {
         return userService.findByEmail(principal.getName());
     }
 
-    /**
-     * ✅ All tasks page
-     */
     @GetMapping("/task-all")
     public String getAllTasks(Model model, Principal principal) {
         User user = getCurrentUser(principal);
         model.addAttribute("tasks", taskService.getTasksForUser(user));
         return "tasks/task-all";
     }
-
-    /**
-     * ✅ Today's tasks page
-     */
+   
     @GetMapping("/task-today")
     public String getTodayTasks(Model model, Principal principal) {
         User user = getCurrentUser(principal);
@@ -280,17 +278,12 @@ public class DashboardController {
 
         return "tasks/task-today";
     }
-
-
-    /**
-     * ✅ Add task page
-     */
+   
     @GetMapping("/add-task")
     public String getAddTaskPage(Model model) {
         model.addAttribute("task", new TaskRequestDTO());
         return "tasks/add-task";
     }
-
     @GetMapping("/activities")
     public ResponseEntity<List<ActivityDTO>> getActivities(Principal principal) {
         User user = userService.findByEmail(principal.getName());

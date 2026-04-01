@@ -78,10 +78,10 @@ public class TaskMapper {
      * @param task persisted task entity
      * @return TaskResponseDTO for UI rendering
      */
-    public static TaskResponseDTO toResponse(Task task) {
+    public static TaskResponseDTO toResponse(Task task, int xpEarned) {
         if (task == null) return null;
 
-        return new TaskResponseDTO(
+        TaskResponseDTO dto = new TaskResponseDTO(
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
@@ -92,5 +92,8 @@ public class TaskMapper {
                 task.getIconUrl(),
                 task.getCompletedDateTime()
         );
+
+        dto.setXpEarned(xpEarned);
+        return dto;
     }
-}
+ }

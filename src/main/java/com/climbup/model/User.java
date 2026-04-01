@@ -40,6 +40,11 @@ public class User implements UserDetails {
     private Integer productivityScore = 0;
 
  
+    @Column(name = "current_streak", nullable = false)
+    private int currentStreak = 0;
+
+    @Column(name = "best_streak", nullable = false)
+    private int bestStreak = 0;
 
     // Security Flags
     private boolean enabled = true;
@@ -161,6 +166,21 @@ public class User implements UserDetails {
 	    }
 
 
+	    public int getCurrentStreak() {
+	        return currentStreak;
+	    }
+
+	    public void setCurrentStreak(int currentStreak) {
+	        this.currentStreak = currentStreak;
+	    }
+
+	    public int getBestStreak() {
+	        return bestStreak;
+	    }
+
+	    public void setBestStreak(int bestStreak) {
+	        this.bestStreak = bestStreak;
+	    }
     // Constructors
     public User() {}
 

@@ -3,9 +3,10 @@ package com.climbup.controller.productivity;
 import com.climbup.dto.request.FocusSessionRequestDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.User;
-import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.FocusSessionService;
+import com.climbup.service.user.UserService;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,118 +14,140 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/focus-sessions")
 public class FocusSessionController {
 
     private final FocusSessionService focusSessionService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public FocusSessionController(FocusSessionService focusSessionService, UserRepository userRepository) {
+    public FocusSessionController(FocusSessionService focusSessionService,
+                                  UserService userService) {
         this.focusSessionService = focusSessionService;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
-    // ➕ Create a new focus session
-    @PostMapping("/create/{userId}")
+    // ➕ Start session
+    @PostMapping("/me")
     public ResponseEntity<FocusSessionResponseDTO> createSession(
-            @PathVariable Long userId,
             @Valid @RequestBody FocusSessionRequestDTO dto) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        FocusSessionResponseDTO response = focusSessionService.startSession(dto, user);
-        return ResponseEntity.ok(response);
+        User user = userService.getCurrentUser();
+        return ResponseEntity.ok(focusSessionService.startSession(dto, user));
     }
 
-    // 📋 Get all focus sessions for a user
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<FocusSessionResponseDTO>> getUserSessions(
-            @PathVariable Long userId,
+    // 📋 Get my sessions (MAIN HISTORY API)
+    @GetMapping("/me")
+    public ResponseEntity<Page<FocusSessionResponseDTO>> getMySessions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sortBy
+            @RequestParam(defaultValue = "startTime") String sortBy
     ) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        User user = userService.getCurrentUser();
 
         Pageable pageable = PageRequest.of(
                 page,
                 size,
-                Sort.by(sortBy != null ? sortBy : "startTime").descending()
+                Sort.by(sortBy).descending()
         );
 
-        Page<FocusSessionResponseDTO> sessions = focusSessionService.getUserSessions(user, pageable);
-        return ResponseEntity.ok(sessions);
+        return ResponseEntity.ok(
+                focusSessionService.getUserSessions(user, pageable)
+        );
     }
 
-    // ✅ Mark a session as successful
-    @PostMapping("/{sessionId}/mark-successful/{userId}")
+    // ✅ Mark session successful (FIXED: no @AuthenticationPrincipal mismatch)
+    @PostMapping("/{sessionId}/success")
     public ResponseEntity<FocusSessionResponseDTO> markSessionSuccessful(
-            @PathVariable Long sessionId,
-            @PathVariable Long userId) {
+            @PathVariable Long sessionId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.getCurrentUser();
 
-        FocusSessionResponseDTO response = focusSessionService.markSessionSuccessful(sessionId, user.getId());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                focusSessionService.markSessionSuccessful(sessionId, user)
+        );
     }
 
-    // ✏️ Update an existing session
-    @PutMapping("/{sessionId}/update/{userId}")
+    // ✏️ Update session (FIXED: removed broken userId path param)
+    @PutMapping("/{sessionId}")
     public ResponseEntity<FocusSessionResponseDTO> updateSession(
             @PathVariable Long sessionId,
-            @PathVariable Long userId,
             @Valid @RequestBody FocusSessionRequestDTO dto) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.getCurrentUser();
 
-        FocusSessionResponseDTO updated = focusSessionService.updateSession(sessionId, dto, user);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(
+                focusSessionService.updateSession(sessionId, dto, user)
+        );
     }
 
-    // ❌ Delete a session
-    @DeleteMapping("/{sessionId}/delete/{userId}")
+    // 🗑 Delete session
+    @DeleteMapping("/{sessionId}")
     public ResponseEntity<Void> deleteSession(
-            @PathVariable Long sessionId,
-            @PathVariable Long userId) {
+            @PathVariable Long sessionId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userService.getCurrentUser();
 
         focusSessionService.deleteSession(sessionId, user);
         return ResponseEntity.ok().build();
     }
 
-    // 🔢 Get total focus minutes for a user
-    @GetMapping("/user/{userId}/total-minutes")
-    public ResponseEntity<Integer> getTotalFocusMinutes(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    // 🔢 Total focus minutes
+    @GetMapping("/me/total-minutes")
+    public ResponseEntity<Integer> getTotalFocusMinutes() {
 
-        int totalMinutes = focusSessionService.getTotalFocusMinutes(user);
-        return ResponseEntity.ok(totalMinutes);
+        User user = userService.getCurrentUser();
+
+        return ResponseEntity.ok(
+                focusSessionService.getTotalFocusMinutes(user)
+        );
     }
 
-    // 🔔 Get count of successful sessions
-    @GetMapping("/user/{userId}/successful-count")
-    public ResponseEntity<Long> getSuccessfulSessionsCount(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    // 🔔 Successful sessions count
+    @GetMapping("/me/successful-count")
+    public ResponseEntity<Long> getSuccessfulSessionsCount() {
 
-        long count = focusSessionService.getSuccessfulSessionsCount(user);
-        return ResponseEntity.ok(count);
+        User user = userService.getCurrentUser();
+
+        return ResponseEntity.ok(
+                focusSessionService.getSuccessfulSessionsCount(user)
+        );
     }
-    @GetMapping("/api/users/{id}/completed-sessions-today")
-    public Long getCompletedSessionsToday(@PathVariable Long id) {
-        User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        return focusSessionService.getCompletedSessionsCount(user);
+
+    // 📅 Completed today
+    @GetMapping("/me/completed-today")
+    public ResponseEntity<Long> getCompletedToday() {
+
+        User user = userService.getCurrentUser();
+
+        return ResponseEntity.ok(
+                focusSessionService.getCompletedSessionsCount(user)
+        );
+    }
+
+    // 🌍 ADMIN / DEBUG ONLY - all sessions
+    @GetMapping("/all")
+    public ResponseEntity<Page<FocusSessionResponseDTO>> getAllSessions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return ResponseEntity.ok(
+                focusSessionService.getAllSessions(pageable)
+        );
+    }
+
+    // 🟢 Complete session
+    @PostMapping("/complete")
+    public ResponseEntity<FocusSessionResponseDTO> completeSession() {
+
+        User user = userService.getCurrentUser();
+
+        return ResponseEntity.ok(
+                focusSessionService.completeSession(user)
+        );
     }
 }

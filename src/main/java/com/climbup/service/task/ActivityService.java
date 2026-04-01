@@ -32,14 +32,17 @@ public class ActivityService {
 
     @Transactional
     public void log(String description, ActivityType type, User user) {
+
+        if (user == null || type == null || description == null) return;
+
         Activity activity = new Activity();
         activity.setDescription(description);
         activity.setType(type);
         activity.setUser(user);
         activity.setTimestamp(LocalDateTime.now());
+
         activityRepository.save(activity);
     }
-
     @Transactional
     public void logTaskCompleted(Task task, User user) {
         String msg = "Completed Task: " + task.getTitle();
@@ -75,7 +78,7 @@ public class ActivityService {
     }
 
     public List<ActivityDTO> getRecentActivities(User user) {
-        return activityRepository.findTop15ByUserOrderByTimestampDesc(user)
+        return activityRepository.findTop5ByUserOrderByTimestampDesc(user)
                 .stream()
                 .map(ActivityMapper::toDTO)
                 .collect(Collectors.toList());
