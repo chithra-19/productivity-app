@@ -1,6 +1,7 @@
 package com.climbup.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import jakarta.persistence.*; // assuming you're using JPA/Hibernate
 
 @Entity
@@ -16,13 +17,13 @@ public class PasswordResetToken {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private LocalDateTime expiryDate;
+    private Instant expiryDate;
 
     public PasswordResetToken() {
         // default constructor for JPA
     }
 
-    public PasswordResetToken(String token, User user, LocalDateTime expiryDate) {
+    public PasswordResetToken(String token, User user, Instant expiryDate) {
         this.token = token;
         this.user = user;
         this.expiryDate = expiryDate;
@@ -41,12 +42,12 @@ public class PasswordResetToken {
         return user;
     }
 
-    public LocalDateTime getExpiryDate() {
+    public Instant getExpiryDate() {
         return expiryDate;
     }
 
     // ---------- Utility ----------
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiryDate);
+        return Instant.now().isAfter(expiryDate);
     }
 }

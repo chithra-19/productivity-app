@@ -14,7 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,7 +40,7 @@ public class ActivityService {
         activity.setDescription(description);
         activity.setType(type);
         activity.setUser(user);
-        activity.setTimestamp(LocalDateTime.now());
+        activity.setTimestamp(Instant.now());
 
         activityRepository.save(activity);
     }
@@ -51,15 +52,15 @@ public class ActivityService {
 
     // ---------------- Fetch Activities ----------------
 
-    public List<ActivityDTO> getAllActivities(User user, ActivityType type, LocalDateTime from, LocalDateTime to) {
+    public List<ActivityDTO> getAllActivities(User user, ActivityType type, Instant fromTs, Instant toTs) {
         List<Activity> activities;
 
-        if (type != null && from != null && to != null) {
-            activities = activityRepository.findByUserAndTypeAndTimestampBetween(user, type, from, to);
+        if (type != null && fromTs != null && toTs != null) {
+            activities = activityRepository.findByUserAndTypeAndTimestampBetween(user, type, fromTs, toTs);
         } else if (type != null) {
             activities = activityRepository.findByUserAndType(user, type);
-        } else if (from != null && to != null) {
-            activities = activityRepository.findByUserAndTimestampBetween(user, from, to);
+        } else if (fromTs != null && toTs != null) {
+            activities = activityRepository.findByUserAndTimestampBetween(user, fromTs, toTs);
         } else {
             activities = activityRepository.findByUser(user);
         }

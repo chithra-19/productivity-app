@@ -1,9 +1,11 @@
 package com.climbup.model;
 
+import java.time.Instant;
+
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name = "user_badges")
@@ -27,7 +29,7 @@ public class UserBadge {
     @JoinColumn(name = "badge_id", nullable = false)
     private Badge badge;
 
-    private LocalDateTime earnedAt;
+    private Instant earnedAt;
     
     
     public Long getId() {
@@ -54,11 +56,11 @@ public class UserBadge {
 		this.badge = badge;
 	}
 
-	public LocalDateTime getEarnedAt() {
+	public Instant getEarnedAt() {
 		return earnedAt;
 	}
 
-	public void setEarnedAt(LocalDateTime earnedAt) {
+	public void setEarnedAt(Instant earnedAt) {
 		this.earnedAt = earnedAt;
 	}
 

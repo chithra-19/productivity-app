@@ -3,8 +3,9 @@ package com.climbup.model;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 
 @Entity
 @Table(
@@ -52,8 +53,7 @@ public class ActivityLog {
     // Auto timestamp when record inserted
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
-    private LocalDateTime loggedAt;
-
+    private Instant loggedAt;
     // ---------- Constructors ----------
 
     public ActivityLog() {
@@ -131,7 +131,7 @@ public class ActivityLog {
         this.activityDate = activityDate;
     }
 
-    public LocalDateTime getLoggedAt() {
+    public Instant getLoggedAt() {
         return loggedAt;
     }
 

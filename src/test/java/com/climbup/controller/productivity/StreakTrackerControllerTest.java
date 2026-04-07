@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+
 
 public class StreakTrackerControllerTest {
 

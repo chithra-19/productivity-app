@@ -1,7 +1,8 @@
 package com.climbup.dto.response;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 
 /**
  * DTO for sending achievement details in API responses.
@@ -17,8 +18,8 @@ public class AchievementResponseDTO {
     private boolean unlocked;
     private boolean newlyUnlocked;
     private boolean seen;
-    private LocalDateTime unlockedDate;
-    private LocalDateTime createdAt;
+    private Instant unlockedDate;
+    private Instant createdAt;
     private Long userId;
     private Long relatedGoalId;
    
@@ -31,7 +32,7 @@ public class AchievementResponseDTO {
     public AchievementResponseDTO(Long id, String title, String description, String type,
                                   String category, String icon, boolean unlocked,
                                   boolean newlyUnlocked, boolean seen,
-                                  LocalDateTime unlockedDate, LocalDateTime createdAt,
+                                 Instant unlockedDate, Instant createdAt,
                                   Long userId, Long relatedGoalId) {
         this.id = id;
         this.title = title;
@@ -77,11 +78,11 @@ public class AchievementResponseDTO {
     public boolean isSeen() { return seen; }
     public void setSeen(boolean seen) { this.seen = seen; }
 
-    public LocalDateTime getUnlockedDate() { return unlockedDate; }
-    public void setUnlockedDate(LocalDateTime unlockedDate) { this.unlockedDate = unlockedDate; }
+    public Instant getUnlockedDate() { return unlockedDate; }
+    public void setUnlockedDate(Instant unlockedDate) { this.unlockedDate = unlockedDate; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }

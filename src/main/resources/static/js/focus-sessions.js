@@ -1,7 +1,8 @@
 let currentPage = 0;
-const pageSize = 5;
+const pageSize = 50;
 
-const sessionList = document.getElementById("sessionList");
+const tableBody = document.getElementById("sessionTableBody");
+const filterDropdown = document.getElementById("statusFilter");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
@@ -11,75 +12,103 @@ const pageInfo = document.getElementById("pageInfo");
 ============================= */
 async function fetchSessions(page = 0) {
   try {
-    const res = await fetch(
-      `/api/focus-sessions/me?page=${page}&size=${pageSize}`,
-      {
-        method: "GET",
-        credentials: "include" // 🔥 IMPORTANT
-      }
-    );
+    // ✅ Loading state
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5">Loading...</td>
+      </tr>
+    `;
 
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+
+    const status = filterDropdown.value;
+
+    let url = `/api/focus-sessions/me?page=${page}&size=${pageSize}`;
+
+    if (status !== "ALL") {
+      url += `&status=${status}`;
+    }
+
+    const res = await fetch(url, {
+      method: "GET",
+      credentials: "include"
+    });
+
+    // ✅ Response check
     if (!res.ok) {
       throw new Error("Failed to fetch sessions");
     }
 
-    const data = await res.json(); // clean direct parse
+    const data = await res.json();
 
-	const sessions = Array.isArray(data) ? data : data.content;
+    renderTable(data.content);
+    updatePagination(data);
 
-	renderSessions(sessions);
-
-	if (data.number !== undefined) {
-	  updatePagination(data);
-	}
   } catch (err) {
     console.error(err);
-    sessionList.innerHTML =
-      `<div class="empty-state">Failed to load sessions</div>`;
+
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5">Error loading sessions</td>
+      </tr>
+    `;
   }
 }
+
 /* =============================
    Render sessions
 ============================= */
-function renderSessions(sessions) {
-  sessionList.innerHTML = "";
+function renderTable(sessions) {
+  tableBody.innerHTML = "";
 
-  if (sessions.length === 0) {
-    sessionList.innerHTML =
-      `<div class="empty-state">No focus sessions yet</div>`;
+  if (!sessions || sessions.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5">No sessions found</td>
+      </tr>
+    `;
     return;
   }
 
+  const statusClassMap = {
+    COMPLETED: "status-completed",
+    ABORTED: "status-aborted",
+    ACTIVE: "status-active"
+  };
+
   sessions.forEach(session => {
-    const div = document.createElement("div");
-    div.className = "session-item";
+    const row = document.createElement("tr");
 
-    const statusClass = session.successful
-      ? "status-completed"
-      : "status-aborted";
+    const status = session.status;
+    const statusClass = statusClassMap[status] || "status-default";
 
-    const statusText = session.successful
-      ? "Completed"
-      : "Aborted";
+    // ✅ safer DOM assignment
+    const typeCell = document.createElement("td");
+    typeCell.textContent = session.sessionType;
 
-    // 🔥 FIX: handle null endTime properly
-    const timeText = session.successful && session.endTime
-      ? `${formatDate(session.startTime)} → ${formatDate(session.endTime)}`
-      : `${formatDate(session.startTime)}`;
+    const durationCell = document.createElement("td");
+    durationCell.textContent = `${session.durationMinutes} min`;
 
-    div.innerHTML = `
-      <div class="session-title">
-        Focus Session (${session.durationMinutes} min)
-      </div>
-      <div class="session-time">
-        ${timeText}
-      </div>
-      <div class="session-status ${statusClass}">
-        ${statusText}
-      </div>
-    `;
+    const startCell = document.createElement("td");
+    startCell.textContent = formatDate(session.startTime);
 
-    sessionList.appendChild(div);
+    const endCell = document.createElement("td");
+    endCell.textContent = session.endTime
+      ? formatDate(session.endTime)
+      : "-";
+
+    const statusCell = document.createElement("td");
+    statusCell.textContent = status;
+    statusCell.className = statusClass;
+
+    row.appendChild(typeCell);
+    row.appendChild(durationCell);
+    row.appendChild(startCell);
+    row.appendChild(endCell);
+    row.appendChild(statusCell);
+
+    tableBody.appendChild(row);
   });
 }
 
@@ -87,7 +116,10 @@ function renderSessions(sessions) {
    Pagination controls
 ============================= */
 function updatePagination(pageData) {
-  pageInfo.textContent = `Page ${pageData.number + 1} of ${pageData.totalPages}`;
+  pageInfo.textContent =
+    pageData.totalPages > 0
+      ? `Page ${pageData.number + 1} of ${pageData.totalPages}`
+      : "No data";
 
   prevBtn.disabled = pageData.first;
   nextBtn.disabled = pageData.last;
@@ -109,18 +141,31 @@ nextBtn.addEventListener("click", () => {
    Utils
 ============================= */
 function formatDate(dateStr) {
-  if (!dateStr) return "";
+  if (!dateStr) return "-";
 
-  const date = new Date(dateStr);
+  const date = new Date(dateStr); // ✅ DO NOT add "Z"
+
   return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata", // 🔥 force correct timezone
     day: "2-digit",
     month: "short",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
   });
 }
 
 /* =============================
+   Filter change
+============================= */
+filterDropdown.addEventListener("change", () => {
+  currentPage = 0; // ✅ reset page
+  fetchSessions(0);
+});
+
+/* =============================
    Initial load
 ============================= */
-fetchSessions();
+
+  fetchSessions(0);

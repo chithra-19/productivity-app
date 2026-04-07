@@ -12,7 +12,7 @@ public class FocusSessionRequestDTO {
     @Max(value = 180, message = "Duration cannot exceed 180 minutes")
     private int durationMinutes;
 
-    private SessionType sessionType = SessionType.POMODORO;
+    private SessionType sessionType = SessionType.FOCUS;
 
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;

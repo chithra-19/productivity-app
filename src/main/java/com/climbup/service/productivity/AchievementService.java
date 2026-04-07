@@ -1,5 +1,6 @@
 package com.climbup.service.productivity;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 
@@ -126,12 +127,11 @@ public class AchievementService {
     @Transactional
     public void evaluateAchievements(User user) {
 
-    	long completedGoals = goalRepository.findByUser(user)
-    	        .stream()
-    	        .filter(goal -> goal.getStatus() == GoalStatus.COMPLETED)
-    	        .count();
-        long completedTasks = taskRepository.findByUser(user)
-                .stream().filter(Task::isCompleted).count();
+        long completedGoals =
+                goalRepository.countByUserAndStatus(user, GoalStatus.COMPLETED);
+
+        long completedTasks =
+                taskRepository.countByUserAndCompletedTrue(user);
 
         unlockIfEligible(user, AchievementCode.GOAL_1, completedGoals >= 1);
         unlockIfEligible(user, AchievementCode.GOAL_5, completedGoals >= 5);
@@ -140,10 +140,15 @@ public class AchievementService {
         unlockIfEligible(user, AchievementCode.FIRST_STEP, completedTasks >= 1);
         unlockIfEligible(user, AchievementCode.TASK_MASTER, completedTasks >= 10);
 
-        boolean earlyBird = taskRepository.findByUserAndCompletedTrue(user)
-                .stream()
-                .anyMatch(t -> t.getCompletedDateTime() != null &&
-                        t.getCompletedDateTime().getHour() < 8);
+        boolean earlyBird =
+                taskRepository.findByUserAndCompletedTrue(user)
+                        .stream()
+                        .anyMatch(t ->
+                                t.getCompletedDateTime() != null &&
+                                t.getCompletedDateTime()
+                                        .atZone(ZoneId.systemDefault())
+                                        .getHour() < 8
+                        );
 
         unlockIfEligible(user, AchievementCode.EARLY_BIRD, earlyBird);
     }
@@ -180,9 +185,12 @@ public class AchievementService {
         achievement.setType(dto.getType());
         achievement.setCategory(dto.getCategory());
         if (dto.getUnlockedDate() != null) {
-            achievement.setUnlockedAt(dto.getUnlockedDate().atStartOfDay());
+            achievement.setUnlockedAt(
+                dto.getUnlockedDate()
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+            );
         }
-
         achievement.setUser(user);
 
         achievementRepository.save(achievement);

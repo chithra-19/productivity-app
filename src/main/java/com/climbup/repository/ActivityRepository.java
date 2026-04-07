@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
@@ -29,17 +29,17 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findByUserOrderByTimestampDesc(User user);
     // 3. Activities between two timestamps
     List<Activity> findByUserAndTimestampBetween(
-            User user,
-            LocalDateTime from,
-            LocalDateTime to
-    );
+    	    User user,
+    	    Instant from,
+    	    Instant to
+    	);
 
     // 4. Activities of a type between timestamps
     List<Activity> findByUserAndTypeAndTimestampBetween(
             User user,
             ActivityType type,
-            LocalDateTime from,
-            LocalDateTime to
+            Instant fromTs,
+            Instant toTs
     );
     
     

@@ -1,7 +1,8 @@
 package com.climbup.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -19,7 +20,7 @@ public class Activity {
     private String description;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -40,7 +41,7 @@ public class Activity {
         this.description = description;
         this.type = type;
         this.user = user;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = Instant.now();
     }
 
     public Long getId() {
@@ -59,11 +60,11 @@ public class Activity {
 		this.description = description;
 	}
 
-	public LocalDateTime getTimestamp() {
+	public Instant getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(LocalDateTime timestamp) {
+	public void setTimestamp(Instant timestamp) {
 		this.timestamp = timestamp;
 	}
 

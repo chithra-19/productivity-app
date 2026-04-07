@@ -12,8 +12,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -74,14 +75,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findOverdueTasks(@Param("user") User user,
                                 @Param("today") LocalDate today);
 
-    
     long countByUserAndCategoryAndCompletedTrueAndCompletedDateTimeBetween(
     	    User user,
-    	    String category,
-    	    LocalDateTime start,
-    	    LocalDateTime end
+    	    String category,   // 🔥 MISSING THIS
+    	    Instant start,
+    	    Instant end
     	);
-
     // ================= Productivity =================
     @Query("""
         SELECT t FROM Task t
@@ -89,10 +88,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
           AND t.completed = true
           AND t.completedDateTime BETWEEN :start AND :end
     """)
-    List<Task> findCompletedTasksBetweenDates(@Param("user") User user,
-                                              @Param("start") LocalDateTime start,
-                                              @Param("end") LocalDateTime end);
-
+    List<Task> findCompletedTasksBetweenDates(
+    	    @Param("user") User user,
+    	    @Param("start") Instant start,
+    	    @Param("end") Instant end
+    	);
     // ================= Bulk Ops =================
     @Modifying
     @Query("""
@@ -101,10 +101,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             t.completedDateTime = :completionDate
         WHERE t.id = :id AND t.user = :user
     """)
-    int markTaskAsCompleted(@Param("id") Long id,
-                            @Param("user") User user,
-                            @Param("completionDate") LocalDateTime completionDate);
-
+    int markTaskAsCompleted(
+    	    @Param("id") Long id,
+    	    @Param("user") User user,
+    	    @Param("completionDate") Instant completionDate
+    	);
+    
+    
     @Modifying
     @Query("""
         UPDATE Task t
@@ -142,8 +145,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     	);
     long countByUserAndCompletedTrueAndCompletedDateTimeBetween(
     	    User user,
-    	    LocalDateTime start,
-    	    LocalDateTime end
+    	    Instant start,
+    	    Instant end
     	);
 
     @Query("""

@@ -6,8 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+
 import java.util.Objects;
+
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "focus_sessions")
@@ -22,40 +24,40 @@ public class FocusSession {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes = 25;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "session_type", nullable = false)
-    private SessionType sessionType = SessionType.POMODORO;
-
-    @Column(name = "successful")
-    private boolean successful = false;
-
+   
     @Column(name = "notes")
     private String notes;
 
-    
-    @Column(name = "start_time", nullable = true, updatable = false)
-    private LocalDateTime startTime;
-
+	@Column(name = "start_time")
+    private OffsetDateTime startTime;
 
     @Column(name = "end_time")
-    private LocalDateTime endTime;
+    private OffsetDateTime endTime;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
+    private OffsetDateTime updatedAt;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private SessionStatus status = SessionStatus.ACTIVE;
 
 
-    public enum SessionType {
-        POMODORO("Pomodoro"),
-        CUSTOM("Custom");
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_type", nullable = false)
+    private SessionType sessionType;
+    
+	public enum SessionType {
+        FOCUS("Focus"),
+        CUSTOM("Custom"),;
 
         private final String label;
 
@@ -75,48 +77,36 @@ public class FocusSession {
 
     
     public void startSession() {
-        if (this.startTime != null) {
+        if (startTime != null) {
             throw new IllegalStateException("Session already started");
         }
-        this.startTime = LocalDateTime.now();
+        this.startTime = OffsetDateTime.now(); // ✅ FIXED
+        this.endTime = null;
+        this.status = SessionStatus.ACTIVE;
     }
-
+    
     public void completeSession() {
-        if (this.endTime != null) {
-            throw new IllegalStateException("Session already ended");
+        if (startTime == null) {
+            throw new IllegalStateException("Session not started");
         }
-        this.successful = true;
-        this.endTime = LocalDateTime.now();
+
+        if (endTime != null) return;
+
+        this.status = SessionStatus.COMPLETED;
+        this.endTime = OffsetDateTime.now(); // ✅ FIXED
     }
 
     // ✅ State Helpers
     public boolean isActive() {
-        return startTime != null && endTime == null;
-    }
-
-    public long getElapsedMinutes() {
-        if (startTime == null) return 0;
-        return Duration.between(startTime, endTime != null ? endTime : LocalDateTime.now()).toMinutes();
-    }
-
-    public long getRemainingMinutes() {
-        return Math.max(durationMinutes - getElapsedMinutes(), 0);
-    }
-    
- // Returns elapsed seconds for live countdown
-    public long getElapsedSeconds() {
-        if (startTime == null) return 0;
-        return Duration.between(startTime, endTime != null ? endTime : LocalDateTime.now()).getSeconds();
+    	return status == SessionStatus.ACTIVE;
     }
 
     // Reset session if user wants to restart
     public void resetSession() {
         this.startTime = null;
         this.endTime = null;
-        this.successful = false;
+        this.status = SessionStatus.ACTIVE;
     }
-
-
     // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -127,28 +117,54 @@ public class FocusSession {
     public SessionType getSessionType() { return sessionType; }
     public void setSessionType(SessionType sessionType) { this.sessionType = sessionType; }
 
-    public boolean isSuccessful() { return successful; }
-    public void setSuccessful(boolean successful) { this.successful = successful; }
-
+  
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
-
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    
 
-    public void abortSession() {
-        this.successful = false;
-        this.endTime = LocalDateTime.now(); // 🔥 THIS IS MISSING
-    }
+    public OffsetDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public SessionStatus getStatus() {
+		return status;
+	}
+
+	public void setCreatedAt(OffsetDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setStatus(SessionStatus status) {
+		this.status = status;
+	}
+	
+
+    public OffsetDateTime getStartTime() {
+		return startTime;
+	}
+
+	public OffsetDateTime getEndTime() {
+		return endTime;
+	}
+
+	public void setStartTime(OffsetDateTime startTime) {
+		this.startTime = startTime;
+	}
+
+	public void setEndTime(OffsetDateTime endTime) {
+		this.endTime = endTime;
+	}
+
+	public void abortSession() {
+	    this.status = SessionStatus.ABORTED;
+	    this.endTime = OffsetDateTime.now(); // ✅ FIXED
+	}
     // Equals & HashCode
     @Override
     public boolean equals(Object o) {
@@ -167,7 +183,6 @@ public class FocusSession {
                 "id=" + id +
                 ", durationMinutes=" + durationMinutes +
                 ", sessionType=" + sessionType +
-                ", successful=" + successful +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 '}';

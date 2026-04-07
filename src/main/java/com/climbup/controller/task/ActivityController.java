@@ -14,7 +14,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,9 +40,8 @@ public class ActivityController {
             @RequestParam(required = false) String to
     ) {
         User user = userService.getCurrentUser();
-        LocalDateTime fromTs = (from != null) ? LocalDateTime.parse(from) : null;
-        LocalDateTime toTs = (to != null) ? LocalDateTime.parse(to) : null;
-
+        Instant fromTs = (from != null) ? Instant.parse(from) : null;
+        Instant toTs = (to != null) ? Instant.parse(to) : null;
         List<ActivityDTO> activities = activityService.getAllActivities(user, type, fromTs, toTs);
         return ResponseEntity.ok(activities);
     }

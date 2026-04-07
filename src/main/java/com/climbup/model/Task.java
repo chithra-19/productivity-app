@@ -5,8 +5,9 @@ import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.time.LocalTime;
 import java.util.Objects;
 
@@ -50,7 +51,7 @@ public class Task {
     private boolean completed = false;
 
     @Column(name = "completed_date_time")
-    private LocalDateTime completedDateTime;
+    private Instant completedDateTime;
     
     @NotNull
     @Column(name = "task_date", nullable = false)
@@ -62,11 +63,11 @@ public class Task {
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "category")
     private String category;
@@ -93,7 +94,7 @@ public class Task {
     public void markCompleted() {
         this.completed = true;
         
-        this.completedDateTime = LocalDateTime.now();
+        this.completedDateTime = Instant.now();
     }
 
     public void markUncompleted() {
@@ -127,17 +128,17 @@ public class Task {
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
 
-    public LocalDateTime getCompletedDateTime() { return completedDateTime; }
-    public void setCompletedDateTime(LocalDateTime completedDateTime) { this.completedDateTime = completedDateTime; }
+    public Instant getCompletedDateTime() { return completedDateTime; }
+    public void setCompletedDateTime(Instant completedDateTime) { this.completedDateTime = completedDateTime; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
@@ -162,20 +163,20 @@ public class Task {
 	}
 
     // 🔁 equals and hashCode
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Task)) return false;
-        Task task = (Task) o;
-        return Objects.equals(id, task.id) &&
-                Objects.equals(title, task.title);
-    }
+   
+	@Override
+	public boolean equals(Object o) {
+	    if (this == o) return true;
+	    if (!(o instanceof Task)) return false;
+	    Task task = (Task) o;
+	    return Objects.equals(id, task.id);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, title);
-    }
-
+	@Override
+	public int hashCode() {
+	    return Objects.hash(id);
+	}
+	
     // 🧾 toString
     @Override
     public String toString() {

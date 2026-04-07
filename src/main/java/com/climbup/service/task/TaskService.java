@@ -24,8 +24,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -155,16 +157,21 @@ public class TaskService {
 
     // 🔹 Focus hours by date
     public Map<LocalDate, Double> getFocusHoursByDate(List<Task> tasks) {
+
         return tasks.stream()
                 .filter(Task::isCompleted)
                 .filter(task -> task.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
-                        task -> task.getCompletedDateTime().toLocalDate(),
+                        task -> task.getCompletedDateTime()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate(),
                         Collectors.summingDouble(
-                                task -> task.getFocusHours() != null ? task.getFocusHours() : 0.0
+                                task -> task.getFocusHours() != null
+                                        ? task.getFocusHours()
+                                        : 0.0
                         )
                 ));
-    }    
+    }  
     // 🔹 Today’s tasks
     public List<TaskResponseDTO> getTodayTasks(User user) {
         LocalDate today = LocalDate.now();
@@ -178,11 +185,14 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+
     public Map<LocalDate, Long> getTaskStats(User user) {
         return taskRepository.findByUser(user).stream()
                 .filter(task -> task.getCreatedAt() != null)
                 .collect(Collectors.groupingBy(
-                        task -> task.getCreatedAt().toLocalDate(),
+                        task -> task.getCreatedAt()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate(),
                         Collectors.counting()
                 ));
     }
@@ -249,7 +259,7 @@ public class TaskService {
 
         // ✅ mark complete
         task.setCompleted(true);
-        task.setCompletedDateTime(LocalDateTime.now());
+        task.setCompletedDateTime(Instant.now());
 
         // 🔥 critical fix
         if (task.getTaskDate() == null) {

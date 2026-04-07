@@ -3,6 +3,8 @@ package com.climbup.service.productivity;
 import com.climbup.dto.request.FocusSessionRequestDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
 import com.climbup.model.FocusSession;
+import com.climbup.model.SessionStatus;
+import com.climbup.model.SessionType;
 import com.climbup.model.User;
 import com.climbup.repository.FocusSessionRepository;
 import com.climbup.repository.UserRepository;
@@ -15,11 +17,12 @@ import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Duration;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @Service
 public class FocusSessionService {
@@ -36,43 +39,109 @@ public class FocusSessionService {
 
     // Fetch all sessions for today
     public List<FocusSession> getTodaySessions(User user) {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        return focusSessionRepository.findTodaySessions(user.getId() ,todayStart);
+    	OffsetDateTime todayStart = OffsetDateTime.now()
+    	        .withHour(0)
+    	        .withMinute(0)
+    	        .withSecond(0)
+    	        .withNano(0);
+        return focusSessionRepository
+                .findByUserIdAndStartTimeAfter(user.getId(), todayStart);
     }
 
     // Count successful sessions today
     public Long getCompletedSessionsCount(User user) {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        return focusSessionRepository.countCompletedToday(user.getId(), todayStart);
-    }
+    	OffsetDateTime todayStart = OffsetDateTime.now()
+    	        .withHour(0)
+    	        .withMinute(0)
+    	        .withSecond(0)
+    	        .withNano(0);
 
-    // Get the current active session (endTime == null)
+    	return focusSessionRepository
+    	        .countByUserIdAndStatusAndStartTimeAfter(
+    	                user.getId(),
+    	                SessionStatus.COMPLETED,
+    	                todayStart
+    	        );
+    }
     public FocusSession getCurrentSession(User user) {
         return focusSessionRepository
-                .findTopByUserIdAndEndTimeIsNullOrderByStartTimeDesc(user.getId())
+                .findTopByUserIdAndStatusOrderByStartTimeDesc(user.getId(), SessionStatus.ACTIVE)
                 .orElse(null);
     }
     
     @Transactional
     public FocusSessionResponseDTO startSession(FocusSessionRequestDTO dto, User user) {
 
-        // Check if there’s already an active session
-        if (focusSessionRepository.findActiveSession(user.getId()).isPresent()) {
-            throw new IllegalStateException("You already have an active focus session");
+        Optional<FocusSession> activeOpt =
+                focusSessionRepository.findTopByUserIdAndStatusOrderByStartTimeDesc(
+                        user.getId(),
+                        SessionStatus.ACTIVE
+                );
+
+        if (activeOpt.isPresent()) {
+
+            FocusSession active = activeOpt.get();
+
+            OffsetDateTime plannedEnd =
+                    active.getStartTime().plusMinutes(active.getDurationMinutes());
+
+            OffsetDateTime now = OffsetDateTime.now();
+
+            // ✅ auto-complete expired session
+            if (now.isAfter(plannedEnd)) {
+
+                active.setStatus(SessionStatus.COMPLETED);
+                active.setEndTime(plannedEnd); // 🔥 important: use planned end, not now
+
+                focusSessionRepository.save(active);
+
+            } else {
+                throw new IllegalStateException("You already have an active focus session");
+            }
         }
 
         FocusSession session = new FocusSession(
-            dto.getDurationMinutes(),
-            dto.getSessionType(),
-            user
+                dto.getDurationMinutes(),
+                dto.getSessionType(),
+                user
         );
 
-        session.startSession();
+        session.setStartTime(OffsetDateTime.now());
+        session.setStatus(SessionStatus.ACTIVE);
+        session.setEndTime(null);
+
         focusSessionRepository.save(session);
 
         return mapToResponse(session);
     }
 
+    @Transactional
+    public FocusSessionResponseDTO endSession(Long sessionId) {
+
+        FocusSession session = focusSessionRepository.findById(sessionId)
+            .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        if (session.getEndTime() != null) {
+            return mapToResponse(session); // already completed
+        }
+
+        session.setEndTime(OffsetDateTime.now());
+        session.setStatus(SessionStatus.COMPLETED);
+
+        focusSessionRepository.save(session);
+
+        return mapToResponse(session);
+    }
+    
+    public Page<FocusSessionResponseDTO> getUserSessionsByStatus(
+            User user,
+            SessionStatus status,
+            Pageable pageable) {
+
+        return focusSessionRepository
+                .findByUserIdAndStatus(user.getId(), status, pageable)
+                .map(this::mapToResponse);
+    }
     
     @Transactional
     public FocusSessionResponseDTO updateSession(Long sessionId, FocusSessionRequestDTO dto, User user) {
@@ -84,7 +153,7 @@ public class FocusSessionService {
         }
 
         // Only allow update if session is not completed
-        if (session.getEndTime() != null) {
+        if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new IllegalStateException("Cannot update a completed session");
         }
 
@@ -98,91 +167,170 @@ public class FocusSessionService {
     }
 
 
-    @Transactional
-    public FocusSessionResponseDTO completeSession(User user) {
-        // Get active session or throw if none
-        FocusSession session = focusSessionRepository.findActiveSession(user.getId())
-                .orElseThrow(() -> new IllegalStateException("No active focus session"));
-
-        // Complete the session
-        session.completeSession();
-        focusSessionRepository.save(session);
-
-        // ✅ Add session minutes to daily goal progress
-        User managedUser = userRepository.findById(user.getId())
-                .orElseThrow();
-
-        managedUser.addFocusMinutes(session.getDurationMinutes());
-        userRepository.save(managedUser);
-        return mapToResponse(session);
-    }
-
-
-
     // Compute remaining time for current session in minutes
     public long getRemainingMinutes(FocusSession session) {
         if (session == null) return 0;
-        LocalDateTime endTime = session.getStartTime().plusMinutes(session.getDurationMinutes());
-        long remaining = java.time.Duration.between(LocalDateTime.now(), endTime).toMinutes();
-        return remaining > 0 ? remaining : 0;
+
+        OffsetDateTime endTime =
+                session.getStartTime().plusMinutes(session.getDurationMinutes());
+
+        long remaining = Duration
+                .between(OffsetDateTime.now(), endTime)
+                .toMinutes();
+
+        return Math.max(remaining, 0);
     }
 
 
     // Get total focus minutes for a user
     public int getTotalFocusMinutes(User user) {
         return focusSessionRepository
-                .findByUserIdAndSuccessfulTrue(user.getId())
-                .stream()
-                .mapToInt(FocusSession::getDurationMinutes)
-                .sum();
+                .sumDurationByUserIdAndStatus(user.getId(), SessionStatus.COMPLETED);
     }
-
     // Get count of successful sessions
     public long getSuccessfulSessionsCount(User user) {
-        return focusSessionRepository.countByUserIdAndSuccessfulTrue(user.getId());
+        return focusSessionRepository
+                .countByUserIdAndStatus(user.getId(), SessionStatus.COMPLETED);
     }
-
-    // Utility: map FocusSession → Response DTO
     private FocusSessionResponseDTO mapToResponse(FocusSession session) {
+
         FocusSessionResponseDTO dto = new FocusSessionResponseDTO();
+
         dto.setId(session.getId());
         dto.setDurationMinutes(session.getDurationMinutes());
         dto.setSessionType(session.getSessionType());
-        dto.setSuccessful(session.isSuccessful());
+        dto.setStatus(session.getStatus());
         dto.setStartTime(session.getStartTime());
         dto.setEndTime(session.getEndTime());
         dto.setNotes(session.getNotes());
 
-        // Add live info
-        dto.setElapsedMinutes(session.getElapsedMinutes());
-        dto.setRemainingMinutes(session.getRemainingMinutes());
+        OffsetDateTime now = OffsetDateTime.now();
+
+        long elapsedMinutes = 0;
+        long remainingMinutes = 0;
+
+        // ✅ ELAPSED TIME
+        if (session.getStartTime() != null) {
+
+            OffsetDateTime effectiveEnd;
+
+            if (session.getStatus() == SessionStatus.ACTIVE) {
+
+                OffsetDateTime plannedEnd =
+                        session.getStartTime().plusMinutes(session.getDurationMinutes());
+
+                // ⏱ cap elapsed time at planned end
+                effectiveEnd = now.isAfter(plannedEnd) ? plannedEnd : now;
+
+            } else {
+                // completed / aborted
+                effectiveEnd = session.getEndTime();
+            }
+
+            if (effectiveEnd != null) {
+                elapsedMinutes = Duration
+                        .between(session.getStartTime(), effectiveEnd)
+                        .toMinutes();
+            }
+        }
+
+        // ✅ REMAINING TIME (ONLY IF ACTIVE)
+        if (session.getStatus() == SessionStatus.ACTIVE
+                && session.getStartTime() != null) {
+
+            OffsetDateTime plannedEnd =
+                    session.getStartTime().plusMinutes(session.getDurationMinutes());
+
+            remainingMinutes = Duration
+                    .between(now, plannedEnd)
+                    .toMinutes();
+        }
+
+        dto.setElapsedMinutes(Math.max(elapsedMinutes, 0));
+        dto.setRemainingMinutes(Math.max(remainingMinutes, 0));
 
         return dto;
     }
+    
+    public List<FocusSessionResponseDTO> getAllUserSessions(User user) {
+        return focusSessionRepository
+                .findByUserIdOrderByStartTimeDesc(user.getId())
+                .stream()
+                .map(this::mapToResponse)   // ✅ FIXED
+                .toList();
+    }
+    
+    @Scheduled(fixedRate = 60000) // runs every 1 minute
+    @Transactional
+    public void autoCompleteExpiredSessions() {
 
+        List<FocusSession> activeSessions =
+                focusSessionRepository.findByStatus(SessionStatus.ACTIVE);
 
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (FocusSession session : activeSessions) {
+
+            if (session.getStartTime() == null) continue;
+
+            OffsetDateTime plannedEnd =
+                    session.getStartTime().plusMinutes(session.getDurationMinutes());
+
+            if (now.isAfter(plannedEnd)) {
+
+                session.setStatus(SessionStatus.COMPLETED);
+                session.setEndTime(plannedEnd);
+
+                focusSessionRepository.save(session);
+            }
+        }
+    }
+    
+    @Transactional
     public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, User user) {
 
         FocusSession session = focusSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        // ownership check
         if (!session.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("Unauthorized");
         }
 
-        // mark session complete
-        session.setSuccessful(true);
-        session.setEndTime(LocalDateTime.now());
+        if (session.getStatus() == SessionStatus.COMPLETED) {
+            return mapToResponse(session);
+        }
+
+        session.completeSession();
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        long elapsedMinutes = 0;
+
+        if (session.getStartTime() != null) {
+
+            OffsetDateTime plannedEnd =
+                    session.getStartTime().plusMinutes(session.getDurationMinutes());
+
+            OffsetDateTime effectiveEnd =
+                    now.isAfter(plannedEnd) ? plannedEnd : now;
+
+            elapsedMinutes = Duration
+                    .between(session.getStartTime(), effectiveEnd)
+                    .toMinutes();
+        }
+
+        // ✅ save session
         focusSessionRepository.save(session);
 
-        // update user progress (NO DB FETCH NEEDED)
-        user.addFocusMinutes(session.getDurationMinutes());
-        userRepository.save(user);
+        // 🔥 ONLY count focus/custom sessions
+        if (shouldCountFocus(session)) {
+            user.addFocusMinutes((int) Math.max(elapsedMinutes, 0));
+            userRepository.save(user);
+        }
 
-        return FocusSessionResponseDTO.fromEntity(session);
+        return mapToResponse(session);
     }
-
+    
     @Transactional
     public void deleteSession(Long sessionId, User user) {
         FocusSession session = focusSessionRepository.findById(sessionId)
@@ -216,21 +364,56 @@ public void resetDailyFocusMinutes() {
         userRepository.save(user);
     }
 }
-
 @Transactional
 public FocusSessionResponseDTO abortSession(User user) {
 
-    FocusSession session = focusSessionRepository.findActiveSession(user.getId())
+    FocusSession session = focusSessionRepository
+            .findTopByUserIdAndStatusOrderByStartTimeDesc(
+                    user.getId(),
+                    SessionStatus.ACTIVE
+            )
             .orElseThrow(() -> new IllegalStateException("No active session"));
 
-    session.setSuccessful(false); // explicitly aborted
-    session.setEndTime(LocalDateTime.now());
+    if (session.getStartTime() == null) {
+        throw new IllegalStateException("Invalid session");
+    }
+
+    OffsetDateTime now = OffsetDateTime.now();
+
+    long elapsedMinutes = Duration
+            .between(session.getStartTime(), now)
+            .toMinutes();
+
+    if (elapsedMinutes >= 1) {
+
+        session.setEndTime(now);
+        session.setStatus(SessionStatus.COMPLETED);
+
+        // 🔥 ONLY count focus/custom
+        if (shouldCountFocus(session)) {
+            user.addFocusMinutes((int) elapsedMinutes);
+            userRepository.save(user); // save only if updated
+        }
+
+    } else {
+        session.abortSession();
+    }
 
     focusSessionRepository.save(session);
 
     return mapToResponse(session);
 }
+public List<FocusSessionResponseDTO> getSessionsByStatus(User user, SessionStatus status) {
+    return focusSessionRepository
+            .findByUserIdAndStatusOrderByStartTimeDesc(user.getId(), status)
+            .stream()
+            .map(this::mapToResponse)
+            .toList();
+}
+private boolean shouldCountFocus(FocusSession session) {
+    if (session.getSessionType() == null) return false; // 🔥 FIX
 
-
-
+    return session.getSessionType() == FocusSession.SessionType.FOCUS
+        || session.getSessionType() == FocusSession.SessionType.CUSTOM;
+}
 }

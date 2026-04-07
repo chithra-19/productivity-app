@@ -7,7 +7,8 @@ import com.climbup.repository.BadgeRepository;
 import com.climbup.repository.UserBadgeRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,7 +63,7 @@ public class BadgeService {
             UserBadge userBadge = new UserBadge();
             userBadge.setUser(user);
             userBadge.setBadge(badge);
-            userBadge.setEarnedAt(LocalDateTime.now());
+            userBadge.setEarnedAt(Instant.now());
 
             userBadgeRepository.save(userBadge);
         }

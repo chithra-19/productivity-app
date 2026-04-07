@@ -1,42 +1,33 @@
 package com.climbup.dto.response;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * DTO for sending task data from backend to frontend.
- * Used in GET responses to shape task details for UI rendering.
  */
 public class TaskResponseDTO {
 
-    private Long id; // Unique task identifier
-
-    private String title; // Task name/title
-
-    private String description; // Optional notes or details
-
-    private LocalDate dueDate; // Deadline for task completion
-
-    private boolean completed; // Status flag
-
-    private String priority; // LOW / MEDIUM / HIGH (stored as String for UI flexibility)
-
-    private String category; // Optional grouping tag (e.g., Work, Personal)
-
-    private String iconUrl; // Optional icon for visual representation in UI
-
-	private int xpEarned;
- 
-    private LocalDateTime completedDateTime; // Precise timestamp for analytics/logs
+    private Long id;
+    private String title;
+    private String description;
+    private LocalDate dueDate;
+    private boolean completed;
+    private String priority;
+    private String category;
+    private String iconUrl;
+    private int xpEarned;
+    private Instant completedDateTime; // 🔥 FIXED
 
     // --- Constructors ---
 
-    public TaskResponseDTO() {} // No-args constructor for serialization
+    public TaskResponseDTO() {}
 
     public TaskResponseDTO(Long id, String title, String description,
                            LocalDate dueDate, boolean completed,
                            String priority, String category, String iconUrl,
-                           LocalDateTime completedDateTime) {
+                           int xpEarned,
+                           Instant completedDateTime) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -45,50 +36,89 @@ public class TaskResponseDTO {
         this.priority = priority;
         this.category = category;
         this.iconUrl = iconUrl;
-       
+        this.xpEarned = xpEarned;
         this.completedDateTime = completedDateTime;
-    }
-
-    public TaskResponseDTO(Long id, String title, String description,
-                           LocalDate dueDate, boolean completed,
-                           String priority, String category, String iconUrl) {
-        this(id, title, description, dueDate, completed, priority, category, iconUrl,  null);
     }
 
     // --- Getters & Setters ---
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getTitle() {
+        return title;
+    }
 
-    public LocalDate getDueDate() { return dueDate; }
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public boolean isCompleted() { return completed; }
-    public void setCompleted(boolean completed) { this.completed = completed; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getPriority() { return priority; }
-    public void setPriority(String priority) { this.priority = priority; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
 
-    public String getIconUrl() { return iconUrl; }
-    public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
 
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getIconUrl() {
+        return iconUrl;
+    }
+
+    public void setIconUrl(String iconUrl) {
+        this.iconUrl = iconUrl;
+    }
 
     public int getXpEarned() {
-		return xpEarned;
-	}
+        return xpEarned;
+    }
 
-	public void setXpEarned(int xpEarned) {
-		this.xpEarned = xpEarned;
-	}
-    public LocalDateTime getCompletedDateTime() { return completedDateTime; }
-    public void setCompletedDateTime(LocalDateTime completedDateTime) { this.completedDateTime = completedDateTime; }
+    public void setXpEarned(int xpEarned) {
+        this.xpEarned = xpEarned;
+    }
+
+    public Instant getCompletedDateTime() {
+        return completedDateTime;
+    }
+
+    public void setCompletedDateTime(Instant completedDateTime) {
+        this.completedDateTime = completedDateTime;
+    }
 }

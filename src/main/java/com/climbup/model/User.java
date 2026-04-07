@@ -8,8 +8,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.util.*;
 
 @Entity
@@ -33,7 +34,7 @@ public class User implements UserDetails {
     private String password;
     
 	@Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
+    private Instant lastLoginAt;
 
     // Productivity & Streak
     @Column(name = "productivity_score", nullable = false)
@@ -56,10 +57,10 @@ public class User implements UserDetails {
     // Timestamps
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
 	private int availableFreezes; // 0 or 1
     private LocalDate lastFreezeResetDate;
@@ -70,7 +71,7 @@ public class User implements UserDetails {
     
     @Column(unique = true)
     private String resetToken;
-    private LocalDateTime resetTokenExpiry;
+    private Instant resetTokenExpiry;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Profile profile;
@@ -129,11 +130,11 @@ public class User implements UserDetails {
 	}
 
     
-    public LocalDateTime getLastLoginAt() {
+    public Instant getLastLoginAt() {
 		return lastLoginAt;
 	}
 
-	public void setLastLoginAt(LocalDateTime lastLoginAt) {
+	public void setLastLoginAt(Instant lastLoginAt) {
 		this.lastLoginAt = lastLoginAt;
 	}
 
@@ -145,11 +146,11 @@ public class User implements UserDetails {
 		this.focusSessions = focusSessions;
 	}
 
-	public void setCreatedAt(LocalDateTime createdAt) {
+	public void setCreatedAt(Instant createdAt) {
 		this.createdAt = createdAt;
 	}
 
-	public void setUpdatedAt(LocalDateTime updatedAt) {
+	public void setUpdatedAt(Instant updatedAt) {
 		this.updatedAt = updatedAt;
 	}
 	
@@ -265,11 +266,11 @@ public class User implements UserDetails {
     public String getResetToken() { return resetToken; }
     public void setResetToken(String resetToken) { this.resetToken = resetToken; }
 
-    public LocalDateTime getResetTokenExpiry() { return resetTokenExpiry; }
-    public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
+    public Instant getResetTokenExpiry() { return resetTokenExpiry; }
+    public void setResetTokenExpiry(Instant resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 
     public Profile getProfile() { return profile; }
 

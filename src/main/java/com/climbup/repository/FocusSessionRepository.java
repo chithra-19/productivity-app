@@ -1,59 +1,63 @@
 package com.climbup.repository;
 
 import com.climbup.model.FocusSession;
+import com.climbup.model.SessionStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.climbup.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface FocusSessionRepository extends JpaRepository<FocusSession, Long> {
 
-    // Get all sessions for a user that started today
-	@Query("""
-		    SELECT f FROM FocusSession f
-		    WHERE f.user.id = :userId AND f.startTime >= :todayStart
-		""")
-		List<FocusSession> findTodaySessions(Long userId, LocalDateTime todayStart);
-	
-    // Count successful sessions for today
-	@Query("""
-		    SELECT COUNT(f) FROM FocusSession f
-		    WHERE f.user.id = :userId 
-		    AND f.successful = true 
-		    AND f.startTime >= :todayStart
-		""")
-		Long countCompletedToday(Long userId, LocalDateTime todayStart);
-	
-	@Query("""
-		    SELECT f FROM FocusSession f
-		    WHERE f.user.id = :userId AND f.successful = false
-		    ORDER BY f.startTime DESC
-		""")
-		List<FocusSession> findCurrentSessions( Long userId);
+    // 🔥 1. FULL HISTORY (sorted - MOST IMPORTANT)
+    List<FocusSession> findByUserIdOrderByStartTimeDesc(Long userId);
 
-    
-    @Query("""
-    	    SELECT f FROM FocusSession f
-    	    WHERE f.user.id = :userId AND f.endTime IS NULL
-    	    ORDER BY f.startTime DESC
-    	""")
-    	Optional<FocusSession> findActiveSession(Long userId);
-    
-    List<FocusSession> findByUserId(Long userId);
-    
+    // 🔥 2. PAGINATED HISTORY
     Page<FocusSession> findByUserId(Long userId, Pageable pageable);
-    
-    List<FocusSession> findByUserIdAndSuccessfulTrue(Long userId);
-    
 
-    long countByUserIdAndSuccessfulTrue(Long userId);
+    // 🔥 3. FILTER BY STATUS (Completed / Aborted / Active)
+    List<FocusSession> findByUserIdAndStatusOrderByStartTimeDesc(
+            Long userId,
+            SessionStatus status
+    );
+
+    // 🔥 4. CURRENT ACTIVE SESSION (based on STATUS, not endTime)
+    Optional<FocusSession> findTopByUserIdAndStatusOrderByStartTimeDesc(
+            Long userId,
+            SessionStatus status
+    );
+
+    // 🔥 5. TODAY’S SESSIONS
+    List<FocusSession> findByUserIdAndStartTimeAfter(
+            Long userId,
+            OffsetDateTime todayStart
+    );
+
+    // 🔥 6. COUNT COMPLETED TODAY
+    long countByUserIdAndStatusAndStartTimeAfter(
+            Long userId,
+            SessionStatus status,
+            OffsetDateTime todayStart
+    );
+
+    List<FocusSession> findByStatus(SessionStatus status);
     
-    Optional<FocusSession> findTopByUserIdAndEndTimeIsNullOrderByStartTimeDesc(Long userId);
-    }
+    Page<FocusSession> findByUserIdAndStatus(Long userId, SessionStatus status, Pageable pageable);
+    
+    // 🔥 7. TOTAL COMPLETED COUNT
+    long countByUserIdAndStatus(Long userId, SessionStatus status);
+
+    @Query("""
+    	    SELECT COALESCE(SUM(f.durationMinutes), 0)
+    	    FROM FocusSession f
+    	    WHERE f.user.id = :userId
+    	    AND f.status = :status
+    	""")
+    	int sumDurationByUserIdAndStatus(Long userId, SessionStatus status);
+}

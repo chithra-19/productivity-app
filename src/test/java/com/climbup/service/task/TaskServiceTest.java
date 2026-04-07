@@ -3,6 +3,8 @@ package com.climbup.service.task;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -112,7 +114,9 @@ class TaskServiceTest {
     @Test
     void updateTask_alreadyCompleted_shouldNotUpdateStreakAgain() {
         task.setCompleted(true);
-        task.setCompletedDateTime(LocalDateTime.now().minusDays(1));
+        task.setCompletedDateTime(
+        	    Instant.now().minus(Duration.ofDays(1))
+        	);
 
         TaskUpdateDTO dto = new TaskUpdateDTO();
         dto.setCompleted(true);

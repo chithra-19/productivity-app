@@ -17,12 +17,18 @@ const TIMER_KEYS = {
   REMAINING: "focus_timer_remaining" 
 };
 
+const SESSION_TYPES = {
+  FOCUS: "FOCUS",
+  CUSTOM: "CUSTOM",
+  SHORT_BREAK: "SHORT_BREAK",
+  LONG_BREAK: "LONG_BREAK"
+};
 
 const progressCircle = document.querySelector(".progress-ring-circle");
 const radius = progressCircle ? progressCircle.r.baseVal.value : 0;
 const circumference = 2 * Math.PI * radius;
 
-
+let completionTriggered = false;
 let timerEl, startBtn, pauseBtn, resetBtn, continueBtn;
 let hoursInput, minsInput, remainingGoalEl, totalHoursEl, sessionsCompletedEl;
 let remainingGoalMinutes = 0;
@@ -50,7 +56,7 @@ let state = {
     localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY) || "[]"
   ),
 
-  sessionType: "FOCUS",
+  sessionType: "FOCUS", 
 
   startTime: null
 };
@@ -149,76 +155,54 @@ function setupDailyReset() {
   }, 60 * 1000); // check every minute
 }
 
-function startTimer() {
+async function startTimer() {
   if (state.running) return;
 
   state.running = true;
+  completionTriggered = false;
 
+  let start = Number(localStorage.getItem(TIMER_KEYS.START));
+  let duration = Number(localStorage.getItem(TIMER_KEYS.DURATION));
+
+  // ✅ If fresh start (not resume)
   if (!localStorage.getItem(TIMER_KEYS.RUNNING)) {
     const sessionTotal =
       Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
 
-    localStorage.setItem(TIMER_KEYS.START, Date.now());
-    localStorage.setItem(TIMER_KEYS.DURATION, sessionTotal * 60 * 1000);
-    localStorage.setItem(TIMER_KEYS.RUNNING, "true");
-  }
+    try {
+      const res = await fetch("/api/focus-sessions/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          durationMinutes: sessionTotal,
+          sessionType: state.sessionType || "FOCUS"
+        })
+      });
 
-  state.interval = setInterval(() => {
-    const start = Number(localStorage.getItem(TIMER_KEYS.START));
-	const duration = Number(localStorage.getItem(TIMER_KEYS.DURATION)) || 0;
-	const sessionMinutes = duration > 0 ? duration / 60000 : state.timerMinutes;
-    const elapsed = Date.now() - start;
-    const remaining = duration - elapsed;
+	  const data = await res.json();
+	  localStorage.setItem("activeSessionId", data.id);
 
-    if (remaining <= 0) {
-      clearInterval(state.interval);
+	  // 🔥 ADD THIS
+	  window.location.href = "/api/focus-sessions/me";
+
+    } catch (err) {
+      console.error("Failed to start session", err);
       state.running = false;
-
-      localStorage.removeItem(TIMER_KEYS.RUNNING);
-
-      state.timerMinutes = 0;
-      state.timerSeconds = 0;
-      updateDisplay();
-	  if (progressCircle) {
-		progressCircle.style.strokeDashoffset = 0;
-	  }
-      
-
-      showToast("Session Complete! ✅");
-      state.totalFocusedMinutes += sessionMinutes;
-      state.completedSessions++;
-
-      updateStats();
-      
-
-      const remainingMinutes = Math.max(dailyGoalMinutes - state.totalFocusedMinutes, 0);
-      if(remainingGoalEl){
-	   remainingGoalEl.textContent = formatMinutesToHM(remainingMinutes);
-		}
-      updateDailyGoalDisplay();
-
-      const percent = ((dailyGoalMinutes - remainingMinutes) / dailyGoalMinutes) * 100;
-      document.getElementById("goalProgress").style.width = percent + "%";
-
-      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
-      localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
-      localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingMinutes);
       return;
     }
 
-    const totalSeconds = Math.floor(remaining / 1000);
-    state.timerMinutes = Math.floor(totalSeconds / 60);
-    state.timerSeconds = totalSeconds % 60;
+    start = Date.now();
+    duration = sessionTotal * 60 * 1000;
 
-    updateDisplay();
+    localStorage.setItem(TIMER_KEYS.START, start);
+    localStorage.setItem(TIMER_KEYS.DURATION, duration);
+    localStorage.setItem(TIMER_KEYS.RUNNING, "true");
+  }
 
-    const offset = circumference - (elapsed / duration) * circumference;
-	if (progressCircle) {
-		progressCircle.style.strokeDashoffset = Math.max(0, offset);
-	}
-    
-  }, 1000);
+  runTimerLoop(start, duration);
 }
+
 function pauseTimer() {
   if (!state.running) return;
 
@@ -232,79 +216,155 @@ function pauseTimer() {
   console.log("Paused at:", remainingSeconds);
 }
   
-function resetTimer() {
+async function resetTimer() {
+  completionTriggered = false;
+
   pauseTimer();
+
+  const sessionId = localStorage.getItem("activeSessionId");
+
+  if (sessionId) {
+    try {
+      await fetch("/api/focus-sessions/abort", {
+        method: "POST",
+        credentials: "include"
+      });
+    } catch (e) {
+      console.warn("Abort failed (safe)");
+    }
+
+    localStorage.removeItem("activeSessionId");
+  }
 
   const sessionTotal =
     Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
 
   state.timerMinutes = sessionTotal;
   state.timerSeconds = 0;
+
   updateDisplay();
 
   if (progressCircle) {
-	progressCircle.style.strokeDashoffset = circumference;
+    progressCircle.style.strokeDashoffset = circumference;
   }
-  
 
+  // 🔥 CLEAN EVERYTHING
   localStorage.removeItem(TIMER_KEYS.START);
   localStorage.removeItem(TIMER_KEYS.DURATION);
-  localStorage.removeItem(TIMER_KEYS.RUNNING); // ✅ ADD THIS
+  localStorage.removeItem(TIMER_KEYS.RUNNING);
+  localStorage.removeItem(TIMER_KEYS.REMAINING); // ✅ IMPORTANT
 }
+
+
 function continueTimer() {
   if (state.running) return;
 
   const remainingSeconds = Number(localStorage.getItem(TIMER_KEYS.REMAINING));
-  if (!remainingSeconds || remainingSeconds <= 0) return;
+
+  if (!remainingSeconds) return;
+
+  const duration = remainingSeconds * 1000;
+  const start = Date.now();
 
   state.running = true;
+  completionTriggered = false;
 
-  state.timerMinutes = Math.floor(remainingSeconds / 60);
-  state.timerSeconds = remainingSeconds % 60;
-  updateDisplay();
+  localStorage.setItem(TIMER_KEYS.START, start);
+  localStorage.setItem(TIMER_KEYS.DURATION, duration);
+  localStorage.setItem(TIMER_KEYS.RUNNING, "true");
 
-  let secondsLeft = remainingSeconds;
+  runTimerLoop(start, duration);
+}
+function runTimerLoop(start, duration) {
+  clearInterval(state.interval);
 
-  state.interval = setInterval(() => {
-    secondsLeft--;
+  state.interval = setInterval(async () => {
+    const elapsed = Date.now() - start;
+    const remaining = duration - elapsed;
 
-    // 🔴 IMPORTANT: keep updating localStorage while running
-    localStorage.setItem(TIMER_KEYS.REMAINING, secondsLeft);
+    // 🔥 COMPLETE
+    if (remaining <= 0 && !completionTriggered) {
+      completionTriggered = true;
 
-    if (secondsLeft <= 0) {
       clearInterval(state.interval);
       state.running = false;
 
-      localStorage.removeItem(TIMER_KEYS.REMAINING);
+      localStorage.removeItem(TIMER_KEYS.RUNNING);
+      localStorage.removeItem(TIMER_KEYS.START);
+      localStorage.removeItem(TIMER_KEYS.DURATION);
 
       state.timerMinutes = 0;
       state.timerSeconds = 0;
       updateDisplay();
 
-	  if (progressCircle) {
-		progressCircle.style.strokeDashoffset = 0;
-	  }
-      
+      if (progressCircle) {
+        progressCircle.style.strokeDashoffset = 0;
+      }
+
       showToast("Session Complete! ✅");
-      completeSessionBackend();
+
+      try {
+        const sessionId = localStorage.getItem("activeSessionId");
+
+        if (sessionId) {
+			await fetch(`/api/focus-sessions/${sessionId}/success`, {
+            method: "POST",
+            credentials: "include"
+          });
+
+          localStorage.removeItem("activeSessionId");
+        }
+      } catch (err) {
+        console.error("Completion failed", err);
+      }
+
+      // ✅ update stats
+      const sessionMinutes = Math.round(duration / 60000);
+
+      state.totalFocusedMinutes += sessionMinutes;
+      state.completedSessions++;
+
+      updateStats();
+
+      const remainingMinutes = Math.max(
+        dailyGoalMinutes - state.totalFocusedMinutes,
+        0
+      );
+
+      if (remainingGoalEl) {
+        remainingGoalEl.textContent = formatMinutesToHM(remainingMinutes);
+      }
+
+      updateDailyGoalDisplay();
+
+      const percent =
+        (state.totalFocusedMinutes / dailyGoalMinutes) * 100;
+
+      document.getElementById("goalProgress").style.width = percent + "%";
+
+      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
+      localStorage.setItem(STORAGE_KEYS.REMAINING_GOAL, remainingMinutes);
+
       return;
     }
 
-    state.timerMinutes = Math.floor(secondsLeft / 60);
-    state.timerSeconds = secondsLeft % 60;
+    // ⏱ NORMAL UPDATE
+    const totalSeconds = Math.floor(remaining / 1000);
+
+    state.timerMinutes = Math.floor(totalSeconds / 60);
+    state.timerSeconds = totalSeconds % 60;
+
     updateDisplay();
 
-    const offset =
-      circumference -
-      ((remainingSeconds - secondsLeft) / remainingSeconds) * circumference;
+    const offset = circumference - (elapsed / duration) * circumference;
 
-	  if (progressCircle) {
-	  		progressCircle.style.strokeDashoffset = Math.max(0, offset);
-	  	}
-	
+    if (progressCircle) {
+      progressCircle.style.strokeDashoffset = Math.max(0, offset);
+    }
+
   }, 1000);
 }
-
 (function restoreRunningTimer() {
   if (!localStorage.getItem(TIMER_KEYS.RUNNING)) return;
 
@@ -322,7 +382,7 @@ function continueTimer() {
   state.timerSeconds = totalSeconds % 60;
 
   updateDisplay();
-  startTimer(); // auto resume
+  runTimerLoop(start, duration);
 })();
 
 // Theme toggle
@@ -472,9 +532,9 @@ function updateDashboardStats() {
 
 async function loadSessions() {
   try {
-    const res = await fetch("/focus-sessions", {
-      credentials: "include"
-    });
+	const res = await fetch("/api/focus-sessions/me", {
+	  credentials: "include"
+	});
 
     const data = await res.json();
 
@@ -495,20 +555,30 @@ function waitForUserAndSync() {
     setTimeout(waitForUserAndSync, 500);
   }
 }
-async function completeSessionBackend() {
+
+async function startSessionBackend(duration, type) {
   try {
-    const res = await fetch("/api/focus-sessions/complete", {
+    const res = await fetch("/api/focus-sessions/me", {
       method: "POST",
-      credentials: "include"
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        durationMinutes: duration,
+        sessionType: type
+      })
     });
 
-    if (!res.ok) throw new Error("Failed");
+    const data = await res.json();
 
-    console.log("Session completed in backend");
+    // 🔥 SAVE SESSION ID
+    localStorage.setItem("activeSessionId", data.id);
+
+    console.log("Session started:", data.id);
   } catch (err) {
     console.error(err);
   }
 }
+
 function renderSessionHistory(sessions) {
     const container = document.getElementById("sessionHistory");
 

@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- CSS (reuse your focus styles for consistency) -->
-  <link rel="stylesheet" href="/css/focus-mode.css">
+  <link rel="stylesheet" href="/css/focus-session.css">
 
 </head>
 
@@ -30,8 +30,30 @@
 
       <h3>Session History</h3>
 
-      <!-- Session List -->
-	  <div id="sessionList" class="history-container"></div>
+	  <!-- Filter -->
+	  <div style="margin-bottom: 15px;">
+	    <select id="statusFilter" class="controls-btn">
+	      <option value="ALL">All</option>
+	      <option value="COMPLETED">Completed</option>
+	      <option value="ACTIVE">Active</option>
+	      <option value="ABORTED">Aborted</option>
+	    </select>
+	  </div>
+
+	  <!-- Table -->
+	  <table class="session-table" style="width:100%; border-collapse: collapse;">
+	    <thead>
+	      <tr>
+	        <th>Type</th>
+	        <th>Duration</th>
+	        <th>Start Time</th>
+	        <th>End Time</th>
+	        <th>Status</th>
+	      </tr>
+	    </thead>
+	    <tbody id="sessionTableBody">
+	    </tbody>
+	  </table>
 
       <!-- Pagination Controls -->
       <div class="pagination-controls" style="margin-top: 20px; display:flex; justify-content:center; gap:12px;">

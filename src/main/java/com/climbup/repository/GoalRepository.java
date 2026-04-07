@@ -30,4 +30,6 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.achievements WHERE g.user.id = :userId")
     List<Goal> findAllByUserWithAchievements(@Param("userId") Long userId);
 
+	long countByUserAndStatus(User user, GoalStatus completed);
+
 }

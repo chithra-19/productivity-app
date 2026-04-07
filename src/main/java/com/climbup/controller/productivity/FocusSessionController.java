@@ -2,11 +2,15 @@ package com.climbup.controller.productivity;
 
 import com.climbup.dto.request.FocusSessionRequestDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
+import com.climbup.model.SessionStatus;
 import com.climbup.model.User;
 import com.climbup.service.productivity.FocusSessionService;
 import com.climbup.service.user.UserService;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,24 +40,42 @@ public class FocusSessionController {
         return ResponseEntity.ok(focusSessionService.startSession(dto, user));
     }
 
+ 
+    
     // 📋 Get my sessions (MAIN HISTORY API)
     @GetMapping("/me")
-    public ResponseEntity<Page<FocusSessionResponseDTO>> getMySessions(
+    public ResponseEntity<Page<FocusSessionResponseDTO>> getUserSessions(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "startTime") String sortBy
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status // 🔥 STRING, not enum
     ) {
 
         User user = userService.getCurrentUser();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
 
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(sortBy).descending()
-        );
+        if (status != null) {
+            try {
+                SessionStatus enumStatus = SessionStatus.valueOf(status);
+                return ResponseEntity.ok(
+                        focusSessionService.getUserSessionsByStatus(user, enumStatus, pageable)
+                );
+            } catch (IllegalArgumentException e) {
+                // ignore invalid values like "ALL"
+            }
+        }
 
         return ResponseEntity.ok(
                 focusSessionService.getUserSessions(user, pageable)
+        );
+    }
+    @GetMapping("/me/filter")
+    public ResponseEntity<List<FocusSessionResponseDTO>> getSessionsByStatus(
+            @RequestParam SessionStatus status) {
+
+        User user = userService.getCurrentUser();
+
+        return ResponseEntity.ok(
+                focusSessionService.getSessionsByStatus(user, status)
         );
     }
 
@@ -140,14 +162,16 @@ public class FocusSessionController {
         );
     }
 
-    // 🟢 Complete session
-    @PostMapping("/complete")
-    public ResponseEntity<FocusSessionResponseDTO> completeSession() {
+    
+    @PostMapping("/abort")
+    public ResponseEntity<FocusSessionResponseDTO> abortSession() {
 
         User user = userService.getCurrentUser();
 
         return ResponseEntity.ok(
-                focusSessionService.completeSession(user)
+                focusSessionService.abortSession(user)
         );
     }
+    
+    
 }

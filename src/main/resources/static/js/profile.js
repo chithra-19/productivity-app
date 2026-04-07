@@ -1,139 +1,136 @@
-// ===============================
-// PROFILE EDIT MODE
-// ===============================
+/* ===============================
+   PROFILE UI CONTROLLER
+   =============================== */
 
 const editBtn = document.getElementById("editBtn");
 const saveBtn = document.getElementById("saveBtn");
 const cancelBtn = document.getElementById("cancelBtn");
-const profileInputs = document.querySelectorAll(".profile-input");
+
+const editableFields = document.querySelectorAll(".js-editable");
 
 let originalValues = {};
 
-// Enable Edit Mode
+
+/* ===============================
+   ENABLE EDIT MODE
+   =============================== */
 function enableEditMode() {
-    profileInputs.forEach(input => {
-        originalValues[input.name] = input.value;
-        input.disabled = false;
+    editableFields.forEach(field => {
+        if (!field.name) return;
+
+        originalValues[field.name] = field.value;
+        field.disabled = false;
     });
 
-    saveBtn.classList.remove("d-none");
-    cancelBtn.classList.remove("d-none");
-    editBtn.classList.add("d-none");
+    toggleButtons(true);
 }
 
-// Cancel Edit Mode
+
+/* ===============================
+   CANCEL EDIT MODE
+   =============================== */
 function cancelEditMode() {
-    profileInputs.forEach(input => {
-        input.value = originalValues[input.name] || input.value;
-        input.disabled = true;
+    editableFields.forEach(field => {
+        if (!field.name) return;
+
+        if (originalValues[field.name] !== undefined) {
+            field.value = originalValues[field.name];
+        }
+
+        field.disabled = true;
     });
 
-    saveBtn.classList.add("d-none");
-    cancelBtn.classList.add("d-none");
-    editBtn.classList.remove("d-none");
+    toggleButtons(false);
 }
 
-// Attach events safely
-if (editBtn) editBtn.addEventListener("click", enableEditMode);
-if (cancelBtn) cancelBtn.addEventListener("click", cancelEditMode);
+
+/* ===============================
+   TOGGLE BUTTON UI
+   =============================== */
+function toggleButtons(isEditing) {
+    if (!editBtn || !saveBtn || !cancelBtn) return;
+
+    editBtn.classList.toggle("hidden", isEditing);
+    saveBtn.classList.toggle("hidden", !isEditing);
+    cancelBtn.classList.toggle("hidden", !isEditing);
+}
 
 
-// ===============================
-// PROFILE IMAGE PREVIEW
-// ===============================
-
+/* ===============================
+   PROFILE IMAGE PREVIEW
+   =============================== */
 function previewImage(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const preview = document.getElementById("profilePreview");
-            if (preview) preview.src = e.target.result;
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+        const preview = document.getElementById("profilePreview");
+        if (preview) preview.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
 }
 
 
-
-// ===============================
-// DYNAMIC STATS UPDATE (Optional)
-// ===============================
-
+/* ===============================
+   OPTIONAL: AUTO UPDATE UI STATS
+   (if you later connect APIs)
+   =============================== */
 function updateStats(data) {
-    const streakEl = document.getElementById("streakValue");
-    const completedEl = document.getElementById("completedTasksValue");
-    const progressBar = document.getElementById("completionBar");
-    const productivityEl = document.getElementById("productivityValue");
-    const badgesContainer = document.getElementById("badgesContainer");
+    const streak = document.getElementById("streakValue");
+    const best = document.getElementById("bestStreakValue");
+    const tasks = document.getElementById("taskValue");
+    const productivity = document.getElementById("productivityValue");
+    const xpBar = document.querySelector(".xp-fill");
 
-    if (streakEl) streakEl.innerText = data.streak;
-    if (completedEl) completedEl.innerText = data.completedTasks;
+    if (streak) streak.innerText = data.currentStreak ?? 0;
+    if (best) best.innerText = data.bestStreak ?? 0;
+    if (tasks) tasks.innerText = data.completedTasks ?? 0;
+    if (productivity) productivity.innerText = data.productivityScore ?? 0;
 
-    if (progressBar) {
-        progressBar.style.width = data.completionPercentage + "%";
-        progressBar.innerText = data.completionPercentage + "%";
-    }
-
-    if (productivityEl) productivityEl.innerText = data.productivityScore;
-
-    if (badgesContainer && data.badges) {
-        badgesContainer.innerHTML = "";
-        data.badges.forEach(badge => {
-            const img = document.createElement("img");
-            img.src = badge.imageUrl || "/images/default-badge.png";
-            img.alt = badge.name;
-            img.title = badge.name;
-            img.classList.add("badge-img");
-            badgesContainer.appendChild(img);
-        });
+    if (xpBar && data.xpPercentage != null) {
+        xpBar.style.width = data.xpPercentage + "%";
     }
 }
 
 
-// ===============================
-// TIMELINE RENDER (Optional AJAX)
-// ===============================
-
+/* ===============================
+   OPTIONAL: TIMELINE RENDER
+   =============================== */
 function renderTimeline(activities) {
-    const timeline = document.getElementById("recentActivitiesList");
-    if (!timeline) return;
+    const container = document.querySelector(".timeline");
+    if (!container || !Array.isArray(activities)) return;
 
-    timeline.innerHTML = "";
+    container.innerHTML = "";
 
-    activities.forEach(activity => {
-        const li = document.createElement("li");
-        li.classList.add("mb-3", "border-bottom", "pb-2");
+    activities.forEach(a => {
+        const item = document.createElement("div");
+        item.className = "timeline-item";
 
-        li.innerHTML = `
-            <small class="text-muted">${activity.activityDate}</small>
-            <div>${activity.description}</div>
+        item.innerHTML = `
+            <div class="dot"></div>
+            <div class="content">
+                <p>${a.description ?? ""}</p>
+                <small>${a.activityDate ?? ""}</small>
+            </div>
         `;
 
-        timeline.appendChild(li);
+        container.appendChild(item);
     });
 }
 
 
-// ===============================
-// INITIALIZATION
-// ===============================
-
+/* ===============================
+   EVENT LISTENERS
+   =============================== */
 document.addEventListener("DOMContentLoaded", () => {
-    initTheme();
 
-    // Optional: Fetch updated stats dynamically
-    /*
-    fetch("/api/profile/stats")
-        .then(res => res.json())
-        .then(data => updateStats(data))
-        .catch(err => console.error("Stats fetch error:", err));
-    */
+    // edit mode
+    editBtn?.addEventListener("click", enableEditMode);
+    cancelBtn?.addEventListener("click", cancelEditMode);
 
-    // Optional: Fetch recent activities dynamically
-    /*
-    fetch("/api/profile/recent")
-        .then(res => res.json())
-        .then(data => renderTimeline(data))
-        .catch(err => console.error("Timeline fetch error:", err));
-    */
+    // future: theme init
+    // initTheme?.();
 });

@@ -81,7 +81,7 @@ public class TaskMapper {
     public static TaskResponseDTO toResponse(Task task, int xpEarned) {
         if (task == null) return null;
 
-        TaskResponseDTO dto = new TaskResponseDTO(
+        return new TaskResponseDTO(
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
@@ -90,10 +90,8 @@ public class TaskMapper {
                 task.getPriority() != null ? task.getPriority().name() : null,
                 task.getCategory(),
                 task.getIconUrl(),
+                xpEarned,
                 task.getCompletedDateTime()
         );
-
-        dto.setXpEarned(xpEarned);
-        return dto;
     }
  }

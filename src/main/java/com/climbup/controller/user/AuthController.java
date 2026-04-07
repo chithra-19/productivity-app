@@ -8,7 +8,8 @@ import com.climbup.repository.TokenRepository;
 import com.climbup.service.user.UserService;
 import com.climbup.service.task.EmailService;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -101,7 +102,12 @@ public class AuthController {
 
                 // Create new token
                 String token = UUID.randomUUID().toString();
-                PasswordResetToken resetToken = new PasswordResetToken(token, user, LocalDateTime.now().plusHours(1));
+                PasswordResetToken resetToken =
+                        new PasswordResetToken(
+                                token,
+                                user,
+                                Instant.now().plus(Duration.ofHours(1))
+                        );
                 tokenRepository.save(resetToken);
 
                 String resetLink = "http://localhost:8080/auth/reset-password?token=" + token;

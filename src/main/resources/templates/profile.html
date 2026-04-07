@@ -11,15 +11,18 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/profile.css">
+
 </head>
+
 <body>
 
 <div class="container">
   <div class="row g-4">
-    
-    <!-- ===== Left Column: Profile Info & Theme ===== -->
+
+    <!-- ===== LEFT COLUMN ===== -->
     <div class="col-lg-4 col-md-12 profile-left">
       <div class="profile-card">
+
         <h3 class="mb-3">Your Profile</h3>
 
         <!-- Theme Toggle -->
@@ -29,19 +32,23 @@
         </div>
 
         <!-- Edit Button -->
-        <button id="editBtn" class="btn btn-primary mb-3 w-100" onclick="enableEdit()">Edit</button>
+        <button id="editBtn" class="btn btn-primary mb-3 w-100" onclick="enableEdit()">
+          Edit
+        </button>
 
         <!-- Profile Picture -->
         <div class="text-center mb-4">
           <div class="profile-pic-container" onclick="document.getElementById('profilePictureFile').click();">
-              <img id="profilePreview"
-                   th:src="${profile.profilePictureUrl != null ? profile.profilePictureUrl : '/images/default-avatar.png'}"
-                   alt="Profile Picture"
-                   class="profile-pic">
-              <div class="overlay">Change</div>
+            <img id="profilePreview"
+                 th:src="${profile.profilePictureUrl != null ? profile.profilePictureUrl : '/images/default-avatar.png'}"
+                 class="profile-pic"
+                 alt="Profile Picture">
+
+            <div class="overlay">Change</div>
           </div>
         </div>
 
+        <!-- FORM -->
         <form id="profileForm"
               th:action="@{/dashboard/profile/{id}/update(id=${profile.id})}"
               th:object="${profileRequestDTO}"
@@ -57,144 +64,131 @@
 
           <div class="mb-3">
             <label class="form-label">First Name</label>
-            <input type="text" th:field="*{firstName}" class="form-control" disabled>
+            <input type="text" th:field="*{firstName}" class="form-control editable" disabled>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Last Name</label>
-            <input type="text" th:field="*{lastName}" class="form-control" disabled>
+            <input type="text" th:field="*{lastName}" class="form-control editable" disabled>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Email</label>
-            <input type="email" th:field="*{email}" class="form-control" disabled>
+            <input type="email" th:field="*{email}" class="form-control editable" disabled>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Bio</label>
-            <textarea th:field="*{bio}" class="form-control" rows="3" disabled></textarea>
+            <textarea th:field="*{bio}" class="form-control editable" rows="3" disabled></textarea>
           </div>
 
-          <!-- Save & Cancel Buttons -->
-          <button id="saveBtn" type="submit" class="btn btn-success w-100 mb-2" style="display:none;">Save Changes</button>
-          <button id="cancelBtn" type="button" class="btn btn-secondary w-100" style="display:none;" onclick="cancelEdit()">Cancel</button>
+          <!-- Buttons -->
+          <button id="saveBtn" type="submit" class="btn btn-success w-100 mb-2" style="display:none;">
+            Save Changes
+          </button>
+
+          <button id="cancelBtn" type="button" class="btn btn-secondary w-100"
+                  style="display:none;" onclick="cancelEdit()">
+            Cancel
+          </button>
 
         </form>
       </div>
     </div>
 
-    <!-- ===== Right Column: Stats, Timeline ===== -->
+    <!-- ===== RIGHT COLUMN ===== -->
     <div class="col-lg-8 col-md-12 profile-right">
 
-      <!-- Stats Section -->
+      <!-- STATS -->
       <div class="stats-section mb-4">
         <h4 class="mb-3">Your Progress</h4>
+
         <div class="row text-center g-3">
 
-			<div class="col-md-3 col-6">
-			  <div class="stat-card p-3 rounded shadow-sm">
-			    <i class="bi bi-fire-fill text-danger fs-2"></i>
-			    <h5 th:text="${currentStreak}">0</h5>
-			    <small>Current Streak</small>
-			  </div>
-			</div>
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-fire-fill text-danger fs-2"></i>
+              <h5 th:text="${currentStreak}">0</h5>
+              <small>Current Streak</small>
+            </div>
+          </div>
 
-			<div class="col-md-3 col-6">
-			  <div class="stat-card p-3 rounded shadow-sm">
-			    <i class="bi bi-trophy-fill text-warning fs-2"></i>
-			    <h5 th:text="${bestStreak}">0</h5>
-			    <small>Best Streak</small>
-			  </div>
-			</div>
-
+          <div class="col-md-3 col-6">
+            <div class="stat-card p-3 rounded shadow-sm">
+              <i class="bi bi-trophy-fill text-warning fs-2"></i>
+              <h5 th:text="${bestStreak}">0</h5>
+              <small>Best Streak</small>
+            </div>
+          </div>
 
           <div class="col-md-3 col-6">
             <div class="stat-card p-3 rounded shadow-sm">
               <i class="bi bi-check2-circle text-success fs-2"></i>
-              <h5 th:text="${completedTasks != null ? completedTasks : 0}">0</h5>
+              <h5 th:text="${completedTasks}">0</h5>
               <small>Tasks Completed</small>
+
               <div class="progress mt-2" style="height:6px;">
-                <div class="progress-bar bg-success" 
-                     role="progressbar" 
-                     th:style="'width:' + (${completedTasks != null ? completedTasks : 0}) + '%'" 
-                     aria-valuenow="0" 
-                     aria-valuemin="0" 
-                     aria-valuemax="100"></div>
+                <div class="progress-bar bg-success"
+                     role="progressbar"
+                     th:style="'width:' + ${taskCompletionPercentage} + '%'"
+                     th:attr="aria-valuenow=${taskCompletionPercentage}"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-bar-chart-fill text-primary fs-2"></i>
-              <h5 th:text="${productivityScore}">0</h5>
-              <small>Productivity</small>
+        </div>
+
+        <!-- BADGES -->
+        <div class="col-12 mt-3">
+          <div class="stat-card p-3 rounded shadow-sm text-center">
+            <i class="bi bi-award-fill text-warning fs-2"></i>
+            <h5 th:text="${badgesCount}">0</h5>
+            <small>Achievements</small>
+
+            <div class="badges mt-2 d-flex flex-wrap gap-2 justify-content-center">
+              <div th:each="badge : ${badges}" class="badge-item"
+                   th:title="${badge.name}">
+
+                <img th:src="${badge.imageUrl}"
+                     class="badge-img rounded-circle shadow-sm"
+                     style="width:40px; height:40px; object-fit:cover;">
+
+                <div class="badge-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                  <span th:text="${badge.name}"></span>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- XP SECTION -->
+      <div class="xp-section mb-4">
+        <h4 class="mb-3">Level Progress</h4>
+
+        <div class="stat-card p-4 text-center">
+          <h5>Level <span th:text="${level}">1</span></h5>
+
+          <div class="progress mt-3" style="height:8px;">
+            <div class="progress-bar bg-primary"
+                 role="progressbar"
+                 th:style="'width:' + ${xpPercentage} + '%'"
+                 th:attr="aria-valuenow=${xpPercentage}"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
             </div>
           </div>
 
-		  <div class="col-md-3 col-6">
-		    <div class="stat-card p-3 rounded shadow-sm">
-		      <i class="bi bi-award-fill text-warning fs-2"></i>
-		      <h5 th:text="${badgesCount}">0</h5>
-		      <small>Achievements</small>
-
-		      <!-- Achievements grid -->
-		      <div class="badges mt-2 d-flex flex-wrap gap-2 justify-content-center">
-		        <div th:each="badge : ${badges}" class="badge-item position-relative" 
-		             th:title="${badge.name}" style="cursor:pointer;">
-		          <img th:src="${badge.imageUrl}" th:alt="${badge.name}" class="badge-img rounded-circle shadow-sm" 
-		               style="width:40px; height:40px; object-fit:cover;">
-		          <!-- Optional: overlay on hover -->
-		          <div class="badge-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-		               style="background:rgba(0,0,0,0.5); color:#fff; font-size:0.8rem; opacity:0; transition:0.2s;">
-		            <span th:text="${badge.name}"></span>
-		          </div>
-		        </div>
-		      </div>
-		    </div>
-		  </div>
-
-
+          <small th:text="${currentXP} + ' / ' + ${xpForNextLevel} + ' XP'">
+            0 / 100 XP
+          </small>
         </div>
-      </div>
-
-	  <div class="xp-section mb-4">
-	    <h4 class="mb-3">Level Progress</h4>
-
-	    <div class="stat-card p-4 text-center">
-	      <h5>Level <span th:text="${level}">1</span></h5>
-	      <div class="progress mt-3" style="height:8px;">
-	        <div class="progress-bar bg-primary"
-	             role="progressbar"
-	             th:style="'width:' + ${xpPercentage} + '%'"
-	             th:attr="aria-valuenow=${xpPercentage}"
-	             aria-valuemin="0"
-	             aria-valuemax="100">
-	        </div>
-	      </div>
-	      <small th:text="${currentXP} + ' / ' + ${xpForNextLevel} + ' XP'">
-	        0 / 100 XP
-	      </small>
-	    </div>
-	  </div>
-
-      <!-- Timeline Section -->
-      <div class="timeline-section mb-4">
-        <h4 class="mb-3">Recent Activity</h4>
-        <ul class="timeline list-unstyled">
-			<li th:each="activity : ${recentActivities}" class="mb-3">
-			  <div class="d-flex align-items-start gap-3">
-			    <i class="bi bi-clock-history text-primary fs-5"></i>
-			    <div>
-			      <div class="fw-semibold" th:text="${activity.description}">Event</div>
-			      <small class="text-muted" th:text="${activity.activityDate}">
-			        Date
-			      </small>
-			    </div>
-			  </div>
-			</li>
-
-        </ul>
       </div>
 
     </div>

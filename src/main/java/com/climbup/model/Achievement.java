@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
@@ -18,11 +18,9 @@ import java.util.Objects;
 )
 public class Achievement {
 
- 
-	
-	 @ManyToOne
-	    @JoinColumn(name = "goal_id")
-	    private Goal goal;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "goal_id")
+	private Goal goal;
 
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,11 +61,9 @@ public class Achievement {
     @Column(nullable = false)
     private boolean seen = false;
 
-    @Column(name = "unlocked_date")
-    private LocalDateTime unlockedDate;
-
+ 
     @Column(name = "unlocked_at")
-    private LocalDateTime unlockedAt;
+    private Instant unlockedAt;
 
     // ------------------ Relations ------------------
 
@@ -79,7 +75,7 @@ public class Achievement {
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     
     
     public void setId(Long id) {
@@ -98,17 +94,12 @@ public class Achievement {
  		this.seen = seen;
  	}
 
- 	public void setUnlockedDate(LocalDateTime unlockedDate) {
- 		this.unlockedDate = unlockedDate;
- 	}
 
- 	public void setUnlockedAt(LocalDateTime unlockedAt) {
+ 	public void setUnlockedAt(Instant unlockedAt) {
  		this.unlockedAt = unlockedAt;
  	}
 
- 	public void setCreatedAt(LocalDateTime createdAt) {
- 		this.createdAt = createdAt;
- 	}
+ 	
 
     // ------------------ Enums ------------------
 
@@ -155,8 +146,7 @@ public class Achievement {
         if (!this.unlocked) {
             this.unlocked = true;
             this.newlyUnlocked = true;
-            this.unlockedDate = LocalDateTime.now();
-            this.unlockedAt = LocalDateTime.now();
+            this.unlockedAt = Instant.now();
         }
     }
 
@@ -191,8 +181,8 @@ public class Achievement {
     public boolean isNewlyUnlocked() { return newlyUnlocked; }
     public boolean isSeen() { return seen; }
 
-    public LocalDateTime getUnlockedDate() { return unlockedDate; }
-    public LocalDateTime getUnlockedAt() { return unlockedAt; }
+ 
+    public Instant  getUnlockedAt() { return unlockedAt; }
 
     
     public Goal getGoal() { return goal; }
@@ -200,7 +190,7 @@ public class Achievement {
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
 
     // ------------------ Equality ------------------
 

@@ -1,7 +1,8 @@
 package com.climbup.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -21,7 +22,7 @@ public class UserAchievement {
     private Achievement achievement;
 
     @Column(name = "unlocked_at", nullable = false)
-    private LocalDateTime unlockedAt;
+    private Instant unlockedAt;
 
     public UserAchievement() {
         // Default constructor for JPA
@@ -30,7 +31,7 @@ public class UserAchievement {
     public UserAchievement(User user, Achievement achievement) {
         this.user = user;
         this.achievement = achievement;
-        this.unlockedAt = LocalDateTime.now();
+        this.unlockedAt = Instant.now();
     }
 
     // Getters and Setters
@@ -43,8 +44,8 @@ public class UserAchievement {
     public Achievement getAchievement() { return achievement; }
     public void setAchievement(Achievement achievement) { this.achievement = achievement; }
 
-    public LocalDateTime getUnlockedAt() { return unlockedAt; }
-    public void setUnlockedAt(LocalDateTime unlockedAt) { this.unlockedAt = unlockedAt; }
+    public Instant getUnlockedAt() { return unlockedAt; }
+    public void setUnlockedAt(Instant unlockedAt) { this.unlockedAt = unlockedAt; }
 
     // Equality based on user + achievement
     @Override

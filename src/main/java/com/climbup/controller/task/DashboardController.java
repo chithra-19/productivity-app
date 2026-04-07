@@ -7,9 +7,7 @@ import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.ActivityDTO;
 import com.climbup.dto.response.DashboardSummaryDTO;
 import com.climbup.dto.response.FocusSessionResponseDTO;
-import com.climbup.dto.response.TaskResponseDTO;
-import com.climbup.mapper.ActivityMapper;
-import com.climbup.mapper.UserMapper;
+
 import com.climbup.model.FocusSession;
 import com.climbup.model.Goal;
 import com.climbup.model.Profile;
@@ -30,13 +28,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
+
 
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @Controller
 @RequestMapping("/dashboard")
@@ -246,7 +243,7 @@ public class DashboardController {
         User user = userService.getUserWithAllData(springUser.getUsername());
 
         return focusSessionService.startSession(
-                new FocusSessionRequestDTO(25, FocusSession.SessionType.POMODORO, ""),
+                new FocusSessionRequestDTO(25, FocusSession.SessionType.FOCUS, ""),
                 user
         );
     }

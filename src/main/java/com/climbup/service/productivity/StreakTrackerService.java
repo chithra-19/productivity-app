@@ -10,17 +10,16 @@ import com.climbup.repository.UserRepository;
 import com.climbup.service.task.ActivityService;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Date;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -79,6 +78,7 @@ public class StreakTrackerService {
 
     // 🔹 Heatmap data (completed tasks per day)
     public Map<LocalDate, Integer> getHeatmapData(User user, String category) {
+
         List<Task> tasks =
                 taskRepository.findByUserIdAndCategory(user.getId(), category);
 
@@ -86,7 +86,9 @@ public class StreakTrackerService {
                 .filter(Task::isCompleted)
                 .filter(t -> t.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
-                        t -> t.getCompletedDateTime().toLocalDate(),
+                        t -> t.getCompletedDateTime()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate(),
                         Collectors.summingInt(t -> 1)
                 ));
     }
@@ -177,11 +179,12 @@ public class StreakTrackerService {
                 .filter(Task::isCompleted)
                 .filter(t -> t.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
-                        t -> t.getCompletedDateTime().toLocalDate(),
+                        t -> t.getCompletedDateTime()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate(),
                         Collectors.summingInt(t -> 1)
                 ));
     }
-
 
     public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
         return streakTrackerRepository.findByUserIdAndCategory(userId, category)

@@ -1,145 +1,261 @@
-/* ===== Base Reset ===== */
+/* ================================
+   Base Reset + Layout
+================================ */
 * {
+  box-sizing: border-box;
+}
+
+body.light {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: #f9fafb;
+  color: #333;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
+  line-height: 1.5;
 }
 
-/* ===== Page Layout ===== */
-body {
-  min-height: 100vh;
-  background: #f0f4ff;
-  color: #333;
-}
-
-.app-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 30px 20px;
-}
-
-/* ===== Headings ===== */
+/* ================================
+   Typography
+================================ */
 h1 {
-  font-size: 28px;
-  margin-bottom: 10px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 16px;
 }
 
 h3 {
-  font-size: 20px;
-  margin-bottom: 15px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 12px;
 }
 
-/* ===== Navigation Link ===== */
+/* ================================
+   Container
+================================ */
+.app-container {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* ================================
+   Navigation
+================================ */
 .view-sessions-btn {
   text-decoration: none;
-  color: #5b7cfa;
-  font-weight: 600;
+  color: #6366f1;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .view-sessions-btn:hover {
+  color: #4f46e5;
   text-decoration: underline;
 }
 
-/* ===== Card Wrapper ===== */
+/* ================================
+   Card
+================================ */
 .card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  padding: 22px;
+  margin-bottom: 30px;
+  transition: transform 0.2s ease;
 }
 
-/* ===== Session List ===== */
-.history-container {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* ===== Single Session Item ===== */
-.session-item {
-  background: #f8faff;
-  border-radius: 12px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-left: 4px solid #5b7cfa;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.session-item:hover {
+.card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* ===== Session Text ===== */
-.session-title {
+/* ================================
+   Controls (Buttons + Select)
+================================ */
+.controls-btn {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.controls-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.controls-btn:disabled {
+  background: #c7d2fe;
+  cursor: not-allowed;
+}
+
+/* Select override */
+select.controls-btn {
+  background: #f3f4f6;
+  color: #333;
+  border: 1px solid #d1d5db;
+}
+
+/* ================================
+   Table
+================================ */
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* Header */
+.session-table thead {
+  background: #f3f4f6;
+}
+
+.session-table th {
+  text-align: left;
+  padding: 14px;
   font-weight: 600;
-  font-size: 16px;
+  color: #444;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
 }
 
-.session-time {
-  font-size: 14px;
-  color: #666;
+/* Body */
+.session-table td {
+  padding: 14px;
+  border-bottom: 1px solid #eef0f3;
 }
 
-.session-status {
-  font-size: 13px;
-  font-weight: 500;
+.session-table tbody tr {
+  transition: background 0.15s ease;
 }
 
-/* ===== Status Colors ===== */
+.session-table tbody tr:hover {
+  background: #f5f7ff;
+}
+
+/* ================================
+   Status Badges
+================================ */
+.status-completed,
+.status-active,
+.status-aborted {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Softer modern colors */
 .status-completed {
-  color: #2e7d32;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-active {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .status-aborted {
-  color: #d32f2f;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
-/* ===== Pagination ===== */
+/* ================================
+   Session Type Styling
+================================ */
+.type-pomodoro {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.type-custom {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* ================================
+   Pagination
+================================ */
 .pagination-controls {
   margin-top: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
-/* ===== Buttons ===== */
-.controls-btn {
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  background: #5b7cfa;
+.pagination-controls button {
+  background: #6366f1;
   color: #fff;
-  font-weight: 500;
-  transition: background 0.2s ease, transform 0.1s ease;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.controls-btn:hover {
-  background: #4a6bf0;
+.pagination-controls button:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
 }
 
-.controls-btn:disabled {
-  background: #c5c9e6;
+.pagination-controls button:disabled {
+  background: #c7d2fe;
   cursor: not-allowed;
 }
 
-/* ===== Page Info ===== */
 #pageInfo {
-  font-size: 14px;
   font-weight: 500;
-  color: #444;
+  color: #555;
 }
 
-/* ===== Empty State ===== */
-.empty-state {
+/* ================================
+   Loading + Empty States
+================================ */
+#loadingState {
   text-align: center;
-  padding: 30px;
-  color: #777;
-  font-size: 15px;
+  padding: 12px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+#emptyState {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+}
+
+/* ================================
+   Responsive Design
+================================ */
+@media (max-width: 768px) {
+  .app-container {
+    margin: 20px auto;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .session-table th,
+  .session-table td {
+    padding: 10px;
+    font-size: 0.8rem;
+  }
+
+  .controls-btn {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
 }
