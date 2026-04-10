@@ -28,6 +28,7 @@ public class AchievementSeeder {
                 a.setCode(code);
                 a.setTitle(generateTitle(code));
                 a.setDescription(generateDescription(code));
+                a.setType(null);
                 a.setUnlocked(false);   // seeders never unlock
                 a.setUser(null);        // no user at seeding
 
