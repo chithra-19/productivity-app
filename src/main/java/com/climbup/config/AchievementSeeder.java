@@ -28,7 +28,7 @@ public class AchievementSeeder {
                 a.setCode(code);
                 a.setTitle(generateTitle(code));
                 a.setDescription(generateDescription(code));
-                a.setType(null);
+                a.setType(getType(code));
                 a.setUnlocked(false);   // seeders never unlock
                 a.setUser(null);        // no user at seeding
 
@@ -64,6 +64,15 @@ public class AchievementSeeder {
             case EARLY_BIRD -> "Complete a task before 8 AM.";
             case PRODUCTIVITY_PRO -> "Reach a productivity score of 80.";
             case GOAL_COMPLETED -> "Complete any goal.";
+        };
+    }
+    private String getType(AchievementCode code) {
+        return switch (code) {
+            case GOAL_1, GOAL_5, GOAL_10, GOAL_COMPLETED -> "GOAL";
+            case STREAK_3, STREAK_7 -> "STREAK";
+            case FIRST_STEP, TASK_MASTER -> "TASK";
+            case EARLY_BIRD -> "TIME";
+            case PRODUCTIVITY_PRO -> "PERFORMANCE";
         };
     }
 }
