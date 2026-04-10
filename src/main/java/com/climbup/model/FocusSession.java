@@ -49,6 +49,9 @@ public class FocusSession {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private SessionStatus status = SessionStatus.ACTIVE;
+    
+    @Column(name = "elapsed_minutes")
+    private int elapsedMinutes;
 
 
     @Enumerated(EnumType.STRING)
@@ -84,17 +87,7 @@ public class FocusSession {
         this.endTime = null;
         this.status = SessionStatus.ACTIVE;
     }
-    
-    public void completeSession() {
-        if (startTime == null) {
-            throw new IllegalStateException("Session not started");
-        }
-
-        if (endTime != null) return;
-
-        this.status = SessionStatus.COMPLETED;
-        this.endTime = OffsetDateTime.now(); // ✅ FIXED
-    }
+   
 
     // ✅ State Helpers
     public boolean isActive() {
@@ -161,9 +154,41 @@ public class FocusSession {
 		this.endTime = endTime;
 	}
 
+	
+	public int getElapsedMinutes() {
+	    return elapsedMinutes;
+	}
+
+	public void setElapsedMinutes(int elapsedMinutes) {
+	    this.elapsedMinutes = elapsedMinutes;
+	}
+	
+	public void completeSession() {
+	    if (startTime == null) throw new IllegalStateException("Session not started");
+	    if (endTime != null) return;
+
+	    this.endTime = OffsetDateTime.now();
+
+	    long actual = Duration.between(startTime, endTime).toMinutes();
+	    this.elapsedMinutes = (int) Math.min(actual, durationMinutes);
+
+	    this.status = SessionStatus.COMPLETED;
+	}
+
 	public void abortSession() {
-	    this.status = SessionStatus.ABORTED;
-	    this.endTime = OffsetDateTime.now(); // ✅ FIXED
+	    if (startTime == null) {
+	        throw new IllegalStateException("Session not started");
+	    }
+
+	    this.endTime = OffsetDateTime.now();
+
+	    long actual = Duration.between(startTime, endTime).toMinutes();
+	    this.elapsedMinutes = (int) Math.max(0, Math.min(actual, durationMinutes));
+
+	    // 🔥 smart status
+	    this.status = (elapsedMinutes > 0)
+	        ? SessionStatus.COMPLETED
+	        : SessionStatus.ABORTED;
 	}
     // Equals & HashCode
     @Override

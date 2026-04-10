@@ -128,6 +128,11 @@ public class FocusSessionService {
         session.setEndTime(OffsetDateTime.now());
         session.setStatus(SessionStatus.COMPLETED);
 
+        long elapsed = Duration
+                .between(session.getStartTime(), session.getEndTime())
+                .toMinutes();
+
+        session.setElapsedMinutes((int) Math.max(elapsed, 0));
         focusSessionRepository.save(session);
 
         return mapToResponse(session);
@@ -185,7 +190,11 @@ public class FocusSessionService {
     // Get total focus minutes for a user
     public int getTotalFocusMinutes(User user) {
         return focusSessionRepository
-                .sumDurationByUserIdAndStatus(user.getId(), SessionStatus.COMPLETED);
+                .findById(user.getId())
+                .stream()
+                .filter(this::shouldCountFocus)
+                .mapToInt(FocusSession::getElapsedMinutes) // 🔥 REAL DATA
+                .sum();
     }
     // Get count of successful sessions
     public long getSuccessfulSessionsCount(User user) {
@@ -278,10 +287,11 @@ public class FocusSessionService {
 
             if (now.isAfter(plannedEnd)) {
 
-                session.setStatus(SessionStatus.COMPLETED);
-                session.setEndTime(plannedEnd);
-
-                focusSessionRepository.save(session);
+            	session.setStatus(SessionStatus.COMPLETED);
+            	session.setEndTime(plannedEnd);
+            	session.setElapsedMinutes(session.getDurationMinutes()); // 🔥 full session
+                
+            	focusSessionRepository.save(session);
             }
         }
     }
@@ -374,29 +384,31 @@ public FocusSessionResponseDTO abortSession(User user) {
             )
             .orElseThrow(() -> new IllegalStateException("No active session"));
 
-    if (session.getStartTime() == null) {
-        throw new IllegalStateException("Invalid session");
-    }
-
     OffsetDateTime now = OffsetDateTime.now();
 
     long elapsedMinutes = Duration
             .between(session.getStartTime(), now)
             .toMinutes();
 
-    if (elapsedMinutes >= 1) {
-
+    // 🔴 CASE 1: Less than 1 min → IGNORE
+    if (elapsedMinutes < 1) {
         session.setEndTime(now);
-        session.setStatus(SessionStatus.COMPLETED);
+        session.setElapsedMinutes(0);
+        session.setStatus(SessionStatus.ABORTED);
 
-        // 🔥 ONLY count focus/custom
-        if (shouldCountFocus(session)) {
-            user.addFocusMinutes((int) elapsedMinutes);
-            userRepository.save(user); // save only if updated
-        }
+        focusSessionRepository.save(session);
+        return mapToResponse(session);
+    }
 
-    } else {
-        session.abortSession();
+    // 🟢 CASE 2: Valid session (>= 1 min)
+    session.setEndTime(now);
+    session.setElapsedMinutes((int) elapsedMinutes);
+    session.setStatus(SessionStatus.ABORTED);
+
+    // ✅ Add to goal
+    if (shouldCountFocus(session)) {
+        user.addFocusMinutes((int) elapsedMinutes);
+        userRepository.save(user);
     }
 
     focusSessionRepository.save(session);

@@ -183,8 +183,7 @@ async function startTimer() {
 	  const data = await res.json();
 	  localStorage.setItem("activeSessionId", data.id);
 
-	  // 🔥 ADD THIS
-	  window.location.href = "/api/focus-sessions/me";
+	 
 
     } catch (err) {
       console.error("Failed to start session", err);
@@ -202,20 +201,51 @@ async function startTimer() {
 
   runTimerLoop(start, duration);
 }
-
-function pauseTimer() {
+async function pauseTimer() {
   if (!state.running) return;
 
   clearInterval(state.interval);
   state.running = false;
 
   const remainingSeconds = state.timerMinutes * 60 + state.timerSeconds;
-
   localStorage.setItem(TIMER_KEYS.REMAINING, remainingSeconds);
+
+  const sessionId = localStorage.getItem("activeSessionId");
+
+  // 🔥 CALL BACKEND TO SAVE PARTIAL WORK
+  if (sessionId) {
+    try {
+      await fetch("/api/focus-sessions/abort", {
+        method: "POST",
+        credentials: "include"
+      });
+
+      console.log("✅ Partial time saved to backend");
+
+    } catch (err) {
+      console.error("❌ Failed to save pause:", err);
+    }
+  }
+
+  // ❌ REMOVE THIS (frontend fake counting)
+  // state.totalFocusedMinutes += workedMinutes;
+
+  // 🔥 reset start time
+  state.startTime = null;
+
+  // 🔥 IMPORTANT
+  localStorage.removeItem(TIMER_KEYS.RUNNING);
+}
+
+  // 🔥 reset start time
+  state.startTime = null;
+
+  // 🔥 IMPORTANT
+  localStorage.removeItem(TIMER_KEYS.RUNNING);
 
   console.log("Paused at:", remainingSeconds);
 }
-  
+
 async function resetTimer() {
   completionTriggered = false;
 
@@ -254,14 +284,32 @@ async function resetTimer() {
   localStorage.removeItem(TIMER_KEYS.RUNNING);
   localStorage.removeItem(TIMER_KEYS.REMAINING); // ✅ IMPORTANT
 }
-
-
-function continueTimer() {
+async function continueTimer() {
   if (state.running) return;
 
   const remainingSeconds = Number(localStorage.getItem(TIMER_KEYS.REMAINING));
-
   if (!remainingSeconds) return;
+
+  const remainingMinutes = Math.ceil(remainingSeconds / 60);
+
+  try {
+    const res = await fetch("/api/focus-sessions/me", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        durationMinutes: remainingMinutes,
+        sessionType: state.sessionType || "FOCUS"
+      })
+    });
+
+    const data = await res.json();
+    localStorage.setItem("activeSessionId", data.id);
+
+  } catch (err) {
+    console.error("Failed to start resumed session", err);
+    return;
+  }
 
   const duration = remainingSeconds * 1000;
   const start = Date.now();
@@ -275,6 +323,8 @@ function continueTimer() {
 
   runTimerLoop(start, duration);
 }
+
+
 function runTimerLoop(start, duration) {
   clearInterval(state.interval);
 
@@ -600,6 +650,28 @@ function renderSessionHistory(sessions) {
     });
 }
 
+async function refreshStatsFromBackend() {
+  try {
+    const [minutesRes, sessionsRes] = await Promise.all([
+      fetch("/api/focus-sessions/me/total-minutes", { credentials: "include" }),
+      fetch("/api/focus-sessions/me/completed-today", { credentials: "include" })
+    ]);
+
+    const totalMinutes = await minutesRes.json();
+    const completedSessions = await sessionsRes.json();
+
+    state.totalFocusedMinutes = totalMinutes;
+    state.completedSessions = completedSessions;
+
+    updateStats();
+    updateGoalProgress();
+    updateDailyGoalDisplay();
+
+  } catch (err) {
+    console.error("Failed to refresh stats", err);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
   timerEl = document.getElementById("timer");
@@ -622,10 +694,24 @@ document.addEventListener("DOMContentLoaded", () => {
   waitForUserAndSync();
 
   // listeners
-  startBtn?.addEventListener("click", startTimer);
-  pauseBtn?.addEventListener("click", pauseTimer);
-  resetBtn?.addEventListener("click", resetTimer);
-  continueBtn?.addEventListener("click", continueTimer);
+  startBtn?.addEventListener("click", (e) => {
+    e.preventDefault();   // 🔥 stops any accidental submit
+    startTimer();
+  });
+  pauseBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    pauseTimer();
+  });
+
+  resetBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetTimer();
+  });
+
+  continueBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    continueTimer();
+  });
 
   hoursInput?.addEventListener("input", updateRemainingGoalDisplay);
   minsInput?.addEventListener("input", updateRemainingGoalDisplay);

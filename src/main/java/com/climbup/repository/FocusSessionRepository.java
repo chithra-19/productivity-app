@@ -54,10 +54,19 @@ public interface FocusSessionRepository extends JpaRepository<FocusSession, Long
     long countByUserIdAndStatus(Long userId, SessionStatus status);
 
     @Query("""
-    	    SELECT COALESCE(SUM(f.durationMinutes), 0)
+    	    SELECT COALESCE(SUM(f.elapsedMinutes), 0)
     	    FROM FocusSession f
     	    WHERE f.user.id = :userId
     	    AND f.status = :status
     	""")
-    	int sumDurationByUserIdAndStatus(Long userId, SessionStatus status);
+    	int sumElapsedMinutesByUserIdAndStatus(Long userId, SessionStatus status);
+    
+    @Query("""
+    	    SELECT COALESCE(SUM(f.elapsedMinutes), 0)
+    	    FROM FocusSession f
+    	    WHERE f.user.id = :userId
+    	    AND f.status IN ('COMPLETED', 'ABORTED')
+    	""")
+    	int sumElapsedMinutesByUserId(Long userId);
+    
 }

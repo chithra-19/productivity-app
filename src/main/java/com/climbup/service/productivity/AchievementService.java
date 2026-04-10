@@ -1,10 +1,12 @@
 package com.climbup.service.productivity;
 
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.climbup.dto.request.AchievementRequestDTO;
 import com.climbup.dto.response.AchievementResponseDTO;
@@ -21,10 +23,6 @@ import com.climbup.repository.GoalRepository;
 import com.climbup.repository.TaskRepository;
 import com.climbup.service.task.ActivityService;
 
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import jakarta.transaction.Transactional;
 @Service
 public class AchievementService {
 
@@ -34,9 +32,9 @@ public class AchievementService {
     private final ActivityService activityService;
 
     public AchievementService(AchievementRepository achievementRepository,
-                              GoalRepository goalRepository,
-                              TaskRepository taskRepository,
-                              ActivityService activityService) {
+                               GoalRepository goalRepository,
+                               TaskRepository taskRepository,
+                               ActivityService activityService) {
         this.achievementRepository = achievementRepository;
         this.goalRepository = goalRepository;
         this.taskRepository = taskRepository;
@@ -47,9 +45,10 @@ public class AchievementService {
     public List<Achievement> getUserAchievements(User user) {
         return achievementRepository.findByUser(user);
     }
-    
+
+    // ================= SEED GOAL ACHIEVEMENT =================
     public void seedAchievementsForGoal(Goal goal) {
-        // Check if achievement already exists for this user + goal
+
         boolean exists = achievementRepository.existsByUserAndGoal(goal.getUser(), goal);
 
         if (!exists) {
@@ -64,12 +63,11 @@ public class AchievementService {
             achievementRepository.save(a);
         }
     }
-    
+
     // ================= INITIAL SEEDING =================
- // ================= INITIAL SEEDING =================
     @Transactional
     public List<AchievementResponseDTO> initializeAchievements(User user) {
-        // If user already has achievements, return them instead of doing nothing
+
         if (achievementRepository.countByUser(user) > 0) {
             return achievementRepository.findByUser(user)
                     .stream()
@@ -97,7 +95,6 @@ public class AchievementService {
                         "Early Bird", "Complete a task before 8 AM", Achievement.Type.TASK, "bi-sun")
         );
 
-        // Save and return as DTOs
         return achievementRepository.saveAll(seeded)
                 .stream()
                 .map(AchievementMapper::toResponseDTO)
@@ -120,12 +117,23 @@ public class AchievementService {
         a.setIcon(icon);
         return a;
     }
-    
-    
 
-    // ================= EVALUATE ACHIEVEMENTS =================
+    // ================= EVALUATE ACHIEVEMENTS (FIXED) =================
     @Transactional
     public void evaluateAchievements(User user) {
+
+        // 🔥 LOAD ONCE (FIXED N+1 PROBLEM)
+        List<Achievement> achievements =
+                achievementRepository.findByUser(user);
+
+        Map<AchievementCode, Achievement> achievementMap =
+                achievements.stream()
+                        .filter(a -> a.getCode() != null)
+                        .collect(Collectors.toMap(
+                                Achievement::getCode,
+                                a -> a,
+                                (a1, a2) -> a1
+                        ));
 
         long completedGoals =
                 goalRepository.countByUserAndStatus(user, GoalStatus.COMPLETED);
@@ -133,12 +141,12 @@ public class AchievementService {
         long completedTasks =
                 taskRepository.countByUserAndCompletedTrue(user);
 
-        unlockIfEligible(user, AchievementCode.GOAL_1, completedGoals >= 1);
-        unlockIfEligible(user, AchievementCode.GOAL_5, completedGoals >= 5);
-        unlockIfEligible(user, AchievementCode.GOAL_10, completedGoals >= 10);
+        unlockIfEligible(achievementMap, AchievementCode.GOAL_1, completedGoals >= 1);
+        unlockIfEligible(achievementMap, AchievementCode.GOAL_5, completedGoals >= 5);
+        unlockIfEligible(achievementMap, AchievementCode.GOAL_10, completedGoals >= 10);
 
-        unlockIfEligible(user, AchievementCode.FIRST_STEP, completedTasks >= 1);
-        unlockIfEligible(user, AchievementCode.TASK_MASTER, completedTasks >= 10);
+        unlockIfEligible(achievementMap, AchievementCode.FIRST_STEP, completedTasks >= 1);
+        unlockIfEligible(achievementMap, AchievementCode.TASK_MASTER, completedTasks >= 10);
 
         boolean earlyBird =
                 taskRepository.findByUserAndCompletedTrue(user)
@@ -150,24 +158,28 @@ public class AchievementService {
                                         .getHour() < 8
                         );
 
-        unlockIfEligible(user, AchievementCode.EARLY_BIRD, earlyBird);
+        unlockIfEligible(achievementMap, AchievementCode.EARLY_BIRD, earlyBird);
     }
 
-    private void unlockIfEligible(User user, AchievementCode code, boolean condition) {
+    // ================= FIXED UNLOCK =================
+    private void unlockIfEligible(Map<AchievementCode, Achievement> map,
+                                  AchievementCode code,
+                                  boolean condition) {
+
         if (!condition) return;
 
-        achievementRepository.findByUserAndCode(user, code)
-            .ifPresent(achievement -> {
-                if (!achievement.isUnlocked()) {
-                    achievement.unlock();
-                    achievementRepository.save(achievement);
-                }
-            });
+        Achievement achievement = map.get(code);
+
+        if (achievement != null && !achievement.isUnlocked()) {
+            achievement.unlock();
+            achievementRepository.save(achievement);
+        }
     }
 
     // ================= MARK AS SEEN =================
     @Transactional
     public void markAchievementsAsSeen(User user) {
+
         List<Achievement> achievements =
                 achievementRepository.findByUserAndNewlyUnlockedTrue(user);
 
@@ -175,22 +187,24 @@ public class AchievementService {
         achievementRepository.saveAll(achievements);
     }
 
-    
-
+    // ================= CREATE CUSTOM ACHIEVEMENT =================
     @Transactional
     public AchievementResponseDTO createAchievement(AchievementRequestDTO dto, User user) {
+
         Achievement achievement = new Achievement();
         achievement.setTitle(dto.getTitle());
         achievement.setDescription(dto.getDescription());
         achievement.setType(dto.getType());
         achievement.setCategory(dto.getCategory());
+
         if (dto.getUnlockedDate() != null) {
             achievement.setUnlockedAt(
-                dto.getUnlockedDate()
-                    .atStartOfDay(ZoneId.systemDefault())
-                    .toInstant()
+                    dto.getUnlockedDate()
+                            .atStartOfDay(ZoneId.systemDefault())
+                            .toInstant()
             );
         }
+
         achievement.setUser(user);
 
         achievementRepository.save(achievement);
@@ -198,18 +212,19 @@ public class AchievementService {
         return AchievementMapper.toResponseDTO(achievement);
     }
 
-
+    // ================= CHECK NEW =================
     public boolean checkForNewAchievements(User user) {
         return !achievementRepository.findByUserAndNewlyUnlockedTrue(user).isEmpty();
     }
-    
+
+    // ================= MANUAL UNLOCK =================
     @Transactional
     public AchievementResponseDTO unlockAchievement(Long achievementId, User user) {
+
         Achievement achievement = achievementRepository.findById(achievementId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Achievement not found with ID: " + achievementId));
 
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Achievement not found with ID: " + achievementId));
-
-        // Optional: verify that this achievement belongs to the user
         if (!achievement.getUser().equals(user)) {
             throw new IllegalStateException("User does not own this achievement");
         }
@@ -218,14 +233,13 @@ public class AchievementService {
             achievement.unlock();
             achievementRepository.save(achievement);
         }
-       
+
         activityService.log(
-        	    "🏆 Achievement unlocked: " + achievement.getTitle(),
-        	    ActivityType.ACHIEVEMENT_UNLOCKED,
-        	    user
-        	);
+                "🏆 Achievement unlocked: " + achievement.getTitle(),
+                ActivityType.ACHIEVEMENT_UNLOCKED,
+                user
+        );
 
         return AchievementMapper.toResponseDTO(achievement);
     }
-
 }
