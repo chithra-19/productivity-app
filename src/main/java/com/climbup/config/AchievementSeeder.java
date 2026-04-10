@@ -66,13 +66,13 @@ public class AchievementSeeder {
             case GOAL_COMPLETED -> "Complete any goal.";
         };
     }
-    private String getType(AchievementCode code) {
+    private Achievement.Type getType(AchievementCode code) {
         return switch (code) {
-            case GOAL_1, GOAL_5, GOAL_10, GOAL_COMPLETED -> "GOAL";
-            case STREAK_3, STREAK_7 -> "STREAK";
-            case FIRST_STEP, TASK_MASTER -> "TASK";
-            case EARLY_BIRD -> "TIME";
-            case PRODUCTIVITY_PRO -> "PERFORMANCE";
+            case GOAL_1, GOAL_5, GOAL_10, GOAL_COMPLETED -> Achievement.Type.GOAL;
+            case STREAK_3, STREAK_7 -> Achievement.Type.STREAK;
+            case FIRST_STEP, TASK_MASTER -> Achievement.Type.TASK;
+            case EARLY_BIRD -> Achievement.Type.TIME;
+            case PRODUCTIVITY_PRO -> Achievement.Type.PERFORMANCE;
         };
     }
 }

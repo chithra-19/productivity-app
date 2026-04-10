@@ -103,12 +103,13 @@ public class Achievement {
 
     // ------------------ Enums ------------------
 
-    public enum Type {
-        GOAL,
-        TASK,
-        STREAK,
-        GENERAL
-    }
+ 	public enum Type {
+ 	    GOAL,
+ 	    STREAK,
+ 	    TASK,
+ 	    TIME,
+ 	    PERFORMANCE
+ 	}
 
     public enum AchievementCode {
         FIRST_STEP,        // first goal created
