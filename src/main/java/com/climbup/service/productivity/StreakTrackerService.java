@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,60 +42,17 @@ public class StreakTrackerService {
     		this.activityService = activityService;
 }
  
-    private StreakTracker createTracker(User user, String category) {
-        StreakTracker tracker = new StreakTracker();
-        tracker.setUser(user);
-        tracker.setCategory(category);
-        return tracker;
-    }
-
-    // 🔹 Get current streak
-    public int getCurrentStreak(User user, String category) {
-        return streakTrackerRepository.findByUserAndCategory(user, category)
-                .map(StreakTracker::getCurrentStreak)
-                .orElse(0);
-    }
+  
+ 
 
     // 🔹 Get all streaks for a user
     public List<StreakTracker> getAllStreaksForUser(Long userId) {
         return streakTrackerRepository.findAllByUserId(userId);
     }
-    
-    public int calculateXP(User user) {
-        List<Task> completedTasks = taskRepository.findByUserAndCompletedTrue(user);
-
-        int xp = 0;
-        for (Task task : completedTasks) {
-            xp += 5; // base XP per task
-            if (task.getFocusHours() != null) {
-                xp += task.getFocusHours().intValue(); // bonus XP for focus
-            }
-        }
-
-        return xp;
-    }
-
-
-    // 🔹 Heatmap data (completed tasks per day)
-    public Map<LocalDate, Integer> getHeatmapData(User user, String category) {
-
-        List<Task> tasks =
-                taskRepository.findByUserIdAndCategory(user.getId(), category);
-
-        return tasks.stream()
-                .filter(Task::isCompleted)
-                .filter(t -> t.getCompletedDateTime() != null)
-                .collect(Collectors.groupingBy(
-                        t -> t.getCompletedDateTime()
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate(),
-                        Collectors.summingInt(t -> 1)
-                ));
-    }
-
+ 
     public void refreshUserStreak(User user) {
 
-        int oldStreak = user.getCurrentStreak(); // 👈 track previous
+        int oldStreak = user.getCurrentStreak();
 
         int current = getCurrentStreak(user);
         int best = getBestStreak(user);
@@ -103,15 +60,17 @@ public class StreakTrackerService {
         user.setCurrentStreak(current);
         user.setBestStreak(best);
 
-        // 🔥 LOG ONLY IF STREAK CHANGED
-        if (current != oldStreak) {
+        userRepository.save(user); // 🔥 THIS IS MISSING
+
+        if (current > oldStreak) {
             activityService.log(
-                "Streak: " + current + " days 🔥",
+                "🔥 Streak increased to " + current + " days",
                 ActivityType.STREAK_UPDATED,
                 user
             );
         }
     }
+    
     public int getBestStreak(User user) {
 
         List<LocalDate> dates = taskRepository.findCompletedDates(user)
@@ -134,57 +93,43 @@ public class StreakTrackerService {
 
         return Math.max(best, current);
     }
+ 
     public int getCurrentStreak(User user) {
 
-        List<LocalDate> dates = taskRepository.findCompletedDates(user)
+        Map<LocalDate, Long> counts = taskRepository.findByUserAndCompletedTrue(user)
                 .stream()
-                .sorted(Comparator.reverseOrder())
-                .toList();
-
-        if (dates.isEmpty()) return 0;
-
-        int streak = 0;
-        LocalDate today = LocalDate.now();
-
-        // 🔥 KEY FIX
-        boolean hasToday = dates.contains(today);
-
-        LocalDate expectedDate = hasToday ? today : today.minusDays(1);
-
-        for (LocalDate date : dates) {
-            if (date.equals(expectedDate.minusDays(streak))) {
-                streak++;
-            } else {
-                break;
-            }
-        }
-
-        return streak;
-    }
-    
-    public List<String> getBadgeLabels(StreakTracker tracker) {
-        int longest = tracker.getLongestStreak();
-        List<String> badges = new ArrayList<>();
-
-        if (longest >= 50) badges.add("50-Day Consistency Badge 🟢");
-        if (longest >= 100) badges.add("100-Day Consistency Badge 🔵");
-        if (longest >= 365) badges.add("365-Day Consistency Badge 🏆");
-
-        return badges;
-    }
-    
-    
-    public Map<LocalDate, Integer> getHeatmapData(List<Task> tasks) {
-        return tasks.stream()
-                .filter(Task::isCompleted)
                 .filter(t -> t.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
                         t -> t.getCompletedDateTime()
                                 .atZone(ZoneId.systemDefault())
                                 .toLocalDate(),
-                        Collectors.summingInt(t -> 1)
+                        Collectors.counting()
                 ));
+
+        Set<LocalDate> validDates = counts.entrySet().stream()
+                .filter(e -> e.getValue() >= 4)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        if (validDates.isEmpty()) return 0;
+
+        LocalDate today = LocalDate.now();
+
+        LocalDate cursor = validDates.contains(today)
+                ? today
+                : today.minusDays(1);
+
+        int streak = 0;
+
+        while (validDates.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+
+        return streak;
     }
+   
+ 
 
     public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
         return streakTrackerRepository.findByUserIdAndCategory(userId, category)

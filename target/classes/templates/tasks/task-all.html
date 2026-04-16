@@ -310,7 +310,7 @@ function sortTable(field) {
 // Mark task as completed
 async function markTaskCompleted(taskId, button) {
     try {
-        const res = await fetch(`/tasks/complete/${taskId}`, { method: 'POST' });
+        const res = await fetch(`/api/tasks/complete/${taskId}`, { method: 'POST' });
         if(!res.ok) throw new Error("Failed to mark as done");
 
         const row = button.closest('tr');

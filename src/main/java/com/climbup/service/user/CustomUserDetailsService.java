@@ -1,5 +1,6 @@
 package com.climbup.service.user;
 
+import com.climbup.model.CustomUserDetails;
 import com.climbup.model.User;
 import com.climbup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,15 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return new org.springframework.security.core.userdetails.User(
-            user.getEmail(),        // 👈 principal is email (for login)
-            user.getPassword(),
-            user.isEnabled(),
-            user.isAccountNonExpired(),
-            user.isCredentialsNonExpired(),
-            user.isAccountNonLocked(),
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+        return new CustomUserDetails(user);
     }
 
 

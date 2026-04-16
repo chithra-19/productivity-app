@@ -51,7 +51,7 @@ public class FocusSession {
     private SessionStatus status = SessionStatus.ACTIVE;
     
     @Column(name = "elapsed_minutes")
-    private int elapsedMinutes;
+    private Integer elapsedMinutes;
 
 
     @Enumerated(EnumType.STRING)
@@ -155,7 +155,7 @@ public class FocusSession {
 	}
 
 	
-	public int getElapsedMinutes() {
+	public  Integer getElapsedMinutes() {
 	    return elapsedMinutes;
 	}
 

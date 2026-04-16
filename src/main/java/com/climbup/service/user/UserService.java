@@ -92,7 +92,7 @@ public class UserService implements UserDetailsService {
         User saved = userRepository.save(user);
 
         // 🔑 Initialize baseline achievements
-        achievementService.initializeAchievements(saved);
+        achievementService.initialize(saved);
        
 
         return saved;

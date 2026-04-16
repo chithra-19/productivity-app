@@ -1,245 +1,165 @@
 package com.climbup.service.productivity;
 
-import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.climbup.dto.request.AchievementRequestDTO;
 import com.climbup.dto.response.AchievementResponseDTO;
+import com.climbup.exception.ResourceNotFoundException;
 import com.climbup.mapper.AchievementMapper;
-import com.climbup.model.Achievement;
-import com.climbup.model.Achievement.AchievementCode;
-import com.climbup.model.ActivityType;
-import com.climbup.model.Goal;
-import com.climbup.model.GoalStatus;
-import com.climbup.model.Task;
-import com.climbup.model.User;
-import com.climbup.repository.AchievementRepository;
-import com.climbup.repository.GoalRepository;
-import com.climbup.repository.TaskRepository;
-import com.climbup.service.task.ActivityService;
+import com.climbup.model.*;
+import com.climbup.repository.*;
 
 @Service
 public class AchievementService {
 
-    private final AchievementRepository achievementRepository;
-    private final GoalRepository goalRepository;
-    private final TaskRepository taskRepository;
-    private final ActivityService activityService;
+	private final UserAchievementRepository achievementRepository;
+	private final AchievementTemplateRepository achievementTemplateRepository;
+    private final AchievementTemplateService templateService;
+    private final AchievementEvaluationService evaluationService;
 
-    public AchievementService(AchievementRepository achievementRepository,
-                               GoalRepository goalRepository,
-                               TaskRepository taskRepository,
-                               ActivityService activityService) {
+    public AchievementService(UserAchievementRepository achievementRepository,
+                              AchievementTemplateService templateService,
+                              AchievementEvaluationService evaluationService,
+                              AchievementTemplateRepository achievementTemplateRepository) {
         this.achievementRepository = achievementRepository;
-        this.goalRepository = goalRepository;
-        this.taskRepository = taskRepository;
-        this.activityService = activityService;
+        this.templateService = templateService;
+        this.evaluationService = evaluationService;
+        this .achievementTemplateRepository = achievementTemplateRepository;
     }
 
-    // ================= GET USER ACHIEVEMENTS =================
-    public List<Achievement> getUserAchievements(User user) {
-        return achievementRepository.findByUser(user);
-    }
-
-    // ================= SEED GOAL ACHIEVEMENT =================
-    public void seedAchievementsForGoal(Goal goal) {
-
-        boolean exists = achievementRepository.existsByUserAndGoal(goal.getUser(), goal);
-
-        if (!exists) {
-            Achievement a = new Achievement();
-            a.setUser(goal.getUser());
-            a.setTitle("Complete Goal: " + goal.getTitle());
-            a.setDescription("Finish the goal: " + goal.getTitle());
-            a.setType(Achievement.Type.GOAL);
-            a.setIcon("bi-flag");
-            a.setGoal(goal);
-
-            achievementRepository.save(a);
-        }
-    }
-
-    // ================= INITIAL SEEDING =================
+    // 🔹 Initialize achievements for new user
     @Transactional
-    public List<AchievementResponseDTO> initializeAchievements(User user) {
+    public List<AchievementResponseDTO> initialize(User user) {
 
-        if (achievementRepository.countByUser(user) > 0) {
-            return achievementRepository.findByUser(user)
-                    .stream()
-                    .map(AchievementMapper::toResponseDTO)
-                    .toList();
+    	if (!achievementRepository.findByUserId(user.getId()).isEmpty()){
+            return getUserAchievements(user);
         }
 
-        List<Achievement> seeded = List.of(
-                create(user, AchievementCode.FIRST_STEP,
-                        "First Step", "Complete your first task", Achievement.Type.TASK, "bi-check-circle"),
+        List<UserAchievement> list = templateService.getAll().stream()
+                .map(template -> {
+                    UserAchievement ua = new UserAchievement();
+                    ua.setUser(user);
+                    ua.setTemplate(template);
+                    return ua;
+                })
+                .toList();
 
-                create(user, AchievementCode.GOAL_1,
-                        "Goal Setter", "Complete 1 goal", Achievement.Type.GOAL, "bi-flag"),
-
-                create(user, AchievementCode.GOAL_5,
-                        "Goal Grinder", "Complete 5 goals", Achievement.Type.GOAL, "bi-trophy"),
-
-                create(user, AchievementCode.GOAL_10,
-                        "Goal Master", "Complete 10 goals", Achievement.Type.GOAL, "bi-award"),
-
-                create(user, AchievementCode.TASK_MASTER,
-                        "Task Master", "Complete 10 tasks", Achievement.Type.TASK, "bi-lightning"),
-
-                create(user, AchievementCode.EARLY_BIRD,
-                        "Early Bird", "Complete a task before 8 AM", Achievement.Type.TASK, "bi-sun")
-        );
-
-        return achievementRepository.saveAll(seeded)
+        return achievementRepository.saveAll(list)
                 .stream()
                 .map(AchievementMapper::toResponseDTO)
                 .toList();
     }
 
-    private Achievement create(User user,
-                               AchievementCode code,
-                               String title,
-                               String description,
-                               Achievement.Type type,
-                               String icon) {
-
-        Achievement a = new Achievement();
-        a.setUser(user);
-        a.setCode(code);
-        a.setTitle(title);
-        a.setDescription(description);
-        a.setType(type);
-        a.setIcon(icon);
-        return a;
-    }
-
-    // ================= EVALUATE ACHIEVEMENTS (FIXED) =================
+    // 🔹 Trigger evaluation
     @Transactional
-    public void evaluateAchievements(User user) {
-
-        // 🔥 LOAD ONCE (FIXED N+1 PROBLEM)
-        List<Achievement> achievements =
-                achievementRepository.findByUser(user);
-
-        Map<AchievementCode, Achievement> achievementMap =
-                achievements.stream()
-                        .filter(a -> a.getCode() != null)
-                        .collect(Collectors.toMap(
-                                Achievement::getCode,
-                                a -> a,
-                                (a1, a2) -> a1
-                        ));
-
-        long completedGoals =
-                goalRepository.countByUserAndStatus(user, GoalStatus.COMPLETED);
-
-        long completedTasks =
-                taskRepository.countByUserAndCompletedTrue(user);
-
-        unlockIfEligible(achievementMap, AchievementCode.GOAL_1, completedGoals >= 1);
-        unlockIfEligible(achievementMap, AchievementCode.GOAL_5, completedGoals >= 5);
-        unlockIfEligible(achievementMap, AchievementCode.GOAL_10, completedGoals >= 10);
-
-        unlockIfEligible(achievementMap, AchievementCode.FIRST_STEP, completedTasks >= 1);
-        unlockIfEligible(achievementMap, AchievementCode.TASK_MASTER, completedTasks >= 10);
-
-        boolean earlyBird =
-                taskRepository.findByUserAndCompletedTrue(user)
-                        .stream()
-                        .anyMatch(t ->
-                                t.getCompletedDateTime() != null &&
-                                t.getCompletedDateTime()
-                                        .atZone(ZoneId.systemDefault())
-                                        .getHour() < 8
-                        );
-
-        unlockIfEligible(achievementMap, AchievementCode.EARLY_BIRD, earlyBird);
+    public void evaluate(User user) {
+    	  initUserAchievements(user);
+        evaluationService.evaluate(user);
     }
 
-    // ================= FIXED UNLOCK =================
-    private void unlockIfEligible(Map<AchievementCode, Achievement> map,
-                                  AchievementCode code,
-                                  boolean condition) {
+    // 🔹 Get all achievements
+    public List<AchievementResponseDTO> getUserAchievements(User user) {
 
-        if (!condition) return;
+        initUserAchievements(user);
 
-        Achievement achievement = map.get(code);
-
-        if (achievement != null && !achievement.isUnlocked()) {
-            achievement.unlock();
-            achievementRepository.save(achievement);
-        }
+        return achievementRepository.findByUserIdWithTemplate(user.getId())
+                .stream()
+                .map(AchievementMapper::toResponseDTO)
+                .toList();
     }
+    
+    public Map<String, List<UserAchievement>> getAchievementsForUser(User user) {
+        List<UserAchievement> customGoals = achievementRepository.findByUserAndGoalIsNotNull(user);
+        List<UserAchievement> defaultTemplates = achievementRepository.findByUserAndGoalIsNull(user);
 
-    // ================= MARK AS SEEN =================
+        Map<String, List<UserAchievement>> result = new HashMap<>();
+        result.put("customGoals", customGoals);
+        result.put("defaultTemplates", defaultTemplates);
+        return result;
+    }
+    
+    // 🔹 Mark achievements as seen
     @Transactional
-    public void markAchievementsAsSeen(User user) {
-
-        List<Achievement> achievements =
+    public void markSeen(User user) {
+        List<UserAchievement> list =
                 achievementRepository.findByUserAndNewlyUnlockedTrue(user);
 
-        achievements.forEach(Achievement::markSeen);
-        achievementRepository.saveAll(achievements);
+        list.forEach(UserAchievement::markSeen);
+        achievementRepository.saveAll(list);
     }
 
-    // ================= CREATE CUSTOM ACHIEVEMENT =================
+    // 🔹 Check new achievements
+    public boolean hasNew(User user) {
+    	return achievementRepository.existsByUserAndNewlyUnlockedTrue(user);
+    }
+
+    // 🔹 Check specific achievement
+    public boolean hasAchievement(User user, AchievementTemplate template) {
+        return achievementRepository.existsByUserAndTemplate(user, template);
+    }
+    
     @Transactional
-    public AchievementResponseDTO createAchievement(AchievementRequestDTO dto, User user) {
+    public void initUserAchievements(User user) {
 
-        Achievement achievement = new Achievement();
-        achievement.setTitle(dto.getTitle());
-        achievement.setDescription(dto.getDescription());
-        achievement.setType(dto.getType());
-        achievement.setCategory(dto.getCategory());
+        System.out.println("INIT for user: " + user.getId());
 
-        if (dto.getUnlockedDate() != null) {
-            achievement.setUnlockedAt(
-                    dto.getUnlockedDate()
-                            .atStartOfDay(ZoneId.systemDefault())
-                            .toInstant()
-            );
+        List<AchievementTemplate> templates = achievementTemplateRepository.findAll();
+
+        List<UserAchievement> existing =
+                achievementRepository.findByUserId(user.getId());
+
+        System.out.println("Existing: " + existing.size());
+        System.out.println("Templates: " + templates.size());
+
+        Set<Long> existingTemplateIds = existing.stream()
+                .map(ua -> ua.getTemplate().getId())
+                .collect(Collectors.toSet());
+
+        List<UserAchievement> toSave = new ArrayList<>();
+
+        for (AchievementTemplate t : templates) {
+            if (!existingTemplateIds.contains(t.getId())) {
+                UserAchievement ua = new UserAchievement();
+                ua.setUser(user);
+                ua.setTemplate(t);
+                ua.setUnlocked(false);
+                ua.setNewlyUnlocked(false);
+                ua.setSeen(false);
+                toSave.add(ua);
+            }
         }
 
-        achievement.setUser(user);
+        System.out.println("TO SAVE: " + toSave.size());
 
-        achievementRepository.save(achievement);
-
-        return AchievementMapper.toResponseDTO(achievement);
-    }
-
-    // ================= CHECK NEW =================
-    public boolean checkForNewAchievements(User user) {
-        return !achievementRepository.findByUserAndNewlyUnlockedTrue(user).isEmpty();
-    }
-
-    // ================= MANUAL UNLOCK =================
-    @Transactional
-    public AchievementResponseDTO unlockAchievement(Long achievementId, User user) {
-
-        Achievement achievement = achievementRepository.findById(achievementId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Achievement not found with ID: " + achievementId));
-
-        if (!achievement.getUser().equals(user)) {
-            throw new IllegalStateException("User does not own this achievement");
+        if (!toSave.isEmpty()) {
+            achievementRepository.saveAll(toSave);
         }
-
-        if (!achievement.isUnlocked()) {
-            achievement.unlock();
-            achievementRepository.save(achievement);
-        }
-
-        activityService.log(
-                "🏆 Achievement unlocked: " + achievement.getTitle(),
-                ActivityType.ACHIEVEMENT_UNLOCKED,
-                user
-        );
-
-        return AchievementMapper.toResponseDTO(achievement);
     }
+    
+    public AchievementTemplate findTemplateByName(String name) {
+        return achievementTemplateRepository.findByTitle(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Achievement template not found: " + name));
+    }
+    
+    public List<AchievementResponseDTO> getUserGoals(User user) {
+        return achievementRepository.findByUserAndGoalIsNotNull(user)
+            .stream()
+            .map(AchievementResponseDTO::fromEntity)
+            .toList();
+    }
+
+    public List<AchievementResponseDTO> getTemplateGoals(User user) {
+        return achievementRepository.findByUserAndGoalIsNull(user)
+            .stream()
+            .map(AchievementResponseDTO::fromEntity)
+            .toList();
+    }
+
 }

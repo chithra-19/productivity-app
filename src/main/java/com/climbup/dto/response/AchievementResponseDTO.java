@@ -3,6 +3,8 @@ package com.climbup.dto.response;
 import java.time.Instant;
 import java.time.LocalDate;
 
+import com.climbup.model.UserAchievement;
+
 
 /**
  * DTO for sending achievement details in API responses.
@@ -94,5 +96,41 @@ public class AchievementResponseDTO {
 	public void setRelatedGoalId(Long relatedGoalId) {
 		this.relatedGoalId = relatedGoalId;
 	}
+	
+	public static AchievementResponseDTO fromEntity(UserAchievement ua) {
+	    AchievementResponseDTO dto = new AchievementResponseDTO();
+
+	    dto.setId(ua.getId());
+	    dto.setTitle(
+	        ua.getGoal() != null ? ua.getGoal().getTitle() :
+	        ua.getTemplate() != null ? ua.getTemplate().getTitle() : null
+	    );
+	    dto.setDescription(
+	        ua.getGoal() != null ? ua.getGoal().getDescription() :
+	        ua.getTemplate() != null ? ua.getTemplate().getDescription() : null
+	    );
+	    dto.setType(
+	        ua.getTemplate() != null && ua.getTemplate().getType() != null
+	            ? ua.getTemplate().getType().name()
+	            : null
+	    );
+	    dto.setCategory(
+	        ua.getTemplate() != null ? ua.getTemplate().getCategory() : null
+	    );
+	    dto.setIcon(
+	        ua.getTemplate() != null ? ua.getTemplate().getIcon() : "bi-trophy"
+	    );
+
+	    dto.setUnlocked(ua.isUnlocked());
+	    dto.setNewlyUnlocked(ua.isNewlyUnlocked());
+	    dto.setSeen(ua.isSeen());
+	    dto.setUnlockedDate(ua.getUnlockedAt());
+	    dto.setCreatedAt(ua.getCreatedAt());
+	    dto.setUserId(ua.getUser() != null ? ua.getUser().getId() : null);
+	    dto.setRelatedGoalId(ua.getGoal() != null ? ua.getGoal().getId() : null);
+
+	    return dto;
+	}
+
 
    }

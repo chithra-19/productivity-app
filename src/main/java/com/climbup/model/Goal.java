@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,9 +45,43 @@ public class Goal {
     private LocalDate completedDate;
     
     @Column(nullable = false)
-    private Boolean completed = false;
+    private boolean completed = false;
     
-    //private boolean dropped = false;
+    public boolean getCompleted() {
+		return completed;
+	}
+
+	public List<UserAchievement> getAchievements() {
+		return achievements;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
+	}
+
+	public void setAchievements(List<UserAchievement> achievements) {
+		this.achievements = achievements;
+	}
+
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+
+
+	@OneToMany(
+		    mappedBy = "goal",
+		    cascade = CascadeType.ALL,
+		    orphanRemoval = true,
+		    fetch = FetchType.LAZY
+		)
+		@JsonManagedReference
+		private List<UserAchievement> achievements = new ArrayList<>();
+	
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -58,9 +94,7 @@ public class Goal {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Achievement> achievements = new ArrayList<>();
-
+    
  
     public enum Priority {
         LOW,
@@ -123,10 +157,7 @@ public class Goal {
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    public List<Achievement> getAchievements() { return achievements; }
-    public void setAchievements(List<Achievement> achievements) {
-        this.achievements = achievements;
-    }
+  
 
     @Override
     public String toString() {

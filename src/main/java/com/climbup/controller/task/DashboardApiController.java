@@ -1,85 +1,93 @@
 package com.climbup.controller.task;
 
+import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.model.User;
-import com.climbup.service.task.TaskService;
+import com.climbup.service.task.TaskQueryService;
+import com.climbup.service.task.TaskStatsService;
+import com.climbup.service.user.UserService;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/dashboard/tasks")
 public class DashboardApiController {
 
-    private final TaskService taskService;
+    private final TaskStatsService taskStatsService;
+    private final UserService userService;
+    private final TaskQueryService taskQueryService;
 
-    public DashboardApiController(TaskService taskService) {
-        this.taskService = taskService;
+    public DashboardApiController(TaskStatsService taskStatsService,
+                                  UserService userService,
+                                  TaskQueryService taskQueryService) {
+        this.taskStatsService = taskStatsService;
+        this.userService = userService;
+        this.taskQueryService = taskQueryService;
+    }
+
+    // 🔹 Helper to get logged-in user safely
+    private User getCurrentUser(UserDetails userDetails) {
+        return userService.findByEmail(userDetails.getUsername());
     }
 
     /**
-     * 📊 Task count by date (for heatmap / charts)
-     * Response example:
+     * 📊 Task count by date (for charts)
+     * Example:
      * {
      *   "2026-02-01": 4,
      *   "2026-02-02": 7
      * }
      */
-    @GetMapping("/task-stats")
+    @GetMapping("/stats")
     public Map<String, Long> getTaskStats(
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return taskService.getTaskStats(user)
+        User user = getCurrentUser(userDetails);
+
+        return taskStatsService.getTaskStats(user)
                 .entrySet()
                 .stream()
-                .filter(entry -> entry.getKey() != null)
+                .filter(entry -> entry.getKey() != null && entry.getValue() != null)
                 .collect(Collectors.toMap(
-                        entry -> entry.getKey().toString(), // LocalDate → String
+                        entry -> entry.getKey().toString(),
                         Map.Entry::getValue
                 ));
     }
 
+   
     /**
-     * 🔥 Heatmap data (based on due dates)
-     * Response example:
-     * {
-     *   "2026-02-03": 2,
-     *   "2026-02-05": 1
-     * }
+     * ✅ Completed tasks count
      */
-    @GetMapping("/heatmap")
-    public Map<String, Integer> getHeatmapData(
-            @AuthenticationPrincipal User user
-    ) {
-        return taskService.getTaskCountsByDate(user)
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey() != null)
-                .collect(Collectors.toMap(
-                        entry -> entry.getKey().toString(),
-                        entry -> entry.getValue().intValue()
-                ));
-    }
-
-    /**
-     * ✅ Completed task count
-     */
-    @GetMapping("/completed-count")
+    @GetMapping("/completed")
     public long getCompletedTaskCount(
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return taskService.getCompletedTaskCount(user);
+        User user = getCurrentUser(userDetails);
+        return taskStatsService.getCompletedTaskCount(user);
     }
 
     /**
-     * ⏳ Pending tasks count
+     * ⏳ Pending tasks count (optimized)
      */
-    @GetMapping("/pending-count")
+    @GetMapping("/pending")
     public long getPendingTaskCount(
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return taskService.getPendingTasks(user).size();
+        User user = getCurrentUser(userDetails);
+
+        // 🔥 IMPORTANT: use optimized DB count method
+        return taskStatsService.getPendingTaskCount(user);
+    }
+    
+    @GetMapping("/top5")
+    @ResponseBody
+    public List<TaskResponseDTO> getTop5Tasks(@AuthenticationPrincipal UserDetails springUser) {
+        User user = userService.getUserWithAllData(springUser.getUsername());
+        return taskQueryService.getTop5TodayTasks(user);
     }
 }

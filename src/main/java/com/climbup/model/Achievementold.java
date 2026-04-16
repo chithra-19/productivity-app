@@ -16,7 +16,7 @@ import java.util.Objects;
         @UniqueConstraint(columnNames = {"user_id", "goal_id"})
     }
 )
-public class Achievement {
+public class Achievementold {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "goal_id")
@@ -126,9 +126,9 @@ public class Achievement {
 
     // ------------------ Constructors ------------------
 
-    public Achievement() {}
+    public Achievementold() {}
 
-    public Achievement(User user, AchievementCode code, String title,
+    public Achievementold(User user, AchievementCode code, String title,
                        String description, Type type, String icon) {
         this.user = user;
         this.code = code;
@@ -198,8 +198,8 @@ public class Achievement {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Achievement)) return false;
-        Achievement that = (Achievement) o;
+        if (!(o instanceof Achievementold)) return false;
+        Achievementold that = (Achievementold) o;
         return Objects.equals(id, that.id);
     }
 

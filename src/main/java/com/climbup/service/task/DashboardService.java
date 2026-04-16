@@ -1,83 +1,69 @@
 package com.climbup.service.task;
 
-import com.climbup.dto.response.DashboardSummaryDTO;
-import com.climbup.dto.response.TaskResponseDTO;
+import com.climbup.dto.response.DashboardResponseDTO;
 import com.climbup.model.User;
-import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.productivity.StreakTrackerService;
-import com.climbup.service.task.TaskService;
-import org.springframework.stereotype.Service;
 import com.climbup.service.productivity.XPService;
+import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
 @Service
 public class DashboardService {
 
-    private final TaskService taskService;
-    private final AchievementService achievementService;
     private final StreakTrackerService streakTrackerService;
+    private final XPService xpService;
 
-    public DashboardService(TaskService taskService,
-                            AchievementService achievementService,
-                            StreakTrackerService streakTrackerService) {
+    public DashboardService(StreakTrackerService streakTrackerService,
+                            XPService xpService) {
 
-        this.taskService = taskService;
-        this.achievementService = achievementService;
         this.streakTrackerService = streakTrackerService;
+        this.xpService = xpService;
     }
 
-    public Map<String, Integer> getTaskStats(User user) {
-        List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
+    public DashboardResponseDTO buildDashboard(User user) {
 
-        int total = tasks.size();
-        int completed = (int) tasks.stream()
-                .filter(TaskResponseDTO::isCompleted)
-                .count();
+        DashboardResponseDTO dto = new DashboardResponseDTO();
 
-        return Map.of(
-                "total", total,
-                "completed", completed,
-                "pending", total - completed
-        );
-    }
-
-    public DashboardSummaryDTO getDashboardSummary(User user) {
-
-        DashboardSummaryDTO dto = new DashboardSummaryDTO();
-
-        dto.setCurrentStreak(user.getCurrentStreak());
-        dto.setBestStreak(user.getBestStreak());
-
-        // 🔥 ADD THIS BLOCK
-        String name = "User";
-        if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
-            name = user.getProfile().getFirstName();
-        }
-        dto.setFirstName(name);
-
-        int score = user.getProductivityScore();
-        dto.setProductivityScore(score);
-
-        if (score < 40) {
-            dto.setProductivityLabel("LOW");
-        } else if (score < 70) {
-            dto.setProductivityLabel("MEDIUM");
-        } else {
-            dto.setProductivityLabel("HIGH");
-        }
-
-        dto.setCurrentStreak(
-            streakTrackerService.getCurrentStreak(user)
+        // ===== USER INFO =====
+        dto.setFirstName(
+                user.getProfile() != null
+                        ? user.getProfile().getFirstName()
+                        : "User"
         );
 
-        dto.setBestStreak(
-            streakTrackerService.getBestStreak(user)
-        );
+        // ===== STREAK =====
+        dto.setCurrentStreak(streakTrackerService.getCurrentStreak(user));
+        dto.setBestStreak(streakTrackerService.getBestStreak(user));
 
-        dto.setTaskStats(getTaskStats(user));
+        // ===== XP =====
+        long xp = xpService.getCurrentXP(user.getId());
+        int level = xpService.getLevel(user.getId());
+
+        dto.setLevel(level);
+        dto.setXp((int) xp);
+
+        dto.setXpProgress(xpService.xpProgressInCurrentLevel(user));
+        dto.setXpForNextLevel(xpService.xpRequiredForNextLevel(level));
+
+        // ===== PRODUCTIVITY =====
+        int productivityScore = clamp(user.getProductivityScore());
+
+        dto.setProductivityScore(productivityScore);
+        dto.setProductivityLabel(mapLabel(productivityScore));
 
         return dto;
+    }
+
+    // =========================
+    // HELPERS
+    // =========================
+
+    private int clamp(int value) {
+        return Math.max(0, Math.min(100, value));
+    }
+
+    private String mapLabel(int score) {
+        if (score < 40) return "LOW";
+        if (score < 70) return "MEDIUM";
+        return "HIGH";
     }
 }

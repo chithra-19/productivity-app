@@ -5,42 +5,55 @@ import com.climbup.model.Profile;
 
 public class ProfileMapper {
 
+    // =========================
+    // ENTITY → DTO
+    // =========================
     public static ProfileResponseDTO toDTO(Profile profile) {
         if (profile == null) return null;
 
         ProfileResponseDTO dto = new ProfileResponseDTO();
-        dto.setId(profile.getId());
+
+        dto.setUserId(
+                profile.getUser() != null ? profile.getUser().getId() : null
+        );
+
         dto.setFirstName(profile.getFirstName());
         dto.setLastName(profile.getLastName());
-        dto.setEmail(profile.getEmail());
         dto.setBio(profile.getBio());
         dto.setProfilePictureUrl(profile.getProfilePictureUrl());
+
         dto.setCurrentStreak(profile.getStreak());
         dto.setCompletedTasks(profile.getCompletedTasks());
-        dto.setProductivityScore(profile.getProductivityScore()); // ✅ int → int
+        dto.setProductivityScore(profile.getProductivityScore());
+
         dto.setLastActiveDate(profile.getLastActiveDate());
+        
         dto.setNewAchievement(profile.isNewAchievement());
         dto.setAchievementList(profile.getAchievementList());
-        dto.setUserId(profile.getUser().getId());
+
         return dto;
     }
 
-    public static Profile toEntity(ProfileResponseDTO dto) {
+    // =========================
+    // REQUEST DTO → ENTITY (FIXED)
+    // =========================
+    public static Profile toEntity(com.climbup.dto.request.ProfileUpdateDTO dto) {
         if (dto == null) return null;
 
         Profile profile = new Profile();
+
         profile.setFirstName(dto.getFirstName());
         profile.setLastName(dto.getLastName());
-        profile.setEmail(dto.getEmail());
         profile.setBio(dto.getBio());
+
         profile.setProfilePictureUrl(dto.getProfilePictureUrl());
-        profile.setStreak(dto.getCurrentStreak());
-        profile.setCompletedTasks(dto.getCompletedTasks());
-        profile.setProductivityScore(dto.getProductivityScore()); // ✅ int → int
-        profile.setLastActiveDate(dto.getLastActiveDate());
-        profile.setNewAchievement(dto.isNewAchievement());
-        profile.setAchievementList(dto.getAchievementList());
-        // user must be set separately in service
+
+        // ⚠️ IMPORTANT:
+        // DO NOT set:
+        // - email
+        // - userId
+        // These must be handled in service layer
+
         return profile;
     }
 }

@@ -1,55 +1,27 @@
 package com.climbup.dto.request;
 
-import com.climbup.model.Achievement;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
-import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
 public class AchievementRequestDTO {
 
-    @NotBlank(message = "Title is required")
-    @Size(max = 100, message = "Title must not exceed 100 characters")
-    private String title;
-
-    @Size(max = 255, message = "Description must not exceed 255 characters")
-    private String description;
-
-    @NotNull(message = "Type is required")
-    private Achievement.Type type;
-
-    @Size(max = 100, message = "Category must not exceed 100 characters")
-    private String category;
+    @NotNull(message = "Template code is required")
+    private String templateCode;   // ✅ IMPORTANT
 
     @PastOrPresent(message = "Unlocked date cannot be in the future")
-    private LocalDate unlockedDate; // ✅ Make sure this exists
+    private LocalDate unlockedDate;
 
     public AchievementRequestDTO() {}
 
-    public AchievementRequestDTO(String title, String description, Achievement.Type type,
-                                 String category, LocalDate unlockedDate) {
-        this.title = title;
-        this.description = description;
-        this.type = type;
-        this.category = category;
+    public AchievementRequestDTO(String templateCode, LocalDate unlockedDate) {
+        this.templateCode = templateCode;
         this.unlockedDate = unlockedDate;
     }
 
-    // ------------------ Getters & Setters ------------------
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public Achievement.Type getType() { return type; }
-    public void setType(Achievement.Type type) { this.type = type; }
-
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public String getTemplateCode() { return templateCode; }
+    public void setTemplateCode(String templateCode) { this.templateCode = templateCode; }
 
     public LocalDate getUnlockedDate() { return unlockedDate; }
     public void setUnlockedDate(LocalDate unlockedDate) { this.unlockedDate = unlockedDate; }

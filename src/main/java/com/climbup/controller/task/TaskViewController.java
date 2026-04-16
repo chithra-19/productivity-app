@@ -3,53 +3,50 @@ package com.climbup.controller.task;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
 import com.climbup.dto.response.TaskResponseDTO;
-import com.climbup.mapper.TaskMapper;
-import com.climbup.model.Task;
 import com.climbup.model.User;
-import com.climbup.repository.TaskRepository;
-import com.climbup.service.task.TaskService;
+import com.climbup.service.task.TaskCommandService;
+import com.climbup.service.task.TaskQueryService;
+import com.climbup.service.task.TaskStatsService;
 import com.climbup.service.user.UserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.security.Principal;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("/tasks")
+@RequestMapping("/tasks") // ✅ FIXED
 public class TaskViewController {
 
-    private final TaskService taskService;
+    private final TaskCommandService taskCommandService;
     private final UserService userService;
-    private final TaskRepository taskRepository;
+    private final TaskQueryService taskQueryService;
+    private final TaskStatsService taskStatsService;
 
     @Autowired
-    public TaskViewController(TaskService taskService, UserService userService,
-    							TaskRepository taskRepository) {
-        this.taskService = taskService;
+    public TaskViewController(TaskCommandService taskCommandService,
+    							UserService userService,
+    							TaskQueryService taskQueryService,
+    							TaskStatsService taskStatsService) {
+        this.taskCommandService = taskCommandService;
         this.userService = userService;
-        this.taskRepository = taskRepository;
+        this.taskQueryService = taskQueryService;
+        this.taskStatsService = taskStatsService;
+    }
+
+    private User getUser(UserDetails userDetails) {
+        return userService.findByEmail(userDetails.getUsername());
     }
 
     // =========================
-    // SHOW ALL TASKS (PAGINATED)
+    // SHOW ALL TASKS
     // =========================
     @GetMapping("/all")
     public String showAllTasks(
@@ -58,10 +55,10 @@ public class TaskViewController {
             Model model,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        User user = userService.findByEmail(userDetails.getUsername());
+        User user = getUser(userDetails);
 
         Page<TaskResponseDTO> taskPage =
-                taskService.getTasksForUserPaginated(user, page, size);
+                taskQueryService.getTasksForUserPaginated(user, page, size);
 
         model.addAttribute("tasks", taskPage.getContent());
         model.addAttribute("currentPage", page);
@@ -71,23 +68,25 @@ public class TaskViewController {
     }
 
     // =========================
-    // SHOW TODAY'S TASKS
+    // TODAY TASKS
     // =========================
     @GetMapping("/today")
-    public String showTodayTasks(Model model, Principal principal) {
-
-        User user = userService.findByEmail(principal.getName());
-        LocalDate today = LocalDate.now();
+    public String showTodayTasks(
+            Model model,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = getUser(userDetails);
 
         List<TaskResponseDTO> todayTasks =
-                taskService.getTasksForUserByDate(user, today);
+                taskQueryService.getTasksForUserByDate(user, LocalDate.now());
 
         model.addAttribute("tasks", todayTasks);
+
         return "tasks/task-today";
     }
 
     // =========================
-    // SHOW ADD TASK FORM
+    // ADD TASK PAGE
     // =========================
     @GetMapping("/add")
     public String showAddTaskForm(Model model) {
@@ -96,69 +95,73 @@ public class TaskViewController {
     }
 
     // =========================
-    // SAVE TASK (FROM FORM)
+    // SAVE TASK
     // =========================
     @PostMapping("/save")
     public String saveTask(
             @ModelAttribute("task") TaskRequestDTO taskDTO,
-            Principal principal,
+            @AuthenticationPrincipal UserDetails userDetails,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            User user = userService.findByEmail(principal.getName());
-            taskService.createTask(taskDTO, user);
+            User user = getUser(userDetails);
+            taskCommandService.createTask(taskDTO, user);
             redirectAttributes.addFlashAttribute("success", "Task added successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Failed to add task.");
-            e.printStackTrace();
         }
+
         return "redirect:/tasks/today";
     }
+
+    // =========================
+    // EDIT TASK PAGE
+    // =========================
     @GetMapping("/edit/{id}")
-    public String showEditTaskForm(@PathVariable Long id, Model model, Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        TaskResponseDTO task = taskService.getTaskById(id, user);
+    public String showEditTaskForm(
+            @PathVariable Long id,
+            Model model,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = getUser(userDetails);
+
+        TaskResponseDTO task = taskQueryService.getTaskById(id, user);
         model.addAttribute("task", task);
+
         return "tasks/edit-task";
     }
 
+    // =========================
+    // UPDATE TASK
+    // =========================
     @PostMapping("/update")
-    public String updateTask(@ModelAttribute("task") TaskUpdateDTO taskDTO, Principal principal,
-                             RedirectAttributes redirectAttributes) {
-        User user = userService.findByEmail(principal.getName());
-        taskService.updateTask(taskDTO.getId(), taskDTO, user);
+    public String updateTask(
+            @ModelAttribute("task") TaskUpdateDTO taskDTO,
+            @AuthenticationPrincipal UserDetails userDetails,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = getUser(userDetails);
+
+        taskCommandService.updateTask(taskDTO.getId(), taskDTO, user);
         redirectAttributes.addFlashAttribute("success", "Task updated successfully!");
+
         return "redirect:/tasks/all";
     }
 
+    // =========================
+    // DELETE TASK
+    // =========================
     @GetMapping("/delete/{id}")
-    public String deleteTask(@PathVariable Long id, Principal principal,
-                             RedirectAttributes redirectAttributes) {
-        User user = userService.findByEmail(principal.getName());
-        taskService.deleteTask(id, user);
-        redirectAttributes.addFlashAttribute("success", "Task deleted successfully!");
-        return "redirect:/tasks/all";
-    }
-    @PostMapping("/update/json")
-    @ResponseBody
-    public ResponseEntity<?> updateTaskJson(@RequestBody TaskUpdateDTO taskDTO, Principal principal) {
-        User user = userService.findByEmail(principal.getName());
-        taskService.updateTask(taskDTO.getId(), taskDTO, user);
-        return ResponseEntity.ok("Task updated");
-    }
-    @GetMapping("/dashboard/top5")
-    @ResponseBody
-    public List<TaskResponseDTO> top5(Principal principal) {
+    public String deleteTask(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = getUser(userDetails);
 
-        User user = userService.findByEmail(principal.getName());
-        LocalDate today = LocalDate.now();
-        return taskRepository.findByUserAndTaskDate(user, today)
-                .stream()
-                .sorted(Comparator.comparing(Task::getPriority))
-                .limit(5)
-                .map(task -> TaskMapper.toResponse(task, 
-                		taskService.getPriorityPoints(task.getPriority())))
-                .toList();
+        taskCommandService.deleteTask(id, user);
+        redirectAttributes.addFlashAttribute("success", "Task deleted successfully!");
+
+        return "redirect:/tasks/all";
     }
 }
-

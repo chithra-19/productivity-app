@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Date;
+
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -159,5 +159,25 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     	""")
     	List<LocalDate> findCompletedDates(User user);
     
+    @Query("""
+    	    SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+    	    FROM Task t
+    	    WHERE t.user = :user
+    	    AND t.completed = true
+    	    AND t.completedDateTime IS NOT NULL
+    	    AND FUNCTION('HOUR', t.completedDateTime) < 8
+    	""")
+    	boolean existsEarlyMorningTask(@Param("user") User user);
+    
+    
+    @Query("""
+    	    SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+    	    FROM Task t
+    	    WHERE t.user = :user
+    	    AND t.completed = true
+    	    AND t.completedDateTime IS NOT NULL
+    	    AND FUNCTION('HOUR', t.completedDateTime) >= 22
+    	""")
+    	boolean existsLateNightTask(@Param("user") User user);
     
    }

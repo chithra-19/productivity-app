@@ -94,4 +94,8 @@ public class TaskMapper {
                 task.getCompletedDateTime()
         );
     }
+    
+    public static TaskResponseDTO toResponse(Task task) {
+        return toResponse(task, 0);
+    }
  }

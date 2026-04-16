@@ -1,49 +1,52 @@
 package com.climbup.dto.request;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * DTO used for updating user profile details.
+ * Clean DTO for updating user profile only.
+ * Does NOT include authentication fields like email.
  */
 public class ProfileUpdateDTO {
 
-    @NotBlank(message = "Name is required")
-    @Size(max = 100, message = "Name must be at most 100 characters")
-    private String name;
+    @NotBlank(message = "First name is required")
+    @Size(max = 50)
+    private String firstName;
 
-    @Email(message = "Invalid email format")
-    @Size(max = 150, message = "Email must be at most 150 characters")
-    private String email;
+    @NotBlank(message = "Last name is required")
+    @Size(max = 50)
+    private String lastName;
 
     @Size(max = 255, message = "Bio must be at most 255 characters")
     private String bio;
 
-    // 🔹 Constructors
+    // Optional display-only field (NOT source of truth)
+    private String profilePictureUrl;
+
+    // ---------- Constructors ----------
     public ProfileUpdateDTO() {}
 
-    public ProfileUpdateDTO(String name, String email, String bio) {
-        this.name = name;
-        this.email = email;
+    public ProfileUpdateDTO(String firstName, String lastName, String bio) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.bio = bio;
     }
 
-    // 🔹 Getters & Setters
-    public String getName() {
-        return name;
+    // ---------- Getters & Setters ----------
+    public String getFirstName() {
+        return firstName != null ? firstName.trim() : null;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
-    public String getEmail() {
-        return email;
+    public String getLastName() {
+        return lastName != null ? lastName.trim() : null;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getBio() {
@@ -52,5 +55,13 @@ public class ProfileUpdateDTO {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }

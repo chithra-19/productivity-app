@@ -118,26 +118,16 @@ public class XPService {
         return (progress * 100.0) / required;
     }
 
-    /**
-     * Total XP required to reach a level
-     */
-    private int xpForLevel(int level) {
-        return (level - 1) * BASE_XP_FOR_LEVEL;
-    }
-
+  
     public int getProgressToNextLevel(long xp) {
-        int currentLevel = calculateLevel((int) xp);
-
-        int xpForCurrentLevel = xpForLevel(currentLevel);
-        int xpForNextLevel = xpForLevel(currentLevel + 1);
-
-        int progress = (int) (((double) (xp - xpForCurrentLevel)
-                / (xpForNextLevel - xpForCurrentLevel)) * 100);
-
-        return Math.min(progress, 100);
+        return (int)((xp % BASE_XP_FOR_LEVEL) * 100 / BASE_XP_FOR_LEVEL);
     }
 
     public int calculateXpProgress(User user) {
         return xpProgressInCurrentLevel(user);
+    }
+    
+    public int xpRequiredForNextLevel(int level) {
+        return 100 ; // or your real XP formula
     }
 }

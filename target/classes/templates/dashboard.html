@@ -68,16 +68,15 @@
         <a class="nav-link" th:href="@{/dashboard/goals}" th:classappend="${currentPath == '/dashboard/goals'} ? ' active'">
           <i class="bi bi-bullseye me-2"></i>Goals
         </a>
-        <a class="nav-link" th:href="@{/dashboard/focus-mode}" th:classappend="${currentPath == '/dashboard/focus-mode'} ? ' active'">
+        <a class="nav-link" th:href="@{/dashboard/focus/focus-mode}" th:classappend="${currentPath == '/dashboard/focus/focus-mode'} ? ' active'">
           <i class="bi bi-fire me-2"></i>Focus Mode
         </a>
         <a class="nav-link" th:href="@{/dashboard/achievements}" th:classappend="${currentPath == '/dashboard/achievements'} ? ' active'">
           <i class="bi bi-trophy me-2"></i>Achievements
         </a>
-        <a class="nav-link" th:href="@{/dashboard/profile}" th:classappend="${currentPath == '/dashboard/profile'} ? ' active'">
-          <i class="bi bi-person me-2"></i>Profile
-        </a>
-      </nav>
+		<a class="nav-link" th:href="@{/dashboard/profile}" th:classappend="${currentPath == '/dashboard/profile'} ? ' active'">
+		          <i class="bi bi-person me-2"></i>Profile
+		        </a>
     </div>
 
     <!-- Main Content -->
@@ -119,7 +118,7 @@
             <div class="stat-icon text-success mb-2"><i class="bi bi-fire"></i></div>
             <h5 class="text-muted">Current Streak</h5>
 			<h3 class="stat-value"
-			    th:text="${summary != null ? summary.currentStreak : 0}">0</h3>
+			    th:text="${dashboard != null ? dashboard.currentStreak : 0}">0</h3>
           </div>
         </div>
 
@@ -130,7 +129,7 @@
             <h5 class="text-muted">Best Streak</h5>
 
 			<h3 class="stat-value"
-			    th:text="${summary != null ? summary.bestStreak : 0}">0</h3>
+			    th:text="${dashboard != null ? dashboard.bestStreak : 0}">0</h3>
           </div>
         </div>
 
@@ -147,27 +146,35 @@
 	  <!-- XP Progress -->
 	  <div class="col-12 animate-fade">
 	    <div class="stat-card p-4 border rounded bg-light shadow-sm">
+
 	      <div class="d-flex justify-content-between align-items-center mb-3">
 	        <div class="d-flex align-items-center gap-2">
 	          <i class="bi bi-stars text-warning" style="font-size: 1.5rem;"></i>
 	          <h5 class="mb-0 text-muted">Level Progress</h5>
 	        </div>
-	        <span class="badge bg-warning text-dark fw-bold">Level <span th:text="${level}">1</span></span>
+
+	        <span class="badge bg-warning text-dark fw-bold">
+	          Level <span th:text="${dashboard.level}">1</span>
+	        </span>
 	      </div>
 
 	      <p class="text-muted mb-3">
-	        <strong th:text="${xpInLevel}">0</strong> XP earned in this level.
-	        <strong th:text="${100 - xpInLevel}">100</strong> XP to reach Level <strong th:text="${level + 1}">2</strong>.
+	        <strong th:text="${dashboard.xpProgress}">0</strong> XP earned in this level.
+	        <strong th:text="${dashboard.xpForNextLevel - dashboard.xpProgress}">100</strong>
+	        XP to reach Level
+	        <strong th:text="${dashboard.level + 1}">2</strong>.
 	      </p>
+		  
+		  <div class="progress" style="height: 36px; width: 100%;">
+		    <div class="progress-bar text-dark fw-bold px-3"
+		         th:classappend="${dashboard.xpProgress > 0} ? 'bg-warning' : ''"
+		         th:style="'width:' + (${dashboard.xpProgress != null ? dashboard.xpProgress : 0}) + '%' + ';background:' + (${dashboard.xpProgress == 0 ? 'transparent' : ''})">
+		      <span th:if="${dashboard.xpProgress > 0}"
+		            th:text="${dashboard.xpProgress + '%'}"></span>
+		    </div>
+		  </div>
 
-	      <div class="px-0"> <!-- Remove horizontal padding -->
-	        <div class="progress" style="height: 36px; width: 100%;">
-	          <div class="progress-bar bg-warning text-dark fw-bold px-4"
-			  th:style="'width:' + (${xpPercent != null ? xpPercent : 0}) + '%'"
-	            <span th:text="${xpPercent + '%'}">0%</span>
-	          </div>
-	        </div>
-	      </div>
+
 	    </div>
 	  </div>
 
@@ -194,9 +201,23 @@
     </div> <!-- main-content -->
   </div> <!-- wrapper -->
   
+  <!-- Level-Up Popup -->
+  <div class="modal fade" id="levelUpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4">
+        <h3 class="text-warning fw-bold mb-3">🎉 Level Up!</h3>
+        <p class="text-muted">Congratulations! You’ve reached Level 
+          <span id="newLevel"></span>!</p>
+        <button type="button" class="btn btn-primary mt-3" data-bs-dismiss="modal">Awesome!</button>
+      </div>
+    </div>
+  </div>
+
   
   <!-- JS Dependencies -->
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
    <!-- Custom JS -->
    <script th:src="@{/js/dashboard.js}"></script>
 

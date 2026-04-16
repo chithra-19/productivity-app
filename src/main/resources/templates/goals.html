@@ -280,7 +280,7 @@
     console.log("Payload:", newGoal);
 
     try {
-      const res = await axios.post('/api/goals/save', newGoal);
+      const res = await axios.post('/api/goals', newGoal);
       const savedGoal = res.data;
       e.target.reset();
 
@@ -371,12 +371,19 @@
   // Delete goal (keeps confirmation)
   async function deleteGoal(id) {
     try {
-      await axios.delete(`/api/goals/${id}`);
-      latestGoals = latestGoals.filter(g => g.id !== id); // remove locally
-      renderGoals(latestGoals);
+      await axios.delete(`/api/goals/${id}`, {
+        withCredentials: true
+      });
+
+      await fetchGoals();
+	  
+	  if (window.updateAchievements) {
+	        await window.updateAchievements();
+	      } // 🔥 always sync with backend
+
     } catch (err) {
-      alert("Delete failed. Please refresh and try again.");
-      console.error(err);
+      console.error("Delete failed:", err.response?.data || err.message);
+      alert("Delete failed");
     }
   }
 

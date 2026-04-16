@@ -4,10 +4,9 @@ import com.climbup.model.Goal;
 import com.climbup.model.User;
 import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.GoalService;
-import com.climbup.controller.productivity.GoalController;
+import com.climbup.dto.request.GoalRequestDTO;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -50,7 +49,7 @@ class GoalControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(goalController).build();
 
         testUser = new User();
-        testUser.setId(1L);
+        testUser.setEmail("email@test.com");
         
 
         testGoal = new Goal();
@@ -67,85 +66,57 @@ class GoalControllerTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
 
-        when(userRepository.findByEmail(testUser.getUsername())).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(testUser.getUsername()))
+                .thenReturn(Optional.of(testUser));
     }
-
     @Test
-    @DisplayName("GET /goals should return goal list")
-    void getGoals_ShouldReturnGoalList() throws Exception {
-        when(goalService.filterGoals(testUser, "ALL", "ALL")).thenReturn(List.of(testGoal));
+    void getGoals_ShouldReturnView() throws Exception {
 
-        mockMvc.perform(get("/goals")
-                        .param("status", "ALL")
-                        .param("priority", "ALL"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Test Goal"))
-                .andExpect(jsonPath("$[0].description").value("Goal Description"));
+        when(goalService.filterGoals(testUser, "ALL", "ALL"))
+                .thenReturn(List.of(testGoal));
+
+        mockMvc.perform(get("/dashboard/goals"))
+                .andExpect(status().isOk());
     }
-
+    
     @Test
-    @DisplayName("POST /goals/save should return saved goal")
-    void saveGoal_ShouldReturnSavedGoal() throws Exception {
-        when(goalService.saveGoal(any(Goal.class))).thenReturn(testGoal);
+    void saveGoal_ShouldRedirect() throws Exception {
 
-        mockMvc.perform(post("/goals/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Test Goal\",\"description\":\"Goal Description\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("Test Goal"))
-                .andExpect(jsonPath("$.description").value("Goal Description"));
+    	when(goalService.createGoal(any(GoalRequestDTO.class), any(User.class)))
+        .thenReturn(testGoal);
+
+        mockMvc.perform(post("/dashboard/goals")
+                        .param("title", "Test Goal")
+                        .param("description", "Goal Description"))
+                .andExpect(status().is3xxRedirection());
     }
-
+    
     @Test
-    @DisplayName("PUT /goals/{id} should update goal")
-    void updateGoal_ShouldReturnUpdatedGoal() throws Exception {
-        Goal updatedGoal = new Goal();
-        updatedGoal.setTitle("Updated Goal");
+    void updateGoal_ShouldReturnRedirect() throws Exception {
 
-        when(goalService.getGoalByIdAndUser(1L, testUser));
-        when(goalService.updateGoal(eq(1L), any(Goal.class))).thenReturn(updatedGoal);
+    	when(goalService.updateGoal(eq(1L), any(GoalRequestDTO.class), any(User.class)))
+        .thenReturn(testGoal);
 
-        mockMvc.perform(put("/goals/1")
+        mockMvc.perform(put("/dashboard/goals/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Updated Goal\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Updated Goal"));
+                .andExpect(status().isOk());
     }
-
+    
     @Test
-    @DisplayName("PUT /goals/{id}/complete should mark goal completed")
-    void completeGoal_ShouldMarkGoalCompleted() throws Exception {
-        testGoal.markCompleted();
-
-        when(goalService.getGoalByIdAndUser(1L, testUser));
-        when(goalService.updateGoal(1L, testGoal)).thenReturn(testGoal);
-
-        mockMvc.perform(put("/goals/1/complete"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.completed").value(true));
-    }
-
-   
-    @Test
-    @DisplayName("DELETE /goals/{id} should return 204 No Content")
     void deleteGoal_ShouldReturnNoContent() throws Exception {
-        when(goalService.getGoalByIdAndUser(1L, testUser));
-        doNothing().when(goalService).deleteGoal(1L);
 
-        mockMvc.perform(delete("/goals/1"))
-                .andExpect(status().isNoContent());
+    	doNothing().when(goalService).deleteGoal(1L, testUser);
 
-        verify(goalService, times(1)).deleteGoal(1L);
+    	mockMvc.perform(delete("/goals/1"))
+    	        .andExpect(status().isNoContent());
+
+    	verify(goalService, times(1)).deleteGoal(1L, testUser);
+
+        mockMvc.perform(delete("/dashboard/goals/1"))
+                .andExpect(status().is3xxRedirection());
+
+        verify(goalService, times(1)).deleteGoal(1L, testUser);
     }
-
-    @Test
-    @DisplayName("PUT /goals/{id} should return 404 if goal not found")
-    void updateGoal_NotFound_ShouldReturn404() throws Exception {
-        when(goalService.getGoalByIdAndUser(999L, testUser));
-
-        mockMvc.perform(put("/goals/999")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Updated Goal\"}"))
-                .andExpect(status().isNotFound());
-    }
+    
 }

@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Profile | ClimbUp</title>
 
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/profile.css">
-
 </head>
 
 <body>
@@ -19,84 +16,100 @@
 <div class="container">
   <div class="row g-4">
 
-    <!-- ===== LEFT COLUMN ===== -->
+    <!-- LEFT PANEL -->
     <div class="col-lg-4 col-md-12 profile-left">
       <div class="profile-card">
 
         <h3 class="mb-3">Your Profile</h3>
 
-        <!-- Theme Toggle -->
-        <div class="theme-toggle mb-3">
-          <label class="form-check-label me-2" for="themeSwitch">Dark Mode</label>
-          <input class="form-check-input" type="checkbox" id="themeSwitch">
-        </div>
+		<a id="editBtn" href="javascript:void(0)" 
+		   class="btn btn-primary mb-3 w-100">
+		  Edit
+		</a>
 
-        <!-- Edit Button -->
-        <button id="editBtn" class="btn btn-primary mb-3 w-100" onclick="enableEdit()">
-          Edit
-        </button>
-
-        <!-- Profile Picture -->
+        <!-- PROFILE IMAGE -->
         <div class="text-center mb-4">
-          <div class="profile-pic-container" onclick="document.getElementById('profilePictureFile').click();">
-            <img id="profilePreview"
-                 th:src="${profile.profilePictureUrl != null ? profile.profilePictureUrl : '/images/default-avatar.png'}"
-                 class="profile-pic"
-                 alt="Profile Picture">
+			<div class="profile-pic-container"
+			     onclick="if (!document.getElementById('profilePictureFile').disabled) {
+			                  document.getElementById('profilePictureFile').click();
+			              }">
+
+            <img
+              id="profilePreview"
+			  th:src="${view?.profile?.profilePictureUrl} ?: '/images/default-avatar.png'"
+              class="profile-pic"
+              alt="Profile Picture">
 
             <div class="overlay">Change</div>
           </div>
         </div>
 
         <!-- FORM -->
-        <form id="profileForm"
-              th:action="@{/dashboard/profile/{id}/update(id=${profile.id})}"
-              th:object="${profileRequestDTO}"
-              method="post"
-              enctype="multipart/form-data">
+		<!-- FORM -->
+		<form id="profileForm"
+		      th:if="${profileRequestDTO != null}"
+		      th:action="@{/dashboard/profile/update}"
+		      th:object="${profileRequestDTO}"
+		      method="post"
+		      enctype="multipart/form-data">
 
-          <input type="file"
-                 id="profilePictureFile"
-                 name="profilePictureFile"
-                 accept="image/*"
-                 style="display:none;"
-                 onchange="previewImage(this)">
+		  <!-- Hidden file input -->
+		  <input type="file"
+		         id="profilePictureFile"
+		         name="file"
+		         accept="image/*"
+		         class="d-none"
+		         disabled
+		         onchange="previewImage(this)">
 
-          <div class="mb-3">
-            <label class="form-label">First Name</label>
-            <input type="text" th:field="*{firstName}" class="form-control editable" disabled>
-          </div>
 
-          <div class="mb-3">
-            <label class="form-label">Last Name</label>
-            <input type="text" th:field="*{lastName}" class="form-control editable" disabled>
-          </div>
+		  <!-- FIRST NAME -->
+		  <div class="mb-3">
+		    <label class="form-label">First Name</label>
+			<input type="text" th:field="*{firstName}" class="form-control editable"
+			       th:attr="readonly=${!editMode}">
+		  </div>
 
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" th:field="*{email}" class="form-control editable" disabled>
-          </div>
+		  <!-- LAST NAME -->
+		  <div class="mb-3">
+		    <label class="form-label">Last Name</label>
+			<input type="text" th:field="*{lastName}" class="form-control editable"
+			       th:attr="readonly=${!editMode}">
+		  </div>
 
-          <div class="mb-3">
-            <label class="form-label">Bio</label>
-            <textarea th:field="*{bio}" class="form-control editable" rows="3" disabled></textarea>
-          </div>
+		  <!-- EMAIL (read-only, not part of DTO) -->
+		  <div class="mb-3">
+		    <label class="form-label">Email</label>
+		    <input type="email"
+		           class="form-control"
+		           th:value="${view.profile.email}"
+		           readonly>
+		  </div>
 
-          <!-- Buttons -->
-          <button id="saveBtn" type="submit" class="btn btn-success w-100 mb-2" style="display:none;">
-            Save Changes
-          </button>
+		  <!-- BIO -->
+		  <div class="mb-3">
+		    <label class="form-label">Bio</label>
+			<textarea th:field="*{bio}" class="form-control editable" rows="3"
+			          th:attr="readonly=${!editMode}"></textarea>
+		  </div>
 
-          <button id="cancelBtn" type="button" class="btn btn-secondary w-100"
-                  style="display:none;" onclick="cancelEdit()">
-            Cancel
-          </button>
+		  <!-- ACTION BUTTONS -->
+		  <button id="saveBtn" type="submit" class="btn btn-success w-100 mb-2"
+		          th:classappend="${editMode} ? '' : 'd-none'">
+		    Save Changes
+		  </button>
 
-        </form>
+		  <button id="cancelBtn" type="button" class="btn btn-secondary w-100"
+		          th:classappend="${editMode} ? '' : 'd-none'">
+		    Cancel
+		  </button>
+
+		</form>
+
       </div>
     </div>
 
-    <!-- ===== RIGHT COLUMN ===== -->
+    <!-- RIGHT PANEL -->
     <div class="col-lg-8 col-md-12 profile-right">
 
       <!-- STATS -->
@@ -108,92 +121,78 @@
           <div class="col-md-3 col-6">
             <div class="stat-card p-3 rounded shadow-sm">
               <i class="bi bi-fire-fill text-danger fs-2"></i>
-              <h5 th:text="${currentStreak}">0</h5>
+			  <h5 th:text="${view.dashboard.currentStreak}">0</h5>
               <small>Current Streak</small>
             </div>
           </div>
-
+ 
           <div class="col-md-3 col-6">
             <div class="stat-card p-3 rounded shadow-sm">
               <i class="bi bi-trophy-fill text-warning fs-2"></i>
-              <h5 th:text="${bestStreak}">0</h5>
-              <small>Best Streak</small>
+			  <h5 th:text="${view.dashboard.bestStreak}">0</h5>
+			 <small>Best Streak</small>
             </div>
           </div>
 
           <div class="col-md-3 col-6">
             <div class="stat-card p-3 rounded shadow-sm">
               <i class="bi bi-check2-circle text-success fs-2"></i>
-              <h5 th:text="${completedTasks}">0</h5>
+              <h5 th:text="${view.completedTasks}">0</h5>
               <small>Tasks Completed</small>
-
-              <div class="progress mt-2" style="height:6px;">
-                <div class="progress-bar bg-success"
-                     role="progressbar"
-                     th:style="'width:' + ${taskCompletionPercentage} + '%'"
-                     th:attr="aria-valuenow=${taskCompletionPercentage}"
-                     aria-valuemin="0"
-                     aria-valuemax="100">
-                </div>
-              </div>
             </div>
           </div>
 
-        </div>
-
-        <!-- BADGES -->
-        <div class="col-12 mt-3">
-          <div class="stat-card p-3 rounded shadow-sm text-center">
-            <i class="bi bi-award-fill text-warning fs-2"></i>
-            <h5 th:text="${badgesCount}">0</h5>
-            <small>Achievements</small>
-
-            <div class="badges mt-2 d-flex flex-wrap gap-2 justify-content-center">
-              <div th:each="badge : ${badges}" class="badge-item"
-                   th:title="${badge.name}">
-
-                <img th:src="${badge.imageUrl}"
-                     class="badge-img rounded-circle shadow-sm"
-                     style="width:40px; height:40px; object-fit:cover;">
-
-                <div class="badge-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
-                  <span th:text="${badge.name}"></span>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-      <!-- XP SECTION -->
-      <div class="xp-section mb-4">
-        <h4 class="mb-3">Level Progress</h4>
-
-        <div class="stat-card p-4 text-center">
-          <h5>Level <span th:text="${level}">1</span></h5>
-
-          <div class="progress mt-3" style="height:8px;">
-            <div class="progress-bar bg-primary"
-                 role="progressbar"
-                 th:style="'width:' + ${xpPercentage} + '%'"
-                 th:attr="aria-valuenow=${xpPercentage}"
-                 aria-valuemin="0"
-                 aria-valuemax="100">
-            </div>
-          </div>
-
-          <small th:text="${currentXP} + ' / ' + ${xpForNextLevel} + ' XP'">
-            0 / 100 XP
-          </small>
         </div>
       </div>
+	  <!-- XP SECTION -->
+	  <div class="xp-section mb-4">
+	    <h4 class="mb-3 fw-bold text-primary">Level Progress</h4>
+
+	    <div class="stat-card p-4 text-center shadow-sm rounded bg-light">
+	      <h5 class="fw-semibold">
+	        Level <span th:text="${view.level}">1</span>
+	      </h5>
+
+	      <!-- Progress Bar -->
+	      <div class="progress mt-3" style="height: 12px; border-radius: 20px; overflow: hidden;">
+	        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+	             th:style="'width:' + ${view.xpPercentage} + '%'">
+	        </div>
+	      </div>
+
+	      <!-- XP Numbers -->
+	      <small class="d-block mt-2 fw-semibold text-dark">
+	        <span th:text="${view.currentXP}">0</span> /
+	        <span th:text="${view.xpForNextLevel}">100</span> XP
+	      </small>
+
+	      <!-- Friendly Message -->
+	      <small class="text-muted"
+	             th:text="'Only ' + (${view.xpForNextLevel} - ${view.currentXP}) + ' XP to reach Level ' + (${view.level}+1)">
+	        Only 20 XP to reach Level 2
+	      </small>
+	    </div>
+	  </div>
+
+
 
     </div>
   </div>
 </div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0 position-relative">
+      <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2"
+              data-bs-dismiss="modal" aria-label="Close"></button>
+      <img id="modalImage" class="img-fluid rounded shadow" alt="Profile Preview">
+    </div>
+  </div>
+</div>
+
+
+
 
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

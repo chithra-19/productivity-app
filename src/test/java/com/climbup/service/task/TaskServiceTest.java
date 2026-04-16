@@ -42,17 +42,14 @@ class TaskServiceTest {
     private AchievementService achievementService;
 
     @InjectMocks
-    private TaskService taskService;
+    private TaskCommandService taskCommandService;
 
     private User user;
     private Task task;
 
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setId(1L);
-    
-
+    	user = new User("test@example.com", "password");
         task = new Task();
         task.setId(1L);
         task.setTitle("Test Task");
@@ -70,7 +67,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskResponseDTO response = taskService.createTask(dto, user);
+        TaskResponseDTO response = taskCommandService.createTask(dto, user);
 
         assertEquals("New Task", response.getTitle());
         assertFalse(response.isCompleted());
@@ -83,7 +80,7 @@ class TaskServiceTest {
         dto.setTitle("");
 
         assertThrows(IllegalArgumentException.class,
-                () -> taskService.createTask(dto, user));
+                () -> taskCommandService.createTask(dto, user));
 
         verifyNoInteractions(taskRepository, activityService);
     }
@@ -101,13 +98,13 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskResponseDTO response = taskService.updateTask(1L, dto, user);
+        TaskResponseDTO response = taskCommandService.updateTask(1L, dto, user);
 
         assertTrue(response.isCompleted());
         assertNotNull(response.getCompletedDateTime());
 
         
-        verify(achievementService).checkForNewAchievements(user);
+        verify(achievementService).evaluate(user);
      
     }
 
@@ -124,13 +121,13 @@ class TaskServiceTest {
         when(taskRepository.findByIdAndUser(1L, user))
                 .thenReturn(Optional.of(task));
 
-        TaskResponseDTO response = taskService.updateTask(1L, dto, user);
+        TaskResponseDTO response = taskCommandService.updateTask(1L, dto, user);
 
         assertTrue(response.isCompleted());
         assertEquals(task.getCompletedDateTime(), response.getCompletedDateTime());
 
         
-        verify(achievementService, never()).checkForNewAchievements(any());
+        verify(achievementService).evaluate(user);
     }
 
     @Test
@@ -142,7 +139,7 @@ class TaskServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class,
-                () -> taskService.updateTask(1L, dto, user));
+                () -> taskCommandService.updateTask(1L, dto, user));
     }
 
     /* ---------------- DELETE TASK ---------------- */
@@ -152,7 +149,7 @@ class TaskServiceTest {
         when(taskRepository.findByIdAndUser(1L, user))
                 .thenReturn(Optional.of(task));
 
-        taskService.deleteTask(1L, user);
+        taskCommandService.deleteTask(1L, user);
 
         verify(taskRepository).delete(task);
         }

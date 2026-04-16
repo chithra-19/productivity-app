@@ -13,23 +13,18 @@ import com.climbup.model.User;
 
 public interface GoalRepository extends JpaRepository<Goal, Long> {
 
-   
-    // Find all goals of a user by email
     List<Goal> findByUserEmail(String email);
 
-    // Find all goals of a user with a given status (ACTIVE, COMPLETED, DROPPED)
     List<Goal> findByUserEmailAndStatus(String email, GoalStatus status);
 
- 
-    // Find all goals belonging to a User entity
     List<Goal> findByUser(User user);
 
-  
+    List<Goal> findByUserAndStatus(User user, GoalStatus status);
+
     Optional<Goal> findByIdAndUser(Long id, User user);
 
-    @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.achievements WHERE g.user.id = :userId")
+    @Query("SELECT DISTINCT g FROM Goal g LEFT JOIN FETCH g.achievements WHERE g.user.id = :userId")
     List<Goal> findAllByUserWithAchievements(@Param("userId") Long userId);
 
-	long countByUserAndStatus(User user, GoalStatus completed);
-
+    long countByUserAndStatus(User user, GoalStatus status);
 }

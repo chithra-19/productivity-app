@@ -66,5 +66,7 @@ public class ActivityController {
         List<ActivityDTO> recentDTOs = activityService.getRecentActivities(user); // already DTO
         return ResponseEntity.ok(recentDTOs);
     }
+    
+    
 
 }

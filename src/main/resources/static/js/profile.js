@@ -1,136 +1,126 @@
-/* ===============================
-   PROFILE UI CONTROLLER
-   =============================== */
-
 const editBtn = document.getElementById("editBtn");
 const saveBtn = document.getElementById("saveBtn");
 const cancelBtn = document.getElementById("cancelBtn");
+const fields = document.querySelectorAll(".editable");
+const fileInput = document.getElementById("profilePictureFile");
+const profilePreview = document.getElementById("profilePreview");
 
-const editableFields = document.querySelectorAll(".js-editable");
+let originalValues = [];
 
-let originalValues = {};
-
-
-/* ===============================
-   ENABLE EDIT MODE
-   =============================== */
 function enableEditMode() {
-    editableFields.forEach(field => {
-        if (!field.name) return;
+    originalValues = Array.from(fields).map(f => f.value);
+    fields.forEach(f => f.readOnly = false);
 
-        originalValues[field.name] = field.value;
-        field.disabled = false;
-    });
+    // Enable file input
+    fileInput.disabled = false;
 
-    toggleButtons(true);
+    editBtn.classList.add("d-none");
+    saveBtn.classList.remove("d-none");
+    cancelBtn.classList.remove("d-none");
 }
 
-
-/* ===============================
-   CANCEL EDIT MODE
-   =============================== */
 function cancelEditMode() {
-    editableFields.forEach(field => {
-        if (!field.name) return;
-
-        if (originalValues[field.name] !== undefined) {
-            field.value = originalValues[field.name];
-        }
-
-        field.disabled = true;
+    fields.forEach((f, i) => {
+        f.value = originalValues[i];
+        f.readOnly = true;
     });
 
-    toggleButtons(false);
+    // Disable file input again
+    fileInput.disabled = true;
+
+    editBtn.classList.remove("d-none");
+    saveBtn.classList.add("d-none");
+    cancelBtn.classList.add("d-none");
 }
 
+function disableEditMode() {
+    fields.forEach(f => f.readOnly = true);
 
-/* ===============================
-   TOGGLE BUTTON UI
-   =============================== */
-function toggleButtons(isEditing) {
-    if (!editBtn || !saveBtn || !cancelBtn) return;
+    // Disable file input again
+    fileInput.disabled = true;
 
-    editBtn.classList.toggle("hidden", isEditing);
-    saveBtn.classList.toggle("hidden", !isEditing);
-    cancelBtn.classList.toggle("hidden", !isEditing);
+    editBtn.classList.remove("d-none");
+    saveBtn.classList.add("d-none");
+    cancelBtn.classList.add("d-none");
 }
 
-
-/* ===============================
-   PROFILE IMAGE PREVIEW
-   =============================== */
 function previewImage(input) {
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-        const preview = document.getElementById("profilePreview");
-        if (preview) preview.src = e.target.result;
-    };
-
-    reader.readAsDataURL(file);
-}
-
-
-/* ===============================
-   OPTIONAL: AUTO UPDATE UI STATS
-   (if you later connect APIs)
-   =============================== */
-function updateStats(data) {
-    const streak = document.getElementById("streakValue");
-    const best = document.getElementById("bestStreakValue");
-    const tasks = document.getElementById("taskValue");
-    const productivity = document.getElementById("productivityValue");
-    const xpBar = document.querySelector(".xp-fill");
-
-    if (streak) streak.innerText = data.currentStreak ?? 0;
-    if (best) best.innerText = data.bestStreak ?? 0;
-    if (tasks) tasks.innerText = data.completedTasks ?? 0;
-    if (productivity) productivity.innerText = data.productivityScore ?? 0;
-
-    if (xpBar && data.xpPercentage != null) {
-        xpBar.style.width = data.xpPercentage + "%";
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById("profilePreview").src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
     }
 }
 
+async function uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append("file", file);
 
-/* ===============================
-   OPTIONAL: TIMELINE RENDER
-   =============================== */
-function renderTimeline(activities) {
-    const container = document.querySelector(".timeline");
-    if (!container || !Array.isArray(activities)) return;
-
-    container.innerHTML = "";
-
-    activities.forEach(a => {
-        const item = document.createElement("div");
-        item.className = "timeline-item";
-
-        item.innerHTML = `
-            <div class="dot"></div>
-            <div class="content">
-                <p>${a.description ?? ""}</p>
-                <small>${a.activityDate ?? ""}</small>
-            </div>
-        `;
-
-        container.appendChild(item);
+    const response = await fetch("/api/profile/picture", {
+        method: "POST",
+        body: formData
     });
+
+    if (response.ok) {
+        const updated = await response.json();
+        document.getElementById("profilePreview").src = updated.profilePictureUrl;
+    } else {
+        alert("Failed to upload picture");
+    }
 }
 
+async function saveProfile() {
+    const payload = {
+        firstName: document.querySelector('[name="firstName"]').value,
+        lastName: document.querySelector('[name="lastName"]').value,
+        bio: document.querySelector('[name="bio"]').value
+    };
 
-/* ===============================
-   EVENT LISTENERS
-   =============================== */
-document.addEventListener("DOMContentLoaded", () => {
+    try {
+        const response = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    // edit mode
-    editBtn?.addEventListener("click", enableEditMode);
-    cancelBtn?.addEventListener("click", cancelEditMode);
+        if (!response.ok) {
+            alert("Failed to update profile text.");
+            return;
+        }
 
-    // future: theme init
-    // initTheme?.();
+        const updated = await response.json();
+        console.log("Profile text updated:", updated);
+
+        if (fileInput.files.length > 0) {
+            await uploadProfilePicture(fileInput.files[0]);
+        }
+
+        disableEditMode();
+        alert("Profile updated successfully!");
+    } catch (err) {
+        console.error(err);
+        alert("Error updating profile.");
+    }
+}
+profilePreview.addEventListener("click", () => {
+    if (fileInput.disabled) {
+        // View mode: show preview modal
+        const modalImage = document.getElementById("modalImage");
+        modalImage.src = profilePreview.src;
+        const modal = new bootstrap.Modal(document.getElementById("imagePreviewModal"));
+        modal.show();
+    } else {
+        // Edit mode: open file picker
+        fileInput.click();
+    }
+});
+
+
+editBtn?.addEventListener("click", enableEditMode);
+cancelBtn?.addEventListener("click", cancelEditMode);
+saveBtn?.addEventListener("click", e => {
+    e.preventDefault();
+    saveProfile();
 });

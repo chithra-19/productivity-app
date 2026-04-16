@@ -1,105 +1,76 @@
 package com.climbup.service.productivity;
 
-import com.climbup.dto.request.AchievementRequestDTO;
-import com.climbup.dto.response.AchievementResponseDTO;
-import com.climbup.model.Achievement;
-import com.climbup.model.Achievement.Type;
 import com.climbup.model.User;
-import com.climbup.repository.AchievementRepository;
+import com.climbup.model.UserAchievement;
+import com.climbup.repository.UserAchievementRepository;
 import com.climbup.repository.UserRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class AchievementServiceTest {
 
-	@Mock
-	AchievementRepository achievementRepository;
+    @Mock
+    private UserAchievementRepository achievementRepository;
 
-	@Mock
-	XPService xpService;
+    @Mock
+    private UserAchievementRepository userAchievementRepository;
 
-	@Mock
-	UserRepository userRepository;
+    @Mock
+    private UserRepository userRepository;
 
-	@InjectMocks
-	AchievementService achievementService;
+    @InjectMocks
+    private AchievementService achievementService;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
         testUser = new User("test@example.com", "password");
-        testUser.setId(1L);
     }
 
     @Test
-    void createAchievement_shouldReturnResponseDTO() {
-        AchievementRequestDTO dto = new AchievementRequestDTO();
-        dto.setTitle("Test Achievement");
-        dto.setDescription("Test Description");
-        dto.setType(Type.GOAL);
-        dto.setCategory("GENERAL");
-        dto.setUnlockedDate(LocalDate.now());
+    void hasNewAchievements_shouldReturnTrue_whenNewExists() {
 
-        // Mock save to return the achievement
-        when(achievementRepository.save(any(Achievement.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userAchievementRepository.findByUserAndNewlyUnlockedTrue(testUser))
+                .thenReturn(List.of(new UserAchievement()));
 
-        AchievementResponseDTO responseDTO = achievementService.createAchievement(dto, testUser);
-
-        assertNotNull(responseDTO);
-        assertEquals("Test Achievement", responseDTO.getTitle());
-        assertEquals("Test Description", responseDTO.getDescription());
-        assertEquals("GENERAL", responseDTO.getCategory());
-
-        verify(achievementRepository, times(1)).save(any(Achievement.class));
-    }
-
-    @Test
-    void unlockAchievement_shouldUnlockAndReturnDTO() {
-        Achievement achievement = new Achievement();
-        achievement.setId(100L);
-        achievement.setUser(testUser);
-        achievement.setUnlocked(false);
-
-        when(achievementRepository.findById(100L)).thenReturn(Optional.of(achievement));
-        when(achievementRepository.save(any(Achievement.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        AchievementResponseDTO dto = achievementService.unlockAchievement(100L, testUser);
-
-        assertTrue(dto.isUnlocked());
-        verify(achievementRepository, times(1)).save(achievement);
-    }
-
-    @Test
-    void checkForNewAchievements_shouldReturnTrueIfAny() {
-        Achievement a = new Achievement();
-        a.setNewlyUnlocked(true);
-
-        when(achievementRepository.findByUserAndNewlyUnlockedTrue(testUser))
-                .thenReturn(java.util.List.of(a));
-
-        boolean result = achievementService.checkForNewAchievements(testUser);
+        boolean result = achievementService.hasNew(testUser);
 
         assertTrue(result);
     }
 
     @Test
-    void checkForNewAchievements_shouldReturnFalseIfNone() {
-        when(achievementRepository.findByUserAndNewlyUnlockedTrue(testUser))
-                .thenReturn(java.util.List.of());
+    void hasNewAchievements_shouldReturnFalse_whenNoneExists() {
 
-        boolean result = achievementService.checkForNewAchievements(testUser);
+        when(userAchievementRepository.findByUserAndNewlyUnlockedTrue(testUser))
+                .thenReturn(List.of());
+
+        boolean result = achievementService.hasNew(testUser);
 
         assertFalse(result);
+    }
+
+    @Test
+    void markSeen_shouldCallRepository() {
+
+        UserAchievement ua = new UserAchievement();
+
+        when(userAchievementRepository.findByUserAndNewlyUnlockedTrue(testUser))
+                .thenReturn(List.of(ua));
+
+        achievementService.markSeen(testUser);
+
+        verify(userAchievementRepository, times(1))
+                .findByUserAndNewlyUnlockedTrue(testUser);
     }
 }

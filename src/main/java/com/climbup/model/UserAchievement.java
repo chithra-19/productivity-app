@@ -1,73 +1,113 @@
 package com.climbup.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
-import java.util.Objects;
 
 @Entity
-@Table(name = "user_achievements")
+@Table(
+    name = "user_achievements",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "template_id"})
+    }
+)
 public class UserAchievement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "achievement_id")
-    private Achievement achievement;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "template_id")
+    private AchievementTemplate template;
 
-    @Column(name = "unlocked_at", nullable = false)
+    @Column(nullable = false)
+    private boolean unlocked = false;
+
+    @Column(nullable = false)
+    private boolean newlyUnlocked = false;
+
+    @Column(nullable = false)
+    private boolean seen = false;
+
     private Instant unlockedAt;
 
-    public UserAchievement() {
-        // Default constructor for JPA
-    }
+    @ManyToOne
+    @JoinColumn(name = "goal_id", nullable = true)
+    @JsonIgnore
+    private Goal goal;
+    
+    
+	@CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
-    public UserAchievement(User user, Achievement achievement) {
-        this.user = user;
-        this.achievement = achievement;
-        this.unlockedAt = Instant.now();
-    }
+    // -------- logic --------
 
-    // Getters and Setters
+	public void unlock() {
+	    if (this.unlocked) return;
+
+	    this.unlocked = true;
+	    this.newlyUnlocked = true;
+	    this.unlockedAt = Instant.now();
+	}
+
+	public void markSeen() {
+	    this.seen = true;
+	    this.newlyUnlocked = false;
+	}
+
+    // -------- getters/setters --------
+
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    public Achievement getAchievement() { return achievement; }
-    public void setAchievement(Achievement achievement) { this.achievement = achievement; }
+    public AchievementTemplate getTemplate() { return template; }
+    public void setTemplate(AchievementTemplate template) { this.template = template; }
+
+    public boolean isUnlocked() { return unlocked; }
+    public boolean isNewlyUnlocked() { return newlyUnlocked; }
+    public boolean isSeen() { return seen; }
 
     public Instant getUnlockedAt() { return unlockedAt; }
-    public void setUnlockedAt(Instant unlockedAt) { this.unlockedAt = unlockedAt; }
+    
+    public Instant getCreatedAt() {
+		return createdAt;
+	}
 
-    // Equality based on user + achievement
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof UserAchievement)) return false;
-        UserAchievement that = (UserAchievement) o;
-        return Objects.equals(user, that.user) &&
-               Objects.equals(achievement, that.achievement);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(user, achievement);
-    }
+	public void setUnlocked(boolean unlocked) {
+		this.unlocked = unlocked;
+	}
 
-    @Override
-    public String toString() {
-        return "UserAchievement{" +
-                "user=" + user.getUsername() +
-                ", achievement=" + achievement.getCode() +
-                ", unlockedAt=" + unlockedAt +
-                '}';
-    }
+	public void setNewlyUnlocked(boolean newlyUnlocked) {
+		this.newlyUnlocked = newlyUnlocked;
+	}
+
+	public void setSeen(boolean seen) {
+		this.seen = seen;
+	}
+
+	public void setUnlockedAt(Instant unlockedAt) {
+		this.unlockedAt = unlockedAt;
+	}
+
+	public Goal getGoal() {
+	    return goal;
+	}
+
+	public void setGoal(Goal goal) {
+	    this.goal = goal;
+	}
+	
+
 }

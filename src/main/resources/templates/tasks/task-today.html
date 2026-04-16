@@ -313,16 +313,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	        const taskId = this.dataset.id;
 
+	        // ✅ CSRF
+	        const token = document.querySelector('meta[name="_csrf"]').content;
+	        const header = document.querySelector('meta[name="_csrf_header"]').content;
+
 	        try {
-	            const res = await fetch(`/tasks/complete/${taskId}`, {
-	                method: "POST"
+	            const res = await fetch(`/api/tasks/mark-done/${taskId}`, {
+	                method: "PUT",
+	                headers: {
+	                    [header]: token
+	                }
 	            });
 
-	            const data = await res.json();
+	            let data;
 
-	            if (!res.ok || data.error) {
-	                alert(data.error || "Failed to mark task as done");
-	                return;
+	            // ✅ Safe JSON parsing
+	            try {
+	                data = await res.json();
+	            } catch (e) {
+	                throw new Error("Invalid server response (not JSON)");
+	            }
+
+	            // ✅ Proper error handling
+	            if (!res.ok) {
+	                throw new Error(data?.message || "Failed to mark task as done");
 	            }
 
 	            const row = this.closest('tr');
@@ -334,21 +348,23 @@ document.addEventListener("DOMContentLoaded", () => {
 	            // ✅ remove button
 	            this.remove();
 
-	            // ✅ update counters
-	            updateCounters(data);
+	            // ✅ update counters (safe check)
+	            if (data) {
+	                updateCounters(data);
+	            }
 
 	            // ✅ toast
 	            const toastEl = document.getElementById('taskToast');
 	            if (toastEl) {
 	                document.getElementById('toastMessage').textContent =
-	                    `Task Completed! +${data.xpIncrement} XP | Streak: ${data.streak}`;
+	                    `Task Completed! +${data?.xpIncrement || 0} XP | Streak: ${data?.streak || 0}`;
 
 	                bootstrap.Toast.getOrCreateInstance(toastEl).show();
 	            }
 
 	        } catch (err) {
-	            console.error(err);
-	            alert("Something went wrong!");
+	            console.error("Complete task error:", err);
+	            alert(err.message || "Something went wrong!");
 	        }
 	    });
 	});

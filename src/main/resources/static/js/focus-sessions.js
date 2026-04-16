@@ -1,5 +1,5 @@
 let currentPage = 0;
-const pageSize = 50;
+const pageSize = 10;
 
 const tableBody = document.getElementById("sessionTableBody");
 const filterDropdown = document.getElementById("statusFilter");
@@ -8,15 +8,19 @@ const nextBtn = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 
 /* =============================
-   Fetch sessions with pagination
+   INIT
+============================= */
+document.addEventListener("DOMContentLoaded", () => {
+  fetchSessions(0);
+});
+
+/* =============================
+   FETCH SESSIONS (PAGINATION + FILTER)
 ============================= */
 async function fetchSessions(page = 0) {
   try {
-    // ✅ Loading state
     tableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Loading...</td>
-      </tr>
+      <tr><td colspan="5">Loading...</td></tr>
     `;
 
     prevBtn.disabled = true;
@@ -26,7 +30,7 @@ async function fetchSessions(page = 0) {
 
     let url = `/api/focus-sessions/me?page=${page}&size=${pageSize}`;
 
-    if (status !== "ALL") {
+    if (status && status !== "ALL") {
       url += `&status=${status}`;
     }
 
@@ -35,38 +39,42 @@ async function fetchSessions(page = 0) {
       credentials: "include"
     });
 
-    // ✅ Response check
     if (!res.ok) {
       throw new Error("Failed to fetch sessions");
     }
 
     const data = await res.json();
 
+    if (!data || !data.content) {
+      renderTable([]);
+      pageInfo.textContent = "No data";
+      return;
+    }
+
     renderTable(data.content);
     updatePagination(data);
 
   } catch (err) {
-    console.error(err);
+    console.error("Error loading sessions:", err);
 
     tableBody.innerHTML = `
-      <tr>
-        <td colspan="5">Error loading sessions</td>
-      </tr>
+      <tr><td colspan="5">Error loading sessions</td></tr>
     `;
+
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
   }
 }
 
 /* =============================
-   Render sessions
+   RENDER TABLE
 ============================= */
 function renderTable(sessions) {
   tableBody.innerHTML = "";
 
   if (!sessions || sessions.length === 0) {
     tableBody.innerHTML = `
-      <tr>
-        <td colspan="5">No sessions found</td>
-      </tr>
+      <tr><td colspan="5">No sessions found</td></tr>
     `;
     return;
   }
@@ -80,10 +88,6 @@ function renderTable(sessions) {
   sessions.forEach(session => {
     const row = document.createElement("tr");
 
-    const status = session.status;
-    const statusClass = statusClassMap[status] || "status-default";
-
-    // ✅ safer DOM assignment
     const typeCell = document.createElement("td");
     typeCell.textContent = session.sessionType;
 
@@ -94,12 +98,12 @@ function renderTable(sessions) {
     startCell.textContent = formatDate(session.startTime);
 
     const endCell = document.createElement("td");
-    endCell.textContent = session.endTime
-      ? formatDate(session.endTime)
-      : "-";
+    endCell.textContent = session.endTime ? formatDate(session.endTime) : "-";
 
     const statusCell = document.createElement("td");
-    statusCell.textContent = status;
+    statusCell.textContent = session.status;
+
+    const statusClass = statusClassMap[session.status] || "status-default";
     statusCell.className = statusClass;
 
     row.appendChild(typeCell);
@@ -113,20 +117,20 @@ function renderTable(sessions) {
 }
 
 /* =============================
-   Pagination controls
+   PAGINATION UI
 ============================= */
-function updatePagination(pageData) {
-  pageInfo.textContent =
-    pageData.totalPages > 0
-      ? `Page ${pageData.number + 1} of ${pageData.totalPages}`
-      : "No data";
+function updatePagination(data) {
+  currentPage = data.number;
 
-  prevBtn.disabled = pageData.first;
-  nextBtn.disabled = pageData.last;
+  pageInfo.textContent = `Page ${data.number + 1} of ${data.totalPages || 1}`;
 
-  currentPage = pageData.number;
+  prevBtn.disabled = data.first;
+  nextBtn.disabled = data.last;
 }
 
+/* =============================
+   BUTTON EVENTS
+============================= */
 prevBtn.addEventListener("click", () => {
   if (currentPage > 0) {
     fetchSessions(currentPage - 1);
@@ -138,15 +142,23 @@ nextBtn.addEventListener("click", () => {
 });
 
 /* =============================
-   Utils
+   FILTER CHANGE
+============================= */
+filterDropdown.addEventListener("change", () => {
+  currentPage = 0;
+  fetchSessions(0);
+});
+
+/* =============================
+   DATE FORMAT
 ============================= */
 function formatDate(dateStr) {
   if (!dateStr) return "-";
 
-  const date = new Date(dateStr); // ✅ DO NOT add "Z"
+  const date = new Date(dateStr);
 
   return date.toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata", // 🔥 force correct timezone
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -155,17 +167,3 @@ function formatDate(dateStr) {
     hour12: true
   });
 }
-
-/* =============================
-   Filter change
-============================= */
-filterDropdown.addEventListener("change", () => {
-  currentPage = 0; // ✅ reset page
-  fetchSessions(0);
-});
-
-/* =============================
-   Initial load
-============================= */
-
-  fetchSessions(0);

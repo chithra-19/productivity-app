@@ -2,7 +2,7 @@ package com.climbup.controller.productivity;
 
 import com.climbup.dto.request.AchievementRequestDTO;
 import com.climbup.dto.response.AchievementResponseDTO;
-import com.climbup.model.Achievement.Type;
+import com.climbup.model.AchievementType;
 import com.climbup.model.User;
 import com.climbup.service.productivity.AchievementService;
 import com.climbup.service.user.UserService;
@@ -20,9 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AchievementController.class)
@@ -46,39 +45,30 @@ class AchievementControllerWebTest {
     }
 
     @Test
-    @DisplayName("POST /api/achievements/create returns created achievement")
+    @DisplayName("GET /api/achievements should return user achievements")
     @WithMockUser(username = "testuser")
-    void createAchievement_ShouldReturnCreatedAchievement() throws Exception {
-        AchievementRequestDTO requestDTO = new AchievementRequestDTO();
-        requestDTO.setTitle("Test Achievement");
-        requestDTO.setDescription("Test Description");
-        requestDTO.setCategory("GENERAL");
-        requestDTO.setType(Type.GOAL);
-        requestDTO.setUnlockedDate(LocalDate.now());
+    void getUserAchievements_ShouldReturnList() throws Exception {
 
-        User mockUser = new User( "test@example.com", "password");
-        mockUser.setId(1L);
+        User mockUser = new User("test@example.com", "password");
 
-        AchievementResponseDTO responseDTO = new AchievementResponseDTO();
-        responseDTO.setId(1L);
-        responseDTO.setTitle("Test Achievement");
-        responseDTO.setDescription("Test Description");
-        responseDTO.setCategory("GENERAL");
-        responseDTO.setUnlocked(false);
-        responseDTO.setNewlyUnlocked(true);
+        AchievementResponseDTO dto = new AchievementResponseDTO();
+        dto.setId(1L);
+        dto.setTitle("Test Achievement");
+        dto.setDescription("Test Description");
+        dto.setCategory("GENERAL");
+        dto.setUnlocked(false);
+        dto.setNewlyUnlocked(true);
 
         when(userService.getCurrentUser()).thenReturn(mockUser);
-        when(achievementService.createAchievement(any(AchievementRequestDTO.class), any(User.class)))
-                .thenReturn(responseDTO);
+        when(achievementService.getUserAchievements(mockUser))
+                .thenReturn(java.util.List.of(dto));
 
-        mockMvc.perform(post("/api/achievements/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDTO)))
+        mockMvc.perform(get("/api/achievements"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Achievement"))
-                .andExpect(jsonPath("$.description").value("Test Description"))
-                .andExpect(jsonPath("$.category").value("GENERAL"))
-                .andExpect(jsonPath("$.unlocked").value(false))
-                .andExpect(jsonPath("$.newlyUnlocked").value(true));
+                .andExpect(jsonPath("$[0].title").value("Test Achievement"))
+                .andExpect(jsonPath("$[0].description").value("Test Description"))
+                .andExpect(jsonPath("$[0].category").value("GENERAL"))
+                .andExpect(jsonPath("$[0].unlocked").value(false))
+                .andExpect(jsonPath("$[0].newlyUnlocked").value(true));
     }
 }

@@ -131,30 +131,6 @@ function updateStats() {
 	}
 }
 
-// Auto-reset daily stats at midnight
-function setupDailyReset() {
-  setInterval(() => {
-    const now = new Date();
-    const todayStr = now.toDateString();
-
-    if (window.lastResetDate !== todayStr) {
-      // Reset daily stats
-      state.totalFocusedMinutes = 0;
-      state.completedSessions = 0;
-      updateStats();
-
-      // Reset progress circle
-	  if (progressCircle) {
-		progressCircle.style.strokeDashoffset = circumference;
-	  }
-      
-
-      // Update last reset date
-      window.lastResetDate = todayStr;
-    }
-  }, 60 * 1000); // check every minute
-}
-
 async function startTimer() {
   if (state.running) return;
 
@@ -235,16 +211,11 @@ async function pauseTimer() {
 
   // 🔥 IMPORTANT
   localStorage.removeItem(TIMER_KEYS.RUNNING);
-}
-
-  // 🔥 reset start time
-  state.startTime = null;
-
-  // 🔥 IMPORTANT
-  localStorage.removeItem(TIMER_KEYS.RUNNING);
-
+  
   console.log("Paused at:", remainingSeconds);
 }
+
+
 
 async function resetTimer() {
   completionTriggered = false;
@@ -288,7 +259,7 @@ async function continueTimer() {
   if (state.running) return;
 
   const remainingSeconds = Number(localStorage.getItem(TIMER_KEYS.REMAINING));
-  if (!remainingSeconds) return;
+  if (remainingSeconds == null) return;
 
   const remainingMinutes = Math.ceil(remainingSeconds / 60);
 
@@ -435,15 +406,7 @@ function runTimerLoop(start, duration) {
   runTimerLoop(start, duration);
 })();
 
-// Theme toggle
-lightBtn.addEventListener("click", () => {
-  body.classList.remove("dark"); body.classList.add("light");
-  lightBtn.classList.add("active"); darkBtn.classList.remove("active");
-});
-darkBtn.addEventListener("click", () => {
-  body.classList.remove("light"); body.classList.add("dark");
-  darkBtn.classList.add("active"); lightBtn.classList.remove("active");
-});
+
 
 function initState() {
   // ✅ restore daily goal
@@ -524,75 +487,28 @@ function updateDailyProgress() {
         `${formatMinutesToHM(progress.dailyFocusMinutes)} / ${formatMinutesToHM(progress.dailyGoalMinutes)}`;
     });
 }
-
-function updateDailyStats() {
+async function syncStatsFromBackend() {
   const userId = getUserId();
   if (!userId) return;
 
-  fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
-    .then(res => res.json())
-    .then(stats => {
-      const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100;
-
-      document.getElementById("goalProgressBar").style.width = `${percent}%`;
-      document.getElementById("goalText").textContent =
-        `${formatMinutesToHM(stats.dailyFocusMinutes)} / ${formatMinutesToHM(stats.dailyGoalMinutes)}`;
-
-      document.getElementById("sessionCount").textContent =
-        stats.sessionsCompletedToday;
-
-      document.getElementById("totalFocusHours").textContent =
-        (stats.totalFocusMinutes / 60).toFixed(2);
-    });
-}
-
-function syncStatsFromBackend() {
-  const userId = getUserId();
-  if (!userId) return;
-  fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
-    .then(res => res.json())
-    .then(stats => {
-      state.totalFocusedMinutes = stats.dailyFocusMinutes;
-      state.completedSessions = stats.sessionsCompletedToday;
-
-      updateStats();
-      updateDailyGoalDisplay();
-      updateGoalProgress();
-
-      localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
-      localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
-    });
-}
-
-function updateDashboardStats() {
-	const userId = getUserId();
-	if (!userId) return;
-    fetch(`/api/focus-sessions/user/${userId}/daily-stats`)
-    .then(res => res.json())
-    .then(stats => {
-      const percent = (stats.dailyFocusMinutes / stats.dailyGoalMinutes) * 100;
-      document.getElementById("goalProgressBar").style.width = `${percent}%`;
-      document.getElementById("goalText").textContent =
-        `${formatMinutesToHM(stats.dailyFocusMinutes)} / ${formatMinutesToHM(stats.dailyGoalMinutes)}`;
-      document.getElementById("sessionCount").textContent = stats.sessionsCompletedToday;
-      document.getElementById("totalFocusHours").textContent =
-        (stats.totalFocusMinutes / 60).toFixed(2);
-    });
-}
-
-async function loadSessions() {
   try {
-	const res = await fetch("/api/focus-sessions/me", {
-	  credentials: "include"
-	});
+    const res = await fetch(`/api/focus-sessions/user/${userId}/daily-stats`);
+    const stats = await res.json();
 
-    const data = await res.json();
+    if (!stats) return;
 
-    console.log("FULL RESPONSE:", data);
+    state.totalFocusedMinutes = stats.dailyFocusMinutes || 0;
+    state.completedSessions = stats.sessionsCompletedToday || 0;
 
-    renderSessionHistory(data.content || []);
+    updateStats();
+    updateDailyGoalDisplay();
+    updateGoalProgress();
+
+    localStorage.setItem(STORAGE_KEYS.TOTAL_MINUTES, state.totalFocusedMinutes);
+    localStorage.setItem(STORAGE_KEYS.SESSIONS, state.completedSessions);
+
   } catch (err) {
-    console.error("Failed to load sessions", err);
+    console.error("Sync failed", err);
   }
 }
 
@@ -648,28 +564,6 @@ function renderSessionHistory(sessions) {
 
         container.appendChild(div);
     });
-}
-
-async function refreshStatsFromBackend() {
-  try {
-    const [minutesRes, sessionsRes] = await Promise.all([
-      fetch("/api/focus-sessions/me/total-minutes", { credentials: "include" }),
-      fetch("/api/focus-sessions/me/completed-today", { credentials: "include" })
-    ]);
-
-    const totalMinutes = await minutesRes.json();
-    const completedSessions = await sessionsRes.json();
-
-    state.totalFocusedMinutes = totalMinutes;
-    state.completedSessions = completedSessions;
-
-    updateStats();
-    updateGoalProgress();
-    updateDailyGoalDisplay();
-
-  } catch (err) {
-    console.error("Failed to refresh stats", err);
-  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -758,6 +652,7 @@ document.addEventListener("DOMContentLoaded", () => {
       progressCircle.style.strokeDashoffset = circumference;
     }
   });
+  
 
   lightBtn.addEventListener("click", () => {
     body.classList.remove("dark");
@@ -802,5 +697,5 @@ document.addEventListener("DOMContentLoaded", () => {
 	  });
 	}
 	
-	loadSessions();
+	
 });

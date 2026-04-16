@@ -2,6 +2,18 @@ body {
   background: #f5f7fb;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
+* {
+  transition: all 0.15s ease-in-out;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+.row.g-4 {
+  align-items: flex-start; /* keeps left card aligned with stats */
+}
 
 /* =========================
    PROFILE CARD
@@ -12,8 +24,50 @@ body {
   background: #fff;
 }
 
+.profile-left {
+  flex: 0 0 350px; /* fixed width for profile card */
+}
+.profile-right {
+  flex: 1; /* stats take remaining space */
+}
+
+.stats-section, .xp-section {
+  margin-bottom: 30px;
+}
+.stats-section h4, .xp-section h4 {
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+.stats-section .row {
+  justify-content: center;
+  gap: 20px;
+}
+.stat-card {
+  flex: 1;
+  min-width: 150px;
+}
+.xp-section .stat-card {
+  background: linear-gradient(135deg, #eef2ff, #f5f7fb);
+  border: 1px solid #e5e7eb;
+}
+
+/* =========================
+   EDIT MODE STATE
+========================= */
+.form-control.editable:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.form-control.editable:not(:disabled) {
+  background: #fff;
+  border-color: #4f46e5;
+}
+
 /* Profile Image */
-.profile-img {
+.profile-pic {
   width: 110px;
   height: 110px;
   object-fit: cover;
@@ -22,9 +76,49 @@ body {
   cursor: pointer;
   transition: 0.2s ease;
 }
+.profile-pic-container {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+}
 
-.profile-img:hover {
+.profile-pic-container img {
+  transition: transform 0.3s ease;
+}
+
+.profile-pic-container:hover img {
+  transform: scale(1.05);
+}
+
+
+.profile-pic:hover {
   transform: scale(1.03);
+}
+
+#imagePreviewModal .modal-content img {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#imagePreviewModal.show .modal-content img {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  transition: all 0.25s ease;
+  cursor: default;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.10);
 }
 
 /* Camera Badge */
@@ -152,4 +246,14 @@ body {
 .btn-light {
   border-radius: 10px;
   background: #f3f4f6;
+}
+
+@media (max-width: 992px) {
+  .profile-left {
+    flex: 1 1 100%;
+    margin-bottom: 30px;
+  }
+  .profile-right {
+    flex: 1 1 100%;
+  }
 }

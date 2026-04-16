@@ -1,40 +1,45 @@
 package com.climbup.dto.response;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileResponseDTO {
 
-    private Long id;
+    // ================= PROFILE INFO =================
+    private Long userId;
     private String firstName;
     private String lastName;
-    private String email;
     private String bio;
     private String profilePictureUrl;
+    private String email;
 
-    // Static / personal info
-    private Long userId;
+    
+	// ================= ACTIVITY =================
     private LocalDate lastActiveDate;
 
-    // Achievements
-    private boolean newAchievement;
-    private List<String> achievementList;
-
-    // Productivity & streak
+    // ================= STATS =================
     private int productivityScore;
     private long completedTasks;
+
+    // ================= STREAK =================
     private int currentStreak;
     private int bestStreak;
 
-    // XP & Level
+    // ================= XP SYSTEM =================
     private long xp;
     private int level;
-    private int levelProgress; // 0-100% to next level
+    private int levelProgress;
 
-    // ---------------- Getters & Setters ----------------
+    // ================= ACHIEVEMENTS =================
+    private boolean newAchievement;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    private List<String> achievementList = new ArrayList<>();
+
+    // ---------- Getters & Setters ----------
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -42,26 +47,14 @@ public class ProfileResponseDTO {
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
 
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
     public LocalDate getLastActiveDate() { return lastActiveDate; }
     public void setLastActiveDate(LocalDate lastActiveDate) { this.lastActiveDate = lastActiveDate; }
-
-    public boolean isNewAchievement() { return newAchievement; }
-    public void setNewAchievement(boolean newAchievement) { this.newAchievement = newAchievement; }
-
-    public List<String> getAchievementList() { return achievementList; }
-    public void setAchievementList(List<String> achievementList) { this.achievementList = achievementList; }
 
     public int getProductivityScore() { return productivityScore; }
     public void setProductivityScore(int productivityScore) { this.productivityScore = productivityScore; }
@@ -83,4 +76,19 @@ public class ProfileResponseDTO {
 
     public int getLevelProgress() { return levelProgress; }
     public void setLevelProgress(int levelProgress) { this.levelProgress = levelProgress; }
+
+    public boolean isNewAchievement() { return newAchievement; }
+    public void setNewAchievement(boolean newAchievement) { this.newAchievement = newAchievement; }
+
+    public String getEmail() {
+		return email;
+	}
+	public void setEmail(String email) {
+		this.email = email;
+	}
+    public List<String> getAchievementList() { return achievementList; }
+    public void setAchievementList(List<String> achievementList) {
+        this.achievementList = achievementList != null ? achievementList : new ArrayList<>();
+    }
+	
 }

@@ -23,7 +23,11 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @Enumerated(EnumType.STRING)   // ✅ ADD THIS
+    @Column(name = "code", length = 50)  // ✅ ADD THIS
+    private AchievementCode code;
+
+	@NotBlank
     @Email
     @Column(unique = true, nullable = false)
     private String email;
@@ -35,34 +39,42 @@ public class User implements UserDetails {
     
 	@Column(name = "last_login_at")
     private Instant lastLoginAt;
-
-    // Productivity & Streak
-    @Column(name = "productivity_score", nullable = false)
-    private Integer productivityScore = 0;
-
- 
+	
     @Column(name = "current_streak", nullable = false)
     private int currentStreak = 0;
 
     @Column(name = "best_streak", nullable = false)
     private int bestStreak = 0;
+    
+    @Column(name = "productivityScore", nullable = false)
+    private int productivityScore = 0;
 
-    // Security Flags
+	// Security Flags
+    @Column(nullable = false)
     private boolean enabled = true;
+
+    @Column(nullable = false)
     private boolean accountNonExpired = true;
+
+    @Column(nullable = false)
     private boolean credentialsNonExpired = true;
+
+    @Column(nullable = false)
     private boolean accountNonLocked = true;
 
     
     // Timestamps
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private Instant updatedAt;
 
-	private int availableFreezes; // 0 or 1
+    @Column(nullable = false)
+    private int availableFreezes = 0;
+    
     private LocalDate lastFreezeResetDate;
 
     // Tokens
@@ -83,7 +95,7 @@ public class User implements UserDetails {
     private Set<Goal> goals = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Achievement> achievements = new HashSet<>();
+    private Set<UserAchievement> achievements = new HashSet<>();
 
  // XP & Level System
     @Column(nullable = false)
@@ -91,11 +103,12 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private int level = 1;
-    
-    private int dailyGoalMinutes;
-    
-    private int totalFocusMinutes;
+  
+    @Column(nullable = false)
+    private int dailyGoalMinutes = 0;
 
+    @Column(nullable = false)
+    private int totalFocusMinutes = 0;
    
 	public int getXp() {
         return xp;
@@ -134,6 +147,14 @@ public class User implements UserDetails {
 		return lastLoginAt;
 	}
 
+    
+    public int getProductivityScore() {
+  		return productivityScore;
+  	}
+
+  	public void setProductivityScore(int productivityScore) {
+  		this.productivityScore = productivityScore;
+  	}
 	public void setLastLoginAt(Instant lastLoginAt) {
 		this.lastLoginAt = lastLoginAt;
 	}
@@ -145,15 +166,12 @@ public class User implements UserDetails {
 	public void setFocusSessions(List<FocusSession> focusSessions) {
 		this.focusSessions = focusSessions;
 	}
-
-	public void setCreatedAt(Instant createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public void setUpdatedAt(Instant updatedAt) {
-		this.updatedAt = updatedAt;
-	}
 	
+
+    public void setId(Long id) {
+		this.id = id;
+	}
+
 	 public void addFocusMinutes(int minutes) {
 	        this.totalFocusMinutes += minutes;
 	    }
@@ -208,7 +226,7 @@ public class User implements UserDetails {
         goal.setUser(this);
     }
 
-    public void addAchievement(Achievement achievement) {
+    public void addAchievement(UserAchievement achievement) {
         achievements.add(achievement);
         achievement.setUser(this);
     }
@@ -236,7 +254,7 @@ public class User implements UserDetails {
 
     // Getters & Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+  
 	
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -244,20 +262,15 @@ public class User implements UserDetails {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public Integer getProductivityScore() { return productivityScore == null ? 0 : productivityScore; }
-    public void setProductivityScore(Integer productivityScore) { this.productivityScore = productivityScore; }
-
-   
-    public boolean isEnabledFlag() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    public boolean isAccountNonExpiredFlag() { return accountNonExpired; }
+  
     public void setAccountNonExpired(boolean accountNonExpired) { this.accountNonExpired = accountNonExpired; }
 
-    public boolean isCredentialsNonExpiredFlag() { return credentialsNonExpired; }
+  
     public void setCredentialsNonExpired(boolean credentialsNonExpired) { this.credentialsNonExpired = credentialsNonExpired; }
 
-    public boolean isAccountNonLockedFlag() { return accountNonLocked; }
+    
     public void setAccountNonLocked(boolean accountNonLocked) { this.accountNonLocked = accountNonLocked; }
 
     public String getVerificationToken() { return verificationToken; }
@@ -275,12 +288,11 @@ public class User implements UserDetails {
     public Profile getProfile() { return profile; }
 
     public Set<Goal> getGoals() { return goals; }
-    public Set<Achievement> getAchievements() { return achievements; }
+    public Set<UserAchievement> getAchievements() { return achievements; }
 
     public void setTasks(Set<Task> tasks) { this.tasks = tasks; }
     public void setGoals(Set<Goal> goals) { this.goals = goals; }
-    public void setAchievements(Set<Achievement> achievements) { this.achievements = achievements; }
-
+   
 
  // ========= SPRING SECURITY REQUIRED METHODS ========= //
     @Override

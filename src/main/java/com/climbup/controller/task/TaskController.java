@@ -3,17 +3,17 @@ package com.climbup.controller.task;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.request.TaskUpdateDTO;
 import com.climbup.dto.response.TaskResponseDTO;
-import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.repository.TaskRepository;
-import com.climbup.repository.UserRepository;
 import com.climbup.service.productivity.StreakTrackerService;
-import com.climbup.service.productivity.XPService;
-import com.climbup.service.task.TaskService;
+import com.climbup.service.task.TaskCommandService;
+import com.climbup.service.task.TaskQueryService;
+import com.climbup.service.task.TaskStatsService;
 import com.climbup.service.user.UserService;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -25,37 +25,56 @@ import java.time.LocalDate;
 import java.util.*;
 
 @RestController
-@RequestMapping("/tasks")
+@RequestMapping("/api/tasks")
 public class TaskController {
 
-    private final TaskService taskService;
+    private final TaskCommandService taskCommandService;
     private final UserService userService;
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
+    private final TaskQueryService taskQueryService;
     private final StreakTrackerService streakTrackerService;
-    private final XPService xpService;
+    private final TaskStatsService taskStatsService;
     
 
     @Autowired
-    public TaskController(TaskService taskService,
+    public TaskController(TaskCommandService taskCommandService,
                           UserService userService,
                           TaskRepository taskRepository,
-                          UserRepository userRepository,
+                          TaskQueryService taskQueryService,
                           StreakTrackerService streakTrackerService,
-                          XPService xpService) {
-        this.taskService = taskService;
+                          TaskStatsService taskStatsService) {
+        this.taskCommandService = taskCommandService;
         this.userService = userService;
         this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
+        this.taskQueryService = taskQueryService;
         this.streakTrackerService = streakTrackerService ;
-        this.xpService = xpService;
+        this.taskStatsService = taskStatsService;
         }
 
+    @GetMapping("/all")
+    public ResponseEntity<Map<String, Object>> getAllTasksPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal
+    ) {
+        User user = userService.findByEmail(principal.getName());
+
+        Page<TaskResponseDTO> taskPage =
+                taskQueryService.getTasksForUserPaginated(user, page, size);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("tasks", taskPage.getContent());
+        response.put("currentPage", page);
+        response.put("totalPages", taskPage.getTotalPages());
+
+        return ResponseEntity.ok(response);
+    }
+    
     /** ✅ Create a new task */
     @PostMapping
     public ResponseEntity<TaskResponseDTO> createTask(@Valid @RequestBody TaskRequestDTO dto, Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        TaskResponseDTO created = taskService.createTask(dto, user);
+        TaskResponseDTO created = taskCommandService.createTask(dto, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -63,59 +82,9 @@ public class TaskController {
     @GetMapping
     public ResponseEntity<List<TaskResponseDTO>> getTasks(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        List<TaskResponseDTO> tasks = taskService.getTasksForUser(user);
+        List<TaskResponseDTO> tasks = taskQueryService.getTasksForUser(user);
         return ResponseEntity.ok(tasks);
     }
-
-    /** ✅ Mark task completed & update score/streak */
-    @PostMapping("/complete/{id}")
-    public ResponseEntity<Map<String, Object>> completeTask(@PathVariable Long id, Principal principal) {
-        try {
-            // Logged-in email
-            String email = principal.getName();
-
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            Task task = taskRepository.findById(id).orElse(null);
-            if (task == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Task not found"));
-            }
-
-            if (task.isCompleted()) {
-                return ResponseEntity.ok(Map.of("message", "Task already completed"));
-            }
-
-            task.setCompleted(true);
-            taskRepository.save(task);
-
-
-            // 2️⃣ Update XP
-            int points = taskService.getPriorityPoints(task.getPriority());
-            xpService.handleTaskCompletion(user, points);
-            // 3️⃣ Get fresh streak value
-            int currentStreak = streakTrackerService.getCurrentStreak(user);
-
-            // 4️⃣ Get XP
-            int xp = user.getXp();
-
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("xp", xp);
-            response.put("streak", currentStreak);
-            response.put("pendingTasks", taskRepository.countByUserAndCompletedFalse(user));
-            response.put("xpIncrement", 10);
-
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-
 
     /** ✅ Update task */
     @PutMapping("/{taskId}")
@@ -123,7 +92,7 @@ public class TaskController {
                                                       @RequestBody TaskUpdateDTO dto,
                                                       Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        TaskResponseDTO updated = taskService.updateTask(taskId, dto, user);
+        TaskResponseDTO updated = taskCommandService.updateTask(taskId, dto, user);
         return ResponseEntity.ok(updated);
     }
 
@@ -134,7 +103,7 @@ public class TaskController {
     @GetMapping("/stats")
     public ResponseEntity<Map<LocalDate, Long>> getTaskStats(Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        Map<LocalDate, Long> stats = taskService.getTaskStats(user);
+        Map<LocalDate, Long> stats = taskStatsService.getTaskStats(user);
         return ResponseEntity.ok(stats);
     }
     
@@ -142,7 +111,7 @@ public class TaskController {
     @GetMapping("/single/{taskId}") 
     public ResponseEntity<TaskResponseDTO> getTask(@PathVariable Long taskId, Principal principal) {
         User user = userService.findByEmail(principal.getName());
-        TaskResponseDTO task = taskService.getTaskById(taskId, user);
+        TaskResponseDTO task = taskQueryService.getTaskById(taskId, user);
         if(task == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         return ResponseEntity.ok(task);
     }
@@ -154,7 +123,7 @@ public class TaskController {
             Principal principal) {
 
         User user = userService.findByEmail(principal.getName());
-        taskService.deleteTask(taskId, user);
+        taskCommandService.deleteTask(taskId, user);
 
         int currentStreak = streakTrackerService.getCurrentStreak(user);
         int xp = user.getXp();
@@ -166,29 +135,29 @@ public class TaskController {
         response.put("xp", xp);
 
         return ResponseEntity.ok(response);
+   
     }
-
-
+    
     @PutMapping("/mark-done/{id}")
-    public ResponseEntity<Map<String, Object>> markTaskDone(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> markTaskDone(
+            @PathVariable Long id,
+            Principal principal
+    ) {
 
-        User user = userService.getCurrentUser(); // 🔥 REQUIRED
+        User user = userService.findByEmail(principal.getName());
 
-        Task task = taskService.markDone(id, user); // ✅ correct call
+        TaskResponseDTO task = taskCommandService.markDone(id, user);
 
         int currentStreak = streakTrackerService.getCurrentStreak(user);
-        int xp = user.getProductivityScore();
         long pendingCount = taskRepository.countByUserAndCompletedFalse(user);
 
         Map<String, Object> resp = new HashMap<>();
+        resp.put("task", task);
         resp.put("streak", currentStreak);
-        resp.put("xp", xp);
         resp.put("pendingCount", pendingCount);
-        resp.put("xpIncrement", 10);
 
         return ResponseEntity.ok(resp);
     }
-
 
 
 }

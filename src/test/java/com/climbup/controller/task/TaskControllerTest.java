@@ -4,8 +4,8 @@ import com.climbup.controller.task.TaskController;
 import com.climbup.dto.request.TaskRequestDTO;
 import com.climbup.dto.response.TaskResponseDTO;
 import com.climbup.model.User;
-import com.climbup.security.TestSecurityConfig;
-import com.climbup.service.task.TaskService;
+import com.climbup.service.task.TaskCommandService;
+import com.climbup.service.task.TaskQueryService;
 import com.climbup.service.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,14 +33,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = TaskController.class)
 @ContextConfiguration(classes = { TaskController.class }) // isolate only controller
-@Import(TestSecurityConfig.class) 
+
 class TaskControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private TaskService taskService;
+    private TaskQueryService taskQueryService;
+    
+    @MockBean
+    private TaskCommandService taskCommandService;
+
 
     @MockBean
     private UserService userService;
@@ -69,7 +73,7 @@ class TaskControllerTest {
         
 
         when(userService.findByEmail("testuser")).thenReturn(mockUser);
-        when(taskService.createTask(any(TaskRequestDTO.class), any(User.class))).thenReturn(response);
+        when(taskCommandService.createTask(any(TaskRequestDTO.class), any(User.class))).thenReturn(response);
 
         mockMvc.perform(post("/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,7 +96,7 @@ class TaskControllerTest {
        
 
         when(userService.findByEmail("testuser")).thenReturn(mockUser);
-        when(taskService.getTasksForUser(any(User.class))).thenReturn(List.of(dto));
+        when(taskQueryService.getTasksForUser(any(User.class))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/tasks"))
                .andExpect(status().isOk())
@@ -127,7 +131,7 @@ class TaskControllerTest {
         
 
         when(userService.findByEmail("testuser")).thenReturn(mockUser);
-        when(taskService.getTasksForUser(any(User.class))).thenReturn(List.of()); // empty list
+        when(taskQueryService.getTasksForUser(any(User.class))).thenReturn(List.of()); // empty list
 
         mockMvc.perform(get("/tasks"))
                .andExpect(status().isOk())

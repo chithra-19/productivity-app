@@ -4,7 +4,7 @@ import com.climbup.model.User;
 import com.climbup.service.productivity.AchievementService;
 
 import com.climbup.service.productivity.StreakTrackerService;
-import com.climbup.service.task.TaskService;
+import com.climbup.service.task.TaskQueryService;
 import com.climbup.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ public class DashboardViewControllerTest {
     private MockMvc mockMvc;
 
     @MockBean private UserService userService;
-    @MockBean private TaskService taskService;
+    @MockBean private TaskQueryService taskQueryService;
     @MockBean private StreakTrackerService streakTrackerService;
     @MockBean private AchievementService achievementService;
    
@@ -40,9 +40,7 @@ public class DashboardViewControllerTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
-        
+    	testUser = new User("email", "pass");
     }
 
     @Test
@@ -50,7 +48,7 @@ public class DashboardViewControllerTest {
     void getDashboardView_ShouldReturnDashboardTemplate() throws Exception {
         when(userService.getUserWithAllData("testuser")).thenReturn(testUser);
         when(streakTrackerService.getCurrentStreak(testUser)).thenReturn(5);
-        when(taskService.getTasksForUser(testUser)).thenReturn(List.of());
+        when(taskQueryService.getTasksForUser(testUser)).thenReturn(List.of());
 
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
