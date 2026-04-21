@@ -11,8 +11,13 @@ public class AchievementTemplate {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "code", unique = true)
     private AchievementCode code;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private AchievementType type;
+  
 
     @Column(nullable = false)
     private String title;
@@ -27,9 +32,6 @@ public class AchievementTemplate {
     @Column
     private Integer threshold;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AchievementType type;
 
     private String category;
 
