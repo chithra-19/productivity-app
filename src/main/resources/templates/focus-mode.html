@@ -14,7 +14,7 @@
 <body class="light">
 <div class="app-container">
 	
-	<a th:href="/dashboard" class="back-arrow">
+	<a th:href="@{/dashboard}" class="back-arrow">
 			  <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
 			</a>
 
@@ -126,7 +126,7 @@
 	    </div>
 		
 		<div class="card">
-		  <a href="/dashboard/focus/focus-sessions" class="view-sessions-btn">View All Sessions</a>
+		  <a th:href="@{/dashboard/focus/focus-sessions}" class="view-sessions-btn">View All Sessions</a>
 		</div>
 
 

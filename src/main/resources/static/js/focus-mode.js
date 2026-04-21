@@ -203,8 +203,6 @@ async function pauseTimer() {
     }
   }
 
-  // ❌ REMOVE THIS (frontend fake counting)
-  // state.totalFocusedMinutes += workedMinutes;
 
   // 🔥 reset start time
   state.startTime = null;
@@ -215,27 +213,12 @@ async function pauseTimer() {
   console.log("Paused at:", remainingSeconds);
 }
 
-
-
 async function resetTimer() {
   completionTriggered = false;
 
-  pauseTimer();
+  await pauseTimer(); // this already handles abort
 
-  const sessionId = localStorage.getItem("activeSessionId");
-
-  if (sessionId) {
-    try {
-      await fetch("/api/focus-sessions/abort", {
-        method: "POST",
-        credentials: "include"
-      });
-    } catch (e) {
-      console.warn("Abort failed (safe)");
-    }
-
-    localStorage.removeItem("activeSessionId");
-  }
+  localStorage.removeItem("activeSessionId");
 
   const sessionTotal =
     Number(document.querySelector(".session-type.active")?.dataset.minutes || customInput.value);
@@ -249,12 +232,12 @@ async function resetTimer() {
     progressCircle.style.strokeDashoffset = circumference;
   }
 
-  // 🔥 CLEAN EVERYTHING
   localStorage.removeItem(TIMER_KEYS.START);
   localStorage.removeItem(TIMER_KEYS.DURATION);
   localStorage.removeItem(TIMER_KEYS.RUNNING);
-  localStorage.removeItem(TIMER_KEYS.REMAINING); // ✅ IMPORTANT
+  localStorage.removeItem(TIMER_KEYS.REMAINING);
 }
+
 async function continueTimer() {
   if (state.running) return;
 
@@ -407,7 +390,6 @@ function runTimerLoop(start, duration) {
 })();
 
 
-
 function initState() {
   // ✅ restore daily goal
   dailyGoalMinutes = getStoredDailyGoal();
@@ -449,6 +431,7 @@ if (savedTheme === "dark") {
   body.classList.add("light");
   body.classList.remove("dark");
 }
+
 function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
