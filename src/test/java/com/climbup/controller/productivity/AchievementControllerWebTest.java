@@ -60,7 +60,7 @@ class AchievementControllerWebTest {
         dto.setNewlyUnlocked(true);
 
         when(userService.getCurrentUser()).thenReturn(mockUser);
-        when(achievementService.getUserAchievements(mockUser))
+        when(achievementService.getUserAchievements(mockUser.getId()))
                 .thenReturn(java.util.List.of(dto));
 
         mockMvc.perform(get("/api/achievements"))

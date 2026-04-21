@@ -46,42 +46,38 @@ public class Goal {
     
     @Column(nullable = false)
     private boolean completed = false;
-    
+  
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAchievement> userAchievements = new ArrayList<>();
+
     public boolean getCompleted() {
 		return completed;
 	}
 
-	public List<UserAchievement> getAchievements() {
-		return achievements;
-	}
 
 	public void setCompleted(boolean completed) {
 		this.completed = completed;
 	}
 
-	public void setAchievements(List<UserAchievement> achievements) {
-		this.achievements = achievements;
-	}
 
 	public void setCreatedAt(Instant createdAt) {
 		this.createdAt = createdAt;
 	}
+	  
+    public List<UserAchievement> getUserAchievements() {
+		return userAchievements;
+	}
+
+
+	public void setUserAchievements(List<UserAchievement> userAchievements) {
+		this.userAchievements = userAchievements;
+	}
+
 
 	public void setUpdatedAt(Instant updatedAt) {
 		this.updatedAt = updatedAt;
 	}
 
-
-
-	@OneToMany(
-		    mappedBy = "goal",
-		    cascade = CascadeType.ALL,
-		    orphanRemoval = true,
-		    fetch = FetchType.LAZY
-		)
-		@JsonManagedReference
-		private List<UserAchievement> achievements = new ArrayList<>();
-	
 
     @CreationTimestamp
     @Column(updatable = false)

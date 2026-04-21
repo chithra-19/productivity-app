@@ -180,4 +180,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     	""")
     	boolean existsLateNightTask(@Param("user") User user);
     
+    @Query("""
+            SELECT t FROM Task t
+            WHERE t.user = :user
+            AND t.completed = true
+            AND t.completedDateTime >= :startDate
+        """)
+        List<Task> findCompletedTasksFromDate(
+                @Param("user") User user,
+                @Param("startDate") Instant startDate
+        );
+    
    }

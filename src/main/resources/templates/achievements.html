@@ -11,114 +11,164 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    body {
-      background: #f5f6fa;
-      font-family: 'Poppins', sans-serif;
-      min-height: 100vh;
-    }
+	/* 🌊 Blue theme base */
+	body {
+	  background: linear-gradient(135deg, #e8f0ff, #f4f8ff);
+	  font-family: 'Poppins', sans-serif;
+	  color: #1a1a1a;
+	  min-height: 100vh;
+	}
 
-    .container {
-      max-width: 1100px;
-      margin-top: 40px;
-      margin-bottom: 60px;
-    }
+	/* 🧱 Container */
+	.container {
+	  max-width: 1100px;
+	  margin: 50px auto;
+	  background: #ffffff;
+	  border-radius: 1rem;
+	  box-shadow: 0 10px 25px rgba(0, 60, 150, 0.08);
+	  padding: 2.5rem 3rem;
+	}
 
-    h2 {
-      font-weight: 700;
-      color: #333;
-      margin-bottom: 20px;
-    }
+	/* 🏷 Headings */
+	h2 {
+	  font-weight: 700;
+	  color: #0d47a1;
+	  margin-bottom: 1.2rem;
+	  border-left: 5px solid #2196f3;
+	  padding-left: 12px;
+	  letter-spacing: 0.3px;
+	  transition: color 0.3s ease;
+	}
 
-    .achievement-card {
-      position: relative;
-      border-radius: 1rem;
-      padding: 1.5rem 1rem;
-      text-align: center;
-      background: linear-gradient(145deg,#fff,#f0f0f0);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
+	h2[style*="cursor:pointer"]:hover {
+	  color: #1565c0;
+	}
 
-    .achievement-card:hover {
-      transform: translateY(-7px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.18);
-    }
+	/* 🪄 Achievement card */
+	.achievement-card {
+	  background: linear-gradient(145deg, #f9fbff, #eef4ff);
+	  border: 1px solid #d0e2ff;
+	  border-radius: 1rem;
+	  height: 100%;
+	  box-shadow: 0 4px 12px rgba(0, 60, 150, 0.08);
+	  padding: 1.5rem 1rem;
+	  text-align: center;
+	  transition: all 0.3s ease;
+	}
 
-    /* 🔥 FIXED LOCK STYLE */
+	.achievement-card:hover {
+	  transform: translateY(-6px);
+	  box-shadow: 0 8px 20px rgba(0, 60, 150, 0.15);
+	}
+
+	/* 🏅 Trophy icons */
+	.achievement-icon {
+	  font-size: 2.8rem;
+	  margin-bottom: 0.6rem;
+	  color: #2196f3; /* default blue */
+	}
+
+	/* 🔒 Locked achievements */
+	.locked .achievement-icon {
+	  color: #90a4ae;
+	}
+
+	/* 🏆 Unlocked achievements — gold trophy */
+	.achievement-card:not(.locked) .achievement-icon {
+	  color: #FFD700; /* gold */
+	  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+	}
+
+	/* ✨ Newly unlocked glow */
+	.newly-unlocked {
+	  border: 2px solid #42a5f5;
+	  box-shadow: 0 0 15px rgba(66, 165, 245, 0.6);
+	  animation: glowFade 2.5s ease-in-out;
+	}
+
+	@keyframes glowFade {
+	  0% { box-shadow: 0 0 15px 5px rgba(66, 165, 245, 0.8); }
+	  50% { box-shadow: 0 0 10px 3px rgba(33, 150, 243, 0.6); }
+	  100% { box-shadow: none; }
+	}
 	.locked {
-	  opacity: 0.85;
-	  filter: grayscale(40%);
-	  transform: scale(0.98);
+	  opacity: 0.7;
+	}
+
+	/* 🔙 Back link */
+	.back-link {
+	  display: inline-flex;
+	  align-items: center;
+	  gap: 6px;
+	  font-weight: 600;
+	  color: #1565c0;
+	  text-decoration: none;
+	  margin-bottom: 20px;
+	  transition: color 0.3s ease;
+	}
+	#custom-achievements {
+	  transition: all 0.3s ease;
+	}
+
+	.back-link:hover {
+	  color: #0d47a1;
+	}
+
+	/* 💬 Empty state */
+	.text-muted {
+	  font-style: italic;
+	  color: #607d8b;
 	}
 	
-	.locked:hover {
-	  opacity: 1;
-	  filter: grayscale(20%);
+	/* Gold trophy for unlocked achievements */
+	.achievement-card:not(.locked) .achievement-icon {
+	  color: #FFD700;
+	  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
 	}
 
-    .locked::after {
-      content: "🔒";
-      position: absolute;
-      top: 12px;
-      right: 16px;
-      font-size: 1.4rem;
-    }
+	/* Gray cup for locked achievements */
+	.locked .achievement-icon {
+	  color: #90a4ae;
+	}
 
-    .achievement-icon {
-      font-size: 3rem;
-      margin-bottom: 0.6rem;
-      color: #ffb400;
-    }
 
-    .locked .achievement-icon {
-      color: #bbb;
-    }
+	/* 🌈 Fade-in animation */
+	#custom-achievements,
+	#template-achievements {
+	  animation: fadeIn 0.4s ease;
+	}
 
-    .achievement-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 0.3rem;
-      color: #333;
-    }
+	@keyframes fadeIn {
+	  from { opacity: 0; transform: translateY(10px); }
+	  to { opacity: 1; transform: translateY(0); }
+	}
 
-    .achievement-desc {
-      font-size: 0.9rem;
-      color: #666;
-      min-height: 40px;
-    }
+	/* 🎯 Buttons */
+	.complete-btn {
+	  background-color: #2196f3;
+	  border: none;
+	  color: #fff;
+	  font-weight: 500;
+	  border-radius: 0.5rem;
+	  padding: 6px 14px;
+	  transition: background-color 0.3s ease;
+	}
 
-    .newly-unlocked {
-      border: 2px solid gold;
-      box-shadow: 0 0 15px gold;
-      animation: glowFade 3s ease-in-out;
-    }
+	.complete-btn:hover {
+	  background-color: #1976d2;
+	}
+	@keyframes slideIn {
+	  from {
+	    opacity: 0;
+	    transform: translateX(100%);
+	  }
+	  to {
+	    opacity: 1;
+	    transform: translateX(0);
+	  }
+	}
 
-    @keyframes glowFade {
-      0%   { box-shadow: 0 0 15px 5px #FFD700; }
-      50%  { box-shadow: 0 0 10px 3px #FFB400; }
-      100% { box-shadow: none; }
-    }
 
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      color: #333;
-      text-decoration: none;
-      margin-bottom: 20px;
-    }
-
-    .back-link:hover {
-      color: #0056b3;
-      transform: translateX(-4px);
-    }
-
-    .empty-state {
-      text-align: center;
-      color: #777;
-      margin-top: 20px;
-    }
   </style>
 </head>
 
@@ -133,8 +183,10 @@
 	  <h2>🏅 Newly Unlocked</h2>
 	  <div id="new-achievements" class="row g-4 mb-4"></div>
 
-	  <h2>🎯 Customized User Goals</h2>
-	  <div id="custom-achievements" class="row g-4 mb-4"></div>
+	  <h2 id="toggle-custom-goals" style="cursor:pointer; color:#333;">
+	    🎯 Customized User Goals
+	  </h2>
+	  <div id="custom-achievements" class="row g-4 mb-4" style="display:none;"></div>
 
 	  <h2>
 	    <span id="toggle-template-goals" style="cursor:pointer; color:#333;">
@@ -142,27 +194,35 @@
 	    </span>
 	  </h2>
 	  <div id="template-achievements" class="row g-4 mb-4" style="display:none;"></div>
+	  
+	  <div id="achievement-toast" style="
+	    position: fixed;
+	    top: 20px;
+	    right: 20px;
+	    z-index: 9999;
+	  "></div>
 
 	</div>
-
 	<script>
 	let isRefreshing = false;
+	let cachedGoals = [];
 
 	function createAchievementCard(a) {
 	  const col = document.createElement('div');
-	  col.className = 'col-sm-6 col-md-4';
+	  col.className = 'col-sm-6 col-md-4 col-lg-3';
 
 	  const card = document.createElement('div');
 	  card.className = 'achievement-card';
 
 	  if (!a.unlocked) card.classList.add('locked');
-	  if (a.newlyUnlocked) card.classList.add('newly-unlocked');
+	  if (a.unlocked && !a.seen) card.classList.add('newly-unlocked');
 
 	  card.innerHTML = `
 	    <div class="achievement-icon">
 	      <i class="bi ${a.icon || 'bi-trophy'}"></i>
 	    </div>
-	    <div class="achievement-title">${a.title}</div>
+		<div class="achievement-title">${a.displayTitle || a.title}</div>
+
 	    <div class="achievement-desc">${a.description || ''}</div>
 	  `;
 
@@ -177,38 +237,61 @@
 	    origin: { y: 0.6 }
 	  });
 	}
+	
+	async function updateAchievements() {
+	  const res = await axios.get('/api/achievements', { withCredentials: true });
+	  renderAchievements(res.data);
+	}
+
+	async function fetchGoals() {
+	  const res = await axios.get('/api/goals', { withCredentials: true });
+	  cachedGoals = res.data;
+	  renderCustomGoals(); // 🔥 ADD THIS
+	}
 
 	function renderAchievements(data) {
 	  const customGrid = document.getElementById('custom-achievements');
-	  const templateGrid = document.getElementById('template-achievements');
 	  const newGrid = document.getElementById('new-achievements');
+	  const templateGrid = document.getElementById('template-achievements');
 
 	  customGrid.innerHTML = '';
-	  templateGrid.innerHTML = '';
 	  newGrid.innerHTML = '';
+	  templateGrid.innerHTML = '';
 
 	  let hasNewUnlocks = false;
 
-	  const customGoals = data.customGoals || data.goals || [];
-	  const defaultTemplates = data.defaultTemplates || [];
+	  // 🔥 CASE 1: data is ARRAY
+	  if (Array.isArray(data)) {
+	    data.forEach(a => handleAchievement(a));
+	  }
 
-	  // Customized user goals
-	  customGoals.forEach(a => {
-	    customGrid.appendChild(createAchievementCard(a));
-	    if (a.newlyUnlocked) {
+	  // 🔥 CASE 2: data is OBJECT (new format)
+	  else {
+	    Array.isArray(data.defaultTemplates) && data.defaultTemplates.forEach(a => handleAchievement(a));
+	    (data.customGoals || []).forEach(a => handleAchievement(a));
+	  }
+
+	  function handleAchievement(a) {
+	    // Skip the template "Custom Goal" entirely
+		if (a.title === 'Custom Goal' && !a.goalId) return;
+
+	    const card = createAchievementCard(a);
+
+	    // 🔹 Show goal-linked achievements under custom section
+	    if (a.goalId || a.displayTitle) {
+	      customGrid.appendChild(card);
+	    } else {
+	      templateGrid.appendChild(card);
+	    }
+
+	    // 🔹 Show newly unlocked achievements
+	    if (a.unlocked && !a.seen) {
 	      hasNewUnlocks = true;
 	      newGrid.appendChild(createAchievementCard(a));
+	      showAchievementToast(a);
 	    }
-	  });
+	  }
 
-	  // Default template goals
-	  defaultTemplates.forEach(a => {
-	    templateGrid.appendChild(createAchievementCard(a));
-	    if (a.newlyUnlocked) {
-	      hasNewUnlocks = true;
-	      newGrid.appendChild(createAchievementCard(a));
-	    }
-	  });
 
 	  if (!hasNewUnlocks) {
 	    newGrid.innerHTML = `<p class="text-muted">No new achievements yet. Keep grinding 🔥</p>`;
@@ -217,18 +300,93 @@
 	  }
 	}
 
+	async function renderCustomGoals() {
+	  const customGrid = document.getElementById('custom-achievements');
+	  customGrid.innerHTML = '';
 
+	  // Fetch achievements to get unlock state
+	  const achRes = await axios.get('/api/achievements', { withCredentials: true });
+	  const achievements = Array.isArray(achRes.data.customGoals)
+	    ? achRes.data.customGoals
+	    : achRes.data;
+
+	  if (cachedGoals.length === 0) {
+	    customGrid.innerHTML = `<p class="text-muted">No goals yet. Start building 🔥</p>`;
+	    return;
+	  }
+
+	  cachedGoals.forEach(g => {
+	    const linkedAch = achievements.find(a => a.goalId === g.id);
+	    const unlocked = linkedAch?.unlocked;
+
+	    const div = document.createElement('div');
+	    div.className = 'col-sm-6 col-md-4 col-lg-3';
+
+	    div.innerHTML = `
+	      <div class="achievement-card ${unlocked ? '' : 'locked'}">
+	        <div class="achievement-icon">
+	          <i class="bi ${unlocked ? 'bi-trophy' : 'bi-hourglass-split'}"></i>
+	        </div>
+	        <div class="achievement-title">${g.title}</div>
+	        <div class="achievement-desc">
+	          ${unlocked ? 'Achievement Unlocked!' : 'Locked'}
+	        </div>
+	      </div>
+	    `;
+
+	    customGrid.appendChild(div);
+	  });
+	}
+
+	
+	function showAchievementToast(a) {
+	  const container = document.getElementById('achievement-toast');
+
+	  const toast = document.createElement('div');
+	  toast.style = `
+	    background: linear-gradient(135deg, #4facfe, #00f2fe);
+	    color: white;
+	    padding: 14px 18px;
+	    border-radius: 10px;
+	    margin-bottom: 10px;
+	    min-width: 250px;
+	    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+	    animation: slideIn 0.4s ease;
+	    font-weight: 500;
+	  `;
+
+	  toast.innerHTML = `
+	    <div style="font-size: 14px; opacity: 0.9;">🏆 Achievement Unlocked</div>
+	    <div style="font-size: 16px; font-weight: 600;">${a.title}</div>
+	  `;
+
+	  container.appendChild(toast);
+
+	  // auto remove
+	  setTimeout(() => {
+	    toast.style.opacity = '0';
+	    toast.style.transform = 'translateX(100%)';
+	    setTimeout(() => toast.remove(), 300);
+	  }, 3000);
+	}
+	
 	async function fetchAchievements() {
 	  try {
 	    const res = await axios.get('/api/achievements', { withCredentials: true });
-	    console.log("DATA:", res.data);
-	    renderAchievements(res.data);
-	    await axios.post('/api/achievements/seen', {}, { withCredentials: true });
+
+	    console.log("ACH DATA:", res.data); // 🔥 DEBUG
+
+		renderAchievements(res.data);
+
+		// delay marking as seen so UI can show "new"
+		setTimeout(async () => {
+		  await axios.post('/api/achievements/seen', {}, { withCredentials: true });
+		}, 15000); // 15 seconds instead of 3
+
 	  } catch (err) {
 	    console.error('Error fetching achievements', err);
 	  }
 	}
-
 	async function refreshAchievements() {
 	  if (isRefreshing) return;
 	  isRefreshing = true;
@@ -244,15 +402,18 @@
 	  }
 	}
 
-	document.addEventListener('DOMContentLoaded', () => {
-	  fetchAchievements();
+
+	document.addEventListener('DOMContentLoaded', async () => {
+	  await fetchGoals();
+	  await fetchAchievements();
+
 
 	  const toggle = document.getElementById('toggle-template-goals');
 	  const templateSection = document.getElementById('template-achievements');
 
 	  toggle.addEventListener('click', () => {
 	    if (templateSection.style.display === 'none') {
-	      templateSection.style.display = 'flex';
+	      templateSection.style.display = 'block';
 	      toggle.style.color = '#0056b3';
 	      toggle.innerHTML = '📜 Hide Template Goals';
 	    } else {
@@ -261,10 +422,28 @@
 	      toggle.innerHTML = '📜 Default Template Goals';
 	    }
 	  });
-	});
+
+	  const customToggle = document.getElementById('toggle-custom-goals');
+	  const customSection = document.getElementById('custom-achievements');
+
+	  customToggle.addEventListener('click', () => {
+	    if (customSection.style.display === 'none') {
+	      customSection.style.display = 'flex';
+	      renderCustomGoals();
+
+	      customToggle.style.color = '#0056b3';
+	      customToggle.innerHTML = '🎯 Hide Customized User Goals';
+	    } else {
+	      customSection.style.display = 'none';
+	      customToggle.style.color = '#333';
+	      customToggle.innerHTML = '🎯 Customized User Goals';
+	    }
+	  });
+	}); // ✅ properly closed
 
 	window.updateAchievements = refreshAchievements;
 	</script>
+
 
 
 </body>

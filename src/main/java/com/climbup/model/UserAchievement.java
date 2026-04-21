@@ -11,7 +11,7 @@ import java.time.Instant;
 @Table(
     name = "user_achievements",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "template_id"})
+        @UniqueConstraint(columnNames = {"user_id", "template_id", "goal_id"})
     }
 )
 public class UserAchievement {
@@ -24,8 +24,8 @@ public class UserAchievement {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "template_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "template_id", nullable = true)
     private AchievementTemplate template;
 
     @Column(nullable = false)
@@ -37,6 +37,7 @@ public class UserAchievement {
     @Column(nullable = false)
     private boolean seen = false;
 
+    @Column(name = "unlocked_at")
     private Instant unlockedAt;
 
     @ManyToOne
@@ -48,6 +49,9 @@ public class UserAchievement {
 	@CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+	
+	@Column(name = "display_title")
+	private String displayTitle;
 
     // -------- logic --------
 
@@ -57,6 +61,7 @@ public class UserAchievement {
 	    this.unlocked = true;
 	    this.newlyUnlocked = true;
 	    this.unlockedAt = Instant.now();
+	    this.seen = false;
 	}
 
 	public void markSeen() {
@@ -107,6 +112,14 @@ public class UserAchievement {
 
 	public void setGoal(Goal goal) {
 	    this.goal = goal;
+	}
+	
+	public String getDisplayTitle() {
+	    return displayTitle;
+	}
+
+	public void setDisplayTitle(String displayTitle) {
+	    this.displayTitle = displayTitle;
 	}
 	
 

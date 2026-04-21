@@ -1,13 +1,11 @@
 package com.climbup.service.productivity;
 
 import com.climbup.dto.request.GoalRequestDTO;
-import com.climbup.exception.NotFoundException;
 import com.climbup.exception.ResourceNotFoundException;
-import com.climbup.mapper.GoalMapper;
 import com.climbup.model.*;
+import com.climbup.repository.AchievementTemplateRepository;
 import com.climbup.repository.GoalRepository;
 import com.climbup.repository.UserAchievementRepository;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,150 +16,147 @@ public class GoalService {
 
     private final GoalRepository goalRepository;
     private final XPService xpService;
-    private final AchievementService achievementService;
-    private final UserAchievementRepository userAchievementRepository;
     private final AchievementEvaluationService achievementEvaluationService;
+    private final UserAchievementRepository userAchievementRepository;
+    private final AchievementTemplateRepository achievementTemplateRepository;
 
     public GoalService(GoalRepository goalRepository,
                        XPService xpService,
-                       AchievementService achievementService,
+                       AchievementEvaluationService achievementEvaluationService,
                        UserAchievementRepository userAchievementRepository,
-                       AchievementEvaluationService achievementEvaluationService) {
+                       AchievementTemplateRepository achievementTemplateRepository) {
         this.goalRepository = goalRepository;
         this.xpService = xpService;
-        this.achievementService = achievementService;
-        this.userAchievementRepository = userAchievementRepository;
         this.achievementEvaluationService = achievementEvaluationService;
+        this.userAchievementRepository = userAchievementRepository;
+        this.achievementTemplateRepository = achievementTemplateRepository;
     }
 
-    // ===== Get goals =====
+    // ================= GET =================
     public List<Goal> filterGoals(User user, String status, String priority) {
-        return goalRepository.findByUser(user).stream()
-                .filter(goal -> "ALL".equalsIgnoreCase(status) || goal.getStatus().name().equalsIgnoreCase(status))
-                .filter(goal -> "ALL".equalsIgnoreCase(priority) || goal.getPriority().name().equalsIgnoreCase(priority))
+
+        List<Goal> goals = goalRepository.findByUser(user);
+
+        return goals.stream()
+                .filter(g -> "ALL".equalsIgnoreCase(status)
+                        || g.getStatus().name().equalsIgnoreCase(status))
+                .filter(g -> "ALL".equalsIgnoreCase(priority)
+                        || g.getPriority().name().equalsIgnoreCase(priority))
                 .toList();
     }
 
- // ===== Create =====
+    public List<Goal> getGoalsForUser(User user) {
+        return goalRepository.findByUser(user);
+    }
+
+    // ================= CREATE =================
     @Transactional
     public Goal createGoal(GoalRequestDTO dto, User user) {
-
         Goal goal = new Goal();
-
         goal.setTitle(dto.getTitle());
         goal.setDescription(dto.getDescription());
         goal.setDueDate(dto.getDueDate());
-
-        goal.setStatus(dto.getStatus() != null ? dto.getStatus() : GoalStatus.ACTIVE);
-        goal.setPriority(dto.getPriority() != null ? dto.getPriority() : Goal.Priority.MEDIUM);
-
+        goal.setPriority(dto.getPriority());
+        goal.setStatus(GoalStatus.ACTIVE);
         goal.setProgress(0);
         goal.setCompleted(false);
         goal.setUser(user);
 
-        // save the goal first
         Goal savedGoal = goalRepository.save(goal);
 
-        // 🔥 create a locked achievement linked to this goal
-        AchievementTemplate template = achievementService.findTemplateByName(savedGoal.getTitle());
-        if (template != null) {
-            UserAchievement ua = new UserAchievement();
-            ua.setUser(user);
-            ua.setTemplate(template);
-            ua.setGoal(savedGoal);
-            ua.setUnlocked(false);
-            userAchievementRepository.save(ua);
-        }
+        // 🔹 Link achievement to this goal
+        AchievementTemplate customTemplate =
+        	    achievementTemplateRepository.findByCode(AchievementCode.CUSTOM_GOAL)
+        	        .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
+
+        UserAchievement ua = new UserAchievement();
+        ua.setUser(user);
+        ua.setGoal(savedGoal);
+        ua.setTemplate(customTemplate);
+        ua.setUnlocked(false);
+        ua.setNewlyUnlocked(false);
+        ua.setSeen(false);
+        ua.setDisplayTitle(savedGoal.getTitle()); // use goal title for display
+        userAchievementRepository.save(ua);
 
         return savedGoal;
     }
 
 
-    // ===== Update =====
+    // ================= UPDATE =================
     @Transactional
     public Goal updateGoal(Long goalId, GoalRequestDTO dto, User user) {
 
-        Goal existing = goalRepository.findByIdAndUser(goalId, user)
+        Goal goal = goalRepository.findByIdAndUser(goalId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
 
-        GoalStatus oldStatus = existing.getStatus();
+        GoalStatus oldStatus = goal.getStatus();
 
-        if (dto.getTitle() != null) existing.setTitle(dto.getTitle());
-        if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
-        if (dto.getDueDate() != null) existing.setDueDate(dto.getDueDate());
-        if (dto.getPriority() != null) existing.setPriority(dto.getPriority());
-        if (dto.getStatus() != null) existing.setStatus(dto.getStatus());
+        if (dto.getTitle() != null) goal.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) goal.setDescription(dto.getDescription());
+        if (dto.getDueDate() != null) goal.setDueDate(dto.getDueDate());
+        if (dto.getPriority() != null) goal.setPriority(dto.getPriority());
+        if (dto.getStatus() != null) goal.setStatus(dto.getStatus());
 
-        Goal saved = goalRepository.save(existing);
+        Goal updated = goalRepository.save(goal);
 
-        // 🔥 trigger achievement only on completion
-        if (oldStatus != GoalStatus.COMPLETED && saved.getStatus() == GoalStatus.COMPLETED) {
+        if (oldStatus != GoalStatus.COMPLETED &&
+                updated.getStatus() == GoalStatus.COMPLETED) {
+            handleCompletion(updated, user);
             achievementEvaluationService.evaluate(user);
         }
 
-        return saved;
+        return updated;
     }
 
- // ===== Complete =====
+    // ================= COMPLETE GOAL =================
     @Transactional
-    public void completeGoal(Long goalId, User user) {
+    public Goal completeGoal(Long goalId, User user) {
 
         Goal goal = goalRepository.findByIdAndUser(goalId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
 
         if (goal.getStatus() == GoalStatus.COMPLETED) {
-            return; // already completed, nothing to do
+            return goal;
         }
 
-        // mark goal complete
         goal.markCompleted();
-        goalRepository.save(goal);
+        Goal savedGoal = goalRepository.save(goal);
 
-        // 🔥 unlock linked achievements
-        List<UserAchievement> achievements = userAchievementRepository.findByGoal(goal);
+        handleCompletion(savedGoal, user);
+
+        achievementEvaluationService.evaluate(user);
+
+        return savedGoal;
+    }
+
+    // ================= CORE COMPLETION LOGIC =================
+    private void handleCompletion(Goal goal, User user) {
+
+        // XP reward
+        xpService.addXp(user, 50);
+
+        // unlock achievements linked to this goal
+        List<UserAchievement> achievements =
+                userAchievementRepository.findByGoal(goal);
+
         for (UserAchievement ua : achievements) {
             if (!ua.isUnlocked()) {
                 ua.unlock();
+                ua.setNewlyUnlocked(true);
                 userAchievementRepository.save(ua);
             }
         }
-
-        // award XP
-        xpService.addXp(user, 50);
-
-        // evaluate other achievement conditions (e.g., streaks, totals)
-        achievementEvaluationService.evaluate(user);
     }
 
-
-    // ===== Delete =====
+    // ================= DELETE =================
     @Transactional
     public void deleteGoal(Long goalId, User user) {
 
         Goal goal = goalRepository.findByIdAndUser(goalId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
 
-        // 🔥 delete children first
         userAchievementRepository.deleteByGoalId(goalId);
-
         goalRepository.delete(goal);
-    }
-    
-    public List<Goal> getGoalsForUser(User user) {
-        return goalRepository.findByUser(user);
-    }
-    public Goal completeGoalAndReturn(Long id, User user) {
-    	Goal goal = goalRepository.findByIdAndUser(id, user)
-    	        .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
-
-        if (goal.getStatus() == GoalStatus.COMPLETED) return goal;
-
-        goal.markCompleted();
-        goalRepository.save(goal);
-
-        xpService.addXp(user, 50);
-        achievementEvaluationService.evaluate(user);
-
-        return goal;
     }
 }

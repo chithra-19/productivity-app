@@ -68,14 +68,17 @@ public class UserService implements UserDetailsService {
     // ---------- Current Authenticated User ----------
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResourceNotFoundException("No authenticated user found");
+
+        if (authentication == null 
+            || !authentication.isAuthenticated() 
+            || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new RuntimeException("User not logged in");
         }
 
-        String login = authentication.getName(); // this is email now
-        return userRepository.findByEmail(login)
+        String login = authentication.getName();
 
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return userRepository.findByEmail(login)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
     
 

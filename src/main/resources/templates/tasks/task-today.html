@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	            const toastEl = document.getElementById('taskToast');
 	            if (toastEl) {
 	                document.getElementById('toastMessage').textContent =
-	                    `Task Completed! +${data?.xpIncrement || 0} XP | Streak: ${data?.streak || 0}`;
+	                    `Task Completed! | Streak: ${data?.streak || 0}`;
 
 	                bootstrap.Toast.getOrCreateInstance(toastEl).show();
 	            }
@@ -370,30 +370,48 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
     // ✅ DELETE
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            if (!confirm("Delete this task?")) return;
+	document.querySelectorAll('.delete-btn').forEach(btn => {
+	    btn.addEventListener('click', async function () {
 
-            const taskId = this.dataset.id;
+	        if (!confirm("Delete this task?")) return;
 
-            try {
-                const res = await fetch(`/tasks/delete/${taskId}`, { method: "DELETE" });
-                const data = await res.json();
+	        const taskId = this.dataset.id;
 
-                if (!res.ok) return;
+	        const token = document.querySelector('meta[name="_csrf"]').content;
+	        const header = document.querySelector('meta[name="_csrf_header"]').content;
 
-                const row = this.closest('tr');
-                row.style.opacity = 0;
-                setTimeout(() => row.remove(), 400);
+	        try {
+	            const res = await fetch(`/api/tasks/delete/${taskId}`, {
+	                method: "DELETE",
+	                headers: {
+	                    [header]: token
+	                }
+	            });
 
-                updateCounters(data);
+	            let data = null;
 
-            } catch (err) {
-                console.error(err);
-                alert("Something went wrong!");
-            }
-        });
-    });
+	            try {
+	                data = await res.json();
+	            } catch (e) {
+	                console.warn("No JSON response");
+	            }
+
+	            if (!res.ok) {
+	                throw new Error("Delete failed");
+	            }
+
+	            const row = this.closest('tr');
+	            row.style.opacity = 0;
+	            setTimeout(() => row.remove(), 400);
+
+	            if (data) updateCounters(data);
+
+	        } catch (err) {
+	            console.error(err);
+	            alert(err.message || "Something went wrong!");
+	        }
+	    });
+	});
 
     // ✅ EDIT (SAFE MODAL HANDLING)
     document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -462,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 function showTaskToast(xpEarned) {
     document.getElementById("toastMessage").innerText =
-        `Task Completed! +${xpEarned} XP`;
+        `Task Completed!`;
 
     const toastEl = document.getElementById("taskToast");
     const toast = new bootstrap.Toast(toastEl);

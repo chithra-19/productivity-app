@@ -247,13 +247,46 @@ body {
   border-radius: 10px;
   background: #f3f4f6;
 }
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 14px);
+  gap: 6px;
+
+  justify-content: center;
+  align-items: center;
+
+  margin: 0 auto;
+}
+
+.heatmap-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  transition: 0.15s ease;
+}
+
+.heatmap-box:hover {
+  transform: scale(1.2);
+}
+.heatmap-box:hover {
+  transform: scale(1.2);
+}
+
+/* levels */
+.level-0 { background-color: #ebedf0; }
+.level-1 { background-color: #c6e48b; }
+.level-2 { background-color: #7bc96f; }
+.level-3 { background-color: #239a3b; }
+
+
 
 @media (max-width: 992px) {
   .profile-left {
     flex: 1 1 100%;
     margin-bottom: 30px;
   }
-  .profile-right {
+  .profile-right
+   {
     flex: 1 1 100%;
   }
 }

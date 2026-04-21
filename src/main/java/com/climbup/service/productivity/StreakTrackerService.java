@@ -11,7 +11,9 @@ import com.climbup.service.task.ActivityService;
 
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 
 import java.time.temporal.ChronoUnit;
@@ -121,8 +123,18 @@ public class StreakTrackerService {
 
         int streak = 0;
 
-        while (validDates.contains(cursor)) {
-            streak++;
+        int freezes = user.getAvailableFreezes();
+
+        while (true) {
+
+            if (validDates.contains(cursor)) {
+                streak++;
+            } else if (freezes > 0) {
+                freezes--; // ❄️ use freeze
+            } else {
+                break;
+            }
+
             cursor = cursor.minusDays(1);
         }
 
@@ -147,7 +159,78 @@ public class StreakTrackerService {
         }
     }
 
-   
+    public List<Map<String, Object>> getMonthlyHeatmap(User user, YearMonth yearMonth) {
 
+        LocalDate startOfMonth = yearMonth.atDay(1);
+        LocalDate endOfMonth = yearMonth.atEndOfMonth();
+
+        Instant start = startOfMonth
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant();
+
+        Map<LocalDate, Long> counts = taskRepository
+                .findCompletedTasksFromDate(user, start)
+                .stream()
+                .filter(t -> t.getCompletedDateTime() != null)
+                .collect(Collectors.groupingBy(
+                        t -> t.getCompletedDateTime()
+                              .atZone(ZoneId.systemDefault())
+                              .toLocalDate(),
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (int i = 1; i <= yearMonth.lengthOfMonth(); i++) {
+            LocalDate date = startOfMonth.withDayOfMonth(i);
+
+            long count = counts.getOrDefault(date, 0L);
+
+            String level;
+
+            if (count == 0) level = "level-0";
+            else if (count <= 2) level = "level-1";
+            else if (count <= 4) level = "level-2";
+            else level = "level-3";
+
+            result.add(Map.of(
+                    "date", date,
+                    "count", count,
+                    "level", level
+            ));
+        }
+
+        return result;
+    }
+
+    public int getConsistencyScore(User user) {
+
+        Instant start = LocalDate.now()
+                .minusDays(29)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant();
+
+        Map<LocalDate, Long> counts = taskRepository
+                .findCompletedTasksFromDate(user, start)
+                .stream()
+                .filter(t -> t.getCompletedDateTime() != null)
+                .collect(Collectors.groupingBy(
+                        t -> t.getCompletedDateTime()
+                              .atZone(ZoneId.systemDefault())
+                              .toLocalDate(),
+                        Collectors.counting()
+                ));
+
+        int activeDays = 0;
+
+        for (int i = 0; i < 30; i++) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            if (counts.getOrDefault(date, 0L) >= 4) {
+                activeDays++;
+            }
+        }
+
+        return (activeDays * 100) / 30;
+    }
    
 }

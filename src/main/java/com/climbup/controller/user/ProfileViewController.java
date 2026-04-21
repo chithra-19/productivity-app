@@ -12,6 +12,7 @@ import com.climbup.service.user.UserService;
 import jakarta.validation.Valid;
 
 import java.security.Principal;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,22 +59,30 @@ public class ProfileViewController {
     // VIEW PROFILE (ONLY ONE GET MAPPING)
     // =========================================================
     @GetMapping
-    public String showProfile(Principal principal, Model model) {
+    public String showProfile(
+            @RequestParam(value = "month", required = false) String month,
+            Principal principal,
+            Model model) {
 
-        if (principal == null) {
-            return "redirect:/login";
-        }
+        if (principal == null) return "redirect:/login";
 
         User user = userService.findByEmail(principal.getName());
 
-        return buildProfile(user, model, false);
+        YearMonth selectedMonth = (month != null)
+                ? YearMonth.parse(month)
+                : YearMonth.now();
+
+        return buildProfile(user, model, false, selectedMonth);
     }
 
     // =========================================================
     // EDIT MODE (same page, different flag)
     // =========================================================
     @GetMapping("/edit")
-    public String editProfile(Principal principal, Model model) {
+    public String editProfile(
+            @RequestParam(value = "month", required = false) String month,
+            Principal principal,
+            Model model) {
 
         if (principal == null) {
             return "redirect:/login";
@@ -81,18 +90,24 @@ public class ProfileViewController {
 
         User user = userService.findByEmail(principal.getName());
 
-        return buildProfile(user, model, true);
+        YearMonth selectedMonth = (month != null)
+                ? YearMonth.parse(month)
+                : YearMonth.now();
+
+        return buildProfile(user, model, true, selectedMonth);
     }
 
     // =========================================================
     // UPDATE PROFILE
     // =========================================================
     @PostMapping("/update")
-    public String updateProfile(Principal principal,
-                                @Valid @ModelAttribute("profileRequestDTO") ProfileRequestDTO dto,
-                                BindingResult result,
-                                @RequestParam("profilePictureFile") MultipartFile file,
-                                Model model) {
+    public String updateProfile(
+            @RequestParam(value = "month", required = false) String month,
+            Principal principal,
+            @Valid @ModelAttribute("profileRequestDTO") ProfileRequestDTO dto,
+            BindingResult result,
+            @RequestParam("profilePictureFile") MultipartFile file,
+            Model model) {
 
         if (principal == null) {
             return "redirect:/login";
@@ -100,8 +115,12 @@ public class ProfileViewController {
 
         User user = userService.findByEmail(principal.getName());
 
+        YearMonth selectedMonth = (month != null)
+                ? YearMonth.parse(month)
+                : YearMonth.now();
+
         if (result.hasErrors()) {
-            return buildProfile(user, model, true);
+            return buildProfile(user, model, true, selectedMonth);
         }
 
         if (file != null && !file.isEmpty()) {
@@ -111,14 +130,14 @@ public class ProfileViewController {
 
         profileService.updateProfile(user.getId(), dto);
 
-        return "redirect:/dashboard/profile?updated=true";
+        return "redirect:/dashboard/profile?month=" + selectedMonth + "&updated=true";
     }
 
     // =========================================================
     // CORE METHOD (NO DUPLICATION)
     // =========================================================
     
-    private String buildProfile(User user, Model model, boolean editMode) {
+    private String buildProfile(User user, Model model, boolean editMode, YearMonth selectedMonth) {
 
         ProfileResponseDTO profile = profileService.getProfile(user.getId());
 
@@ -130,6 +149,13 @@ public class ProfileViewController {
         
         int currentStreak = streakService.getCurrentStreak(user);
         int bestStreak = streakService.getBestStreak(user);
+        
+        List<Map<String, Object>> monthlyHeatmap =
+                streakService.getMonthlyHeatmap(user, selectedMonth);
+
+        
+        int consistency = streakService.getConsistencyScore(user);
+        
         // ===== TASKS =====
         long completedTasks = taskStatsService.getCompletedTaskCount(user);
 
@@ -158,15 +184,23 @@ public class ProfileViewController {
         view.put("profile", profile);
 
         view.put("dashboard", Map.of(
-            "currentStreak", currentStreak,
-            "bestStreak", bestStreak
-        ));
+        	    "currentStreak", currentStreak,
+        	    "bestStreak", bestStreak
+
+        	));
 
         view.put("completedTasks", completedTasks);
         view.put("level", level);
         view.put("currentXP", currentXP);
         view.put("xpPercentage", xpPercentage);
         view.put("xpForNextLevel", xpForNextLevel);
+        view.put("consistency", consistency);
+        view.put("freezes", user.getAvailableFreezes());
+
+        view.put("monthlyHeatmap", monthlyHeatmap);
+        view.put("selectedMonth", selectedMonth);
+        view.put("prevMonth", selectedMonth.minusMonths(1));
+        view.put("nextMonth", selectedMonth.plusMonths(1));
 
         model.addAttribute("view", view);
         model.addAttribute("editMode", editMode);

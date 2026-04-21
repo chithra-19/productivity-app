@@ -154,7 +154,8 @@ public class TaskController {
         Map<String, Object> resp = new HashMap<>();
         resp.put("task", task);
         resp.put("streak", currentStreak);
-        resp.put("pendingCount", pendingCount);
+        resp.put("pendingTasks", pendingCount);
+        resp.put("xp", user.getXp());
 
         return ResponseEntity.ok(resp);
     }

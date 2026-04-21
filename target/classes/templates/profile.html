@@ -22,7 +22,8 @@
 
         <h3 class="mb-3">Your Profile</h3>
 
-		<a id="editBtn" href="javascript:void(0)" 
+		<a id="editBtn"
+		   th:href="@{/dashboard/profile/edit(month=${view.selectedMonth})}"
 		   class="btn btn-primary mb-3 w-100">
 		  Edit
 		</a>
@@ -109,71 +110,160 @@
       </div>
     </div>
 
-    <!-- RIGHT PANEL -->
-    <div class="col-lg-8 col-md-12 profile-right">
+	<!-- RIGHT PANEL -->
+	<div class="col-lg-8 col-md-12 profile-right">
 
-      <!-- STATS -->
-      <div class="stats-section mb-4">
-        <h4 class="mb-3">Your Progress</h4>
+	  <!-- STATS -->
+	  <div class="stats-section mb-4">
+	    <h4 class="mb-3">Your Progress</h4>
 
-        <div class="row text-center g-3">
+	    <div class="row text-center g-3">
 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-fire-fill text-danger fs-2"></i>
-			  <h5 th:text="${view.dashboard.currentStreak}">0</h5>
-              <small>Current Streak</small>
-            </div>
-          </div>
- 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-trophy-fill text-warning fs-2"></i>
-			  <h5 th:text="${view.dashboard.bestStreak}">0</h5>
-			 <small>Best Streak</small>
-            </div>
-          </div>
+	      <!-- CURRENT STREAK + FREEZE -->
+	      <div class="col-md-4 col-6">
+	        <div class="stat-card p-3 rounded shadow-sm text-center">
 
-          <div class="col-md-3 col-6">
-            <div class="stat-card p-3 rounded shadow-sm">
-              <i class="bi bi-check2-circle text-success fs-2"></i>
-              <h5 th:text="${view.completedTasks}">0</h5>
-              <small>Tasks Completed</small>
-            </div>
-          </div>
+	          <i class="bi bi-fire-fill text-danger fs-2"></i>
+	          <h5 th:text="${view.dashboard.currentStreak}">0</h5>
+	          <small>Current Streak</small>
 
-        </div>
-      </div>
+	          <!-- Freeze -->
+	          <div class="mt-2">
+	            <span class="badge"
+				th:class="'badge ' + (${view.freezes == 0} ? 'bg-danger' : 'bg-info')"
+	                  th:text="'❄️ ' + ${view.freezes}">
+	              ❄️ 1
+	            </span>
+	          </div>
+
+	        </div>
+	      </div>
+
+	      <!-- BEST STREAK -->
+	      <div class="col-md-4 col-6">
+	        <div class="stat-card p-3 rounded shadow-sm text-center">
+
+	          <i class="bi bi-trophy-fill text-warning fs-2"></i>
+	          <h5 th:text="${view.dashboard.bestStreak}">0</h5>
+	          <small>Best Streak</small>
+
+	        </div>
+	      </div>
+
+	      <!-- COMPLETED TASKS -->
+	      <div class="col-md-4 col-6">
+	        <div class="stat-card p-3 rounded shadow-sm text-center">
+
+	          <i class="bi bi-check2-circle text-success fs-2"></i>
+	          <h5 th:text="${view.completedTasks}">0</h5>
+	          <small>Tasks Completed</small>
+
+	        </div>
+	      </div>
+
+	    </div>
+	  </div>
+
 	  <!-- XP SECTION -->
 	  <div class="xp-section mb-4">
 	    <h4 class="mb-3 fw-bold text-primary">Level Progress</h4>
 
 	    <div class="stat-card p-4 text-center shadow-sm rounded bg-light">
+
 	      <h5 class="fw-semibold">
 	        Level <span th:text="${view.level}">1</span>
 	      </h5>
 
-	      <!-- Progress Bar -->
-	      <div class="progress mt-3" style="height: 12px; border-radius: 20px; overflow: hidden;">
+	      <div class="progress mt-3" style="height: 12px; border-radius: 20px;">
 	        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
 	             th:style="'width:' + ${view.xpPercentage} + '%'">
 	        </div>
 	      </div>
 
-	      <!-- XP Numbers -->
 	      <small class="d-block mt-2 fw-semibold text-dark">
 	        <span th:text="${view.currentXP}">0</span> /
 	        <span th:text="${view.xpForNextLevel}">100</span> XP
 	      </small>
 
-	      <!-- Friendly Message -->
 	      <small class="text-muted"
 	             th:text="'Only ' + (${view.xpForNextLevel} - ${view.currentXP}) + ' XP to reach Level ' + (${view.level}+1)">
-	        Only 20 XP to reach Level 2
 	      </small>
+
 	    </div>
 	  </div>
 
+	  <!-- HEATMAP -->
+	  <div class="xp-section mb-4">
+	    <h4 class="mb-3 fw-bold text-primary">
+	      Monthly Activity
+	    </h4>
+
+	    <div class="stat-card p-4 shadow-sm rounded bg-light">
+
+	      <!-- HEADER NAV -->
+	      <div class="d-flex justify-content-between align-items-center mb-3">
+
+	        <!-- PREV -->
+	        <a th:href="@{/dashboard/profile(month=${view.prevMonth})}"
+	           class="btn btn-sm btn-outline-secondary">
+	          ←
+	        </a>
+
+	        <!-- MONTH TITLE -->
+	        <strong class="text-dark fw-semibold"
+	                th:text="${#temporals.format(view.selectedMonth.atDay(1), 'MMMM yyyy')}">
+	          April 2026
+	        </strong>
+
+	        <!-- NEXT -->
+	        <a th:href="@{/dashboard/profile(month=${view.nextMonth})}"
+	           class="btn btn-sm btn-outline-secondary">
+	          →
+	        </a>
+
+	      </div>
+
+	      <!-- HEATMAP GRID -->
+	      <div class="heatmap-grid mx-auto">
+
+	        <div th:each="day : ${view.monthlyHeatmap}"
+	             class="heatmap-box"
+	             th:classappend="${day.level}"
+	             th:title="${day.date + ' → ' + day.count + ' tasks'}">
+	        </div>
+
+	      </div>
+
+	    </div>
+	  </div>
+	  <!-- CONSISTENCY -->
+	  <div class="xp-section mb-4">
+	    <h4 class="mb-3 fw-bold text-primary">Consistency</h4>
+
+	    <div class="stat-card p-4 text-center shadow-sm rounded bg-light">
+
+	      <h2 class="fw-bold" th:text="${view.consistency + '%'}">0%</h2>
+
+	      <div class="progress mt-3" style="height: 10px;">
+	        <div class="progress-bar"
+	             th:classappend="${view.consistency >= 80} ? 'bg-success' :
+	                             (${view.consistency >= 60} ? 'bg-info' :
+	                              (${view.consistency >= 30} ? 'bg-warning' : 'bg-danger'))"
+	             th:style="'width:' + ${view.consistency} + '%'">
+	        </div>
+	      </div>
+
+	      <small class="text-muted d-block mt-3"
+	             th:text="${view.consistency >= 80} ? 'Elite consistency 🔥' :
+	                      (${view.consistency >= 60} ? 'Strong momentum 💪' :
+	                       (${view.consistency >= 30} ? 'Building habit ⚡' :
+	                        'Just getting started 🚀'))">
+	      </small>
+
+	    </div>
+	  </div>
+
+	</div>
 
 
     </div>

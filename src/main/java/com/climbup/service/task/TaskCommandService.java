@@ -109,14 +109,13 @@ public class TaskCommandService {
     // =========================================================
     // DELETE TASK
     // =========================================================
+    @Transactional
     public void deleteTask(Long taskId, User user) {
 
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found"));
 
         taskRepository.delete(task);
-
-        
     }
 
     // =========================================================

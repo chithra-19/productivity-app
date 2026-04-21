@@ -40,6 +40,8 @@ public class AchievementTemplateSeeder {
 
     private String generateTitle(AchievementCode code) {
         return switch (code) {
+        
+        	case CUSTOM_GOAL -> "Custom Goal";
             // Goals
             case GOAL_1_COMPLETED -> "First Goal Completed";
             case GOAL_5_COMPLETED -> "5 Goals Completed";
@@ -72,6 +74,9 @@ public class AchievementTemplateSeeder {
 
     private String generateDescription(AchievementCode code) {
         return switch (code) {
+        
+        	case CUSTOM_GOAL -> "Complete a custom goal.";
+        	
             // Goals
             case GOAL_1_COMPLETED -> "Complete your first goal.";
             case GOAL_5_COMPLETED -> "Complete 5 goals.";
@@ -105,6 +110,7 @@ public class AchievementTemplateSeeder {
     private AchievementType getType(AchievementCode code) {
     return switch (code) {
 
+    	case CUSTOM_GOAL -> AchievementType.GOAL;
         // Goals
         case GOAL_1_COMPLETED,
              GOAL_5_COMPLETED,
@@ -138,6 +144,7 @@ public class AchievementTemplateSeeder {
 
         switch (code) {
 
+        	case CUSTOM_GOAL -> { t.setMetric("CUSTOM"); }
             // GOALS
             case GOAL_1_COMPLETED -> { t.setMetric("GOALS"); t.setThreshold(1); }
             case GOAL_5_COMPLETED -> { t.setMetric("GOALS"); t.setThreshold(5); }

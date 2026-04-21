@@ -73,6 +73,18 @@ public class DashboardController {
 
         User user = userService.getUserWithAllData(springUser.getUsername());
 
+        String displayName = "User"; // fallback
+
+        if (user.getProfile() != null &&
+            user.getProfile().getFirstName() != null &&
+            !user.getProfile().getFirstName().isBlank()) {
+
+            displayName = user.getProfile().getFirstName();
+        }
+
+        model.addAttribute("displayName", displayName);
+        
+        model.addAttribute("firstName", displayName);
         // ONLY ONE DTO
         DashboardResponseDTO dashboard = dashboardService.buildDashboard(user);
 

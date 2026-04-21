@@ -32,7 +32,7 @@ public class GoalController {
         return userService.getCurrentUser();
     }
 
-    // 🔹 GET goals with filters
+    // 🔹 GET goals
     @GetMapping
     public ResponseEntity<List<GoalResponseDTO>> getGoals(
             @RequestParam(defaultValue = "ALL") String status,
@@ -62,7 +62,6 @@ public class GoalController {
             @Valid @RequestBody GoalRequestDTO dto
     ) {
         Goal updated = goalService.updateGoal(goalId, dto, currentUser());
-
         return ResponseEntity.ok(GoalMapper.toDTO(updated));
     }
 
@@ -70,7 +69,10 @@ public class GoalController {
     @PutMapping("/{goalId}/complete")
     public ResponseEntity<GoalResponseDTO> completeGoal(@PathVariable Long goalId) {
 
-        Goal goal = goalService.completeGoalAndReturn(goalId, currentUser());
+        Goal goal = goalService.completeGoal(goalId, currentUser());
+
+        // ❌ NO achievement call here
+        // already handled inside GoalService
 
         return ResponseEntity.ok(GoalMapper.toDTO(goal));
     }

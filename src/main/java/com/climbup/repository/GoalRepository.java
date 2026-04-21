@@ -22,9 +22,16 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findByUserAndStatus(User user, GoalStatus status);
 
     Optional<Goal> findByIdAndUser(Long id, User user);
+    
+    long countByUserAndCompletedTrue(User user);
 
-    @Query("SELECT DISTINCT g FROM Goal g LEFT JOIN FETCH g.achievements WHERE g.user.id = :userId")
-    List<Goal> findAllByUserWithAchievements(@Param("userId") Long userId);
-
+    @Query("""
+    		SELECT DISTINCT g 
+    		FROM Goal g 
+    		LEFT JOIN FETCH g.userAchievements ua
+    		LEFT JOIN FETCH ua.template
+    		WHERE g.user.id = :userId
+    		""")
+    		List<Goal> findAllByUserWithAchievements(@Param("userId") Long userId);
     long countByUserAndStatus(User user, GoalStatus status);
 }

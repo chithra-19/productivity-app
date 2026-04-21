@@ -2,6 +2,7 @@ package com.climbup.model;
 
 public enum AchievementCode {
    
+	 CUSTOM_GOAL,
 	 // goals
     GOAL_1_COMPLETED,
     GOAL_5_COMPLETED,

@@ -157,8 +157,7 @@
         `<p class="text-center text-muted">Failed to load goals.</p>`;
     }
   }
-
-
+  
   // Render goals (creates DOM elements + safe event handlers)
   function renderGoals(goals) {
     const list = document.getElementById('goal-list');
@@ -264,56 +263,63 @@
     const priority = document.getElementById('goal-priority').value;
 
     // ✅ Date format validation
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+	if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
       alert("Please enter a valid date in YYYY-MM-DD format.");
       return;
     }
 
     // ✅ Future-or-present check
     const today = new Date().toISOString().split("T")[0];
-    if (dueDate < today) {
+	if (dueDate && dueDate < today) {
       alert("Due date must be today or in the future.");
       return;
     }
 
-    const newGoal = { title, description, dueDate, priority };
-    console.log("Payload:", newGoal);
+	const newGoal = { title, description, dueDate, priority };
+	console.log("Payload:", newGoal);
 
+	try {
+	  const res = await axios.post('/api/goals', newGoal);
+	  const savedGoal = res.data;
+
+	  e.target.reset();
+
+	  latestGoals.push(savedGoal);
+
+	  const currentStatus = document.getElementById('filter-status').value;
+	  let filteredGoals = latestGoals;
+
+	  if (currentStatus !== "ALL") {
+	    filteredGoals = latestGoals.filter(g => g.status === currentStatus);
+	  }
+
+	  renderGoals(filteredGoals);
+
+
+
+	} catch (err) {
+	  console.error('Error adding goal:', err);
+	}
+});
+async function completeGoal(goalId) {
     try {
-      const res = await axios.post('/api/goals', newGoal);
-      const savedGoal = res.data;
-      e.target.reset();
+        await axios.put(`/api/goals/${goalId}/complete`);
 
-      latestGoals.push(savedGoal);
+        // just refresh goals UI
+        fetchGoals();
+		
+		if (window.updateAchievements) {
+		  window.updateAchievements();
+		} else {
+		  await axios.post('/api/achievements/evaluate', {}, { withCredentials: true });
+		}
 
-      const currentStatus = document.getElementById('filter-status').value;
-      let filteredGoals = latestGoals;
-      if (currentStatus !== "ALL") {
-        filteredGoals = latestGoals.filter(g => g.status === currentStatus);
-      }
 
-      renderGoals(filteredGoals);
     } catch (err) {
-      console.error('Error adding goal:', err);
+        console.error(err);
     }
-  });
-
-  // Complete goal (AJAX)
-  async function completeGoal(id) {
-    try {
-      const res = await axios.put(`/api/goals/${id}/complete`, {});
-      const updatedGoal = res.data;
-
-      // Update local array
-      latestGoals = latestGoals.map(g => g.id === id ? updatedGoal : g);
-      renderGoals(latestGoals);
-
-      if (window.updateAchievements) window.updateAchievements();
-    } catch (err) {
-      console.error('Error completing goal:', err);
-    }
-  }
-
+}
+  
   // Show inline edit form and populate fields
   function showEditForm(id, title, desc, dueDate, priority) {
     // ✅ Find the goal object from the latestGoals array
@@ -344,27 +350,27 @@
     e.preventDefault();
     const id = document.getElementById('edit-goal-id').value;
 
-	const updatedGoal = {
-	  title: document.getElementById('edit-goal-title').value,
-	  description: document.getElementById('edit-goal-description').value,
-	  dueDate: document.getElementById('edit-goal-due-date').value,
-	  priority: document.getElementById('edit-goal-priority').value,
-	 };
+    const updatedGoal = {
+      title: document.getElementById('edit-goal-title').value,
+      description: document.getElementById('edit-goal-description').value,
+      dueDate: document.getElementById('edit-goal-due-date').value,
+      priority: document.getElementById('edit-goal-priority').value,
+    };
 
     try {
       const res = await axios.put(`/api/goals/${id}`, updatedGoal);
       const savedGoal = res.data;
 
-      // Update local array
-	  await fetchGoals(); // ✅ Re-fetch from backend
-	  if (window.updateAchievements) window.updateAchievements();
+      await fetchGoals(); // refresh UI
 
+      
       document.getElementById('edit-goal-container').style.display = 'none';
+
     } catch (err) {
       console.error('Error updating goal:', err);
     }
-	
-	window.lastEditedGoalId = id;
+
+    window.lastEditedGoalId = id;
   });
 
 
@@ -376,19 +382,13 @@
       });
 
       await fetchGoals();
-	  
-	  if (window.updateAchievements) {
-	        await window.updateAchievements();
-	      } // 🔥 always sync with backend
 
+    
     } catch (err) {
       console.error("Delete failed:", err.response?.data || err.message);
       alert("Delete failed");
     }
   }
-
-
-
   // Filter listener
   document.getElementById('filter-status').addEventListener('change', fetchGoals);
 

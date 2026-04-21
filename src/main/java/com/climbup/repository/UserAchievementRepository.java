@@ -1,12 +1,7 @@
 package com.climbup.repository;
 
 import com.climbup.model.User;
-
 import com.climbup.model.UserAchievement;
-
-import jakarta.transaction.Transactional;
-
-import com.climbup.model.AchievementCode;
 import com.climbup.model.AchievementTemplate;
 import com.climbup.model.Goal;
 
@@ -15,13 +10,33 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+
 public interface UserAchievementRepository extends JpaRepository<UserAchievement, Long> {
 
-	Optional<UserAchievement> findByUserAndTemplate(User user, AchievementTemplate template);
+    // ========================
+    // BASIC LOOKUPS
+    // ========================
+
+    List<UserAchievement> findByUser(User user);
 
     List<UserAchievement> findByUserId(Long userId);
+
+    Optional<UserAchievement> findById(Long id);
+
+    long countByUser(User user);
+
+    boolean existsByUserId(Long userId);
+
+    // ========================
+    // TEMPLATE-BASED
+    // ========================
+
+    Optional<UserAchievement> findByUserAndTemplate(User user, AchievementTemplate template);
+
+    boolean existsByUserAndTemplate(User user, AchievementTemplate template);
 
     List<UserAchievement> findByUserAndUnlockedTrue(User user);
 
@@ -29,29 +44,44 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
 
     boolean existsByUserAndNewlyUnlockedTrue(User user);
 
-    long countByUser(User user);
-    
-    @Query("SELECT ua FROM UserAchievement ua JOIN FETCH ua.template WHERE ua.user.id = :userId")
-    List<UserAchievement> findByUserIdWithTemplate(@Param("userId") Long userId);
-    
-    List<UserAchievement> findByUser(User user);
-    
+    // ========================
+    // GOAL-BASED (IMPORTANT FOR YOUR SYSTEM)
+    // ========================
+
     List<UserAchievement> findByGoal(Goal goal);
 
- // Customized user goals (goal_id is not null)
+    List<UserAchievement> findByUserAndGoal(User user, Goal goal);
+
+    Optional<UserAchievement> findByGoalId(Long goalId);
+
     List<UserAchievement> findByUserAndGoalIsNotNull(User user);
 
-    // Default template goals (goal_id is null)
     List<UserAchievement> findByUserAndGoalIsNull(User user);
-    
+
+    // 🔥 New method: fetch only locked goal-linked achievements
+    List<UserAchievement> findByUserAndGoalIsNotNullAndUnlockedFalse(User user);
+
+    // 🔥 CHECK IF GOAL HAS UNLOCKED ACHIEVEMENT
+    boolean existsByUserAndGoalAndUnlockedTrue(User user, Goal goal);
+
+    // ========================
+    // OPTIMIZED FETCH (NO N+1)
+    // ========================
+
+    @Query("""
+        SELECT ua
+        FROM UserAchievement ua
+        JOIN FETCH ua.template
+        WHERE ua.user.id = :userId
+    """)
+    List<UserAchievement> findAllByUserIdWithTemplate(@Param("userId") Long userId);
+
+    // ========================
+    // DELETE OPERATIONS
+    // ========================
+
     @Modifying
     @Transactional
     @Query("DELETE FROM UserAchievement ua WHERE ua.goal.id = :goalId")
     void deleteByGoalId(@Param("goalId") Long goalId);
-
-    boolean existsByUserAndTemplate(User user, AchievementTemplate template);
-    
-    @Query("SELECT ua FROM UserAchievement ua WHERE ua.user.id = :userId OR ua.user.id = 0")
-    List<UserAchievement> findAllVisibleAchievements(@Param("userId") Long userId);
-    
 }

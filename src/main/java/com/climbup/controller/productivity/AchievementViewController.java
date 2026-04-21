@@ -41,7 +41,7 @@ public class AchievementViewController {
         }
 
         User user = userService.findByEmail(principal.getUsername());
-        List<AchievementResponseDTO> achievements = achievementService.getUserAchievements(user);
+        List<AchievementResponseDTO> achievements = achievementService.getUserAchievements(user.getId());
 
         model.addAttribute("achievements", achievements);
         return "achievements"; // points to achievements.html
