@@ -46,6 +46,8 @@ public interface FocusSessionRepository extends JpaRepository<FocusSession, Long
             OffsetDateTime todayStart
     );
 
+    Page<FocusSession> findByStatus(SessionStatus status, Pageable pageable);
+    
     List<FocusSession> findByStatus(SessionStatus status);
     
     Page<FocusSession> findByUserIdAndStatus(Long userId, SessionStatus status, Pageable pageable);

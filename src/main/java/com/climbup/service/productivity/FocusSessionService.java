@@ -10,6 +10,7 @@ import com.climbup.repository.FocusSessionRepository;
 import com.climbup.repository.UserRepository;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -269,12 +270,17 @@ public class FocusSessionService {
                 .toList();
     }
     
-    @Scheduled(fixedRate = 60000) // runs every 1 minute
+    @Scheduled(fixedDelay = 60000)
     @Transactional
     public void autoCompleteExpiredSessions() {
 
-        List<FocusSession> activeSessions =
-                focusSessionRepository.findByStatus(SessionStatus.ACTIVE);
+        Page<FocusSession> page =
+            focusSessionRepository.findByStatus(
+                SessionStatus.ACTIVE,
+                PageRequest.of(0, 50)
+            );
+
+        List<FocusSession> activeSessions = page.getContent(); // ✅ IMPORTANT
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -287,15 +293,14 @@ public class FocusSessionService {
 
             if (now.isAfter(plannedEnd)) {
 
-            	session.setStatus(SessionStatus.COMPLETED);
-            	session.setEndTime(plannedEnd);
-            	session.setElapsedMinutes(session.getDurationMinutes()); // 🔥 full session
-                
-            	focusSessionRepository.save(session);
+                session.setStatus(SessionStatus.COMPLETED);
+                session.setEndTime(plannedEnd);
+                session.setElapsedMinutes(session.getDurationMinutes());
+
+                focusSessionRepository.save(session);
             }
         }
     }
-    
     @Transactional
     public FocusSessionResponseDTO markSessionSuccessful(Long sessionId, User user) {
 
@@ -422,6 +427,8 @@ public List<FocusSessionResponseDTO> getSessionsByStatus(User user, SessionStatu
             .map(this::mapToResponse)
             .toList();
 }
+
+
 private boolean shouldCountFocus(FocusSession session) {
     if (session.getSessionType() == null) return false; // 🔥 FIX
 
