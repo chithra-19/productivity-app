@@ -11,9 +11,9 @@ public class AchievementTemplate {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "code", unique = true)
+    @Column(name = "code", unique = true, length = 100, nullable = false)
     private AchievementCode code;
-
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private AchievementType type;
