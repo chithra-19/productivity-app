@@ -190,13 +190,9 @@ public class FocusSessionService {
 
     // Get total focus minutes for a user
     public int getTotalFocusMinutes(User user) {
-        return focusSessionRepository
-                .findById(user.getId())
-                .stream()
-                .filter(this::shouldCountFocus)
-                .mapToInt(FocusSession::getElapsedMinutes) // 🔥 REAL DATA
-                .sum();
+        return focusSessionRepository.sumElapsedMinutesByUserId(user.getId());
     }
+    
     // Get count of successful sessions
     public long getSuccessfulSessionsCount(User user) {
         return focusSessionRepository
@@ -269,8 +265,7 @@ public class FocusSessionService {
                 .map(this::mapToResponse)   // ✅ FIXED
                 .toList();
     }
-    
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 60000, initialDelay = 120000)
     @Transactional
     public void autoCompleteExpiredSessions() {
 
@@ -370,13 +365,19 @@ public Page<FocusSessionResponseDTO> getUserSessions(User user, Pageable pageabl
 
 }
 //✅ Reset daily focus minutes at midnight
-@Scheduled(cron = "0 0 0 * * ?")
+@Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Kolkata")
 @Transactional
 public void resetDailyFocusMinutes() {
-    List<User> users = userRepository.findAll();
-    for (User user : users) {
-        user.setDailyGoalMinutes(0);
-        userRepository.save(user);
+    try {
+        List<User> users = userRepository.findAll();
+
+        for (User user : users) {
+            user.setDailyGoalMinutes(0);
+        }
+
+        userRepository.saveAll(users); // 🔥 better than save inside loop
+    } catch (Exception e) {
+        e.printStackTrace(); // prevent crash
     }
 }
 @Transactional
