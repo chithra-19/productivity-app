@@ -91,7 +91,7 @@ public class UserService implements UserDetailsService {
         User user = new User();
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
-
+        user.setFirstName("User"); 
         User saved = userRepository.save(user);
 
         // 🔑 Initialize baseline achievements
