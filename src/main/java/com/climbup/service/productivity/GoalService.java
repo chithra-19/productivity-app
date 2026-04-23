@@ -65,19 +65,26 @@ public class GoalService {
         Goal savedGoal = goalRepository.save(goal);
 
         // 🔹 Link achievement to this goal
+   
         AchievementTemplate customTemplate =
-        	    achievementTemplateRepository.findByCode(AchievementCode.CUSTOM_GOAL)
-        	        .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
+            achievementTemplateRepository.findByCode(AchievementCode.CUSTOM_GOAL)
+                .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
 
-        UserAchievement ua = new UserAchievement();
-        ua.setUser(user);
-        ua.setGoal(savedGoal);
-        ua.setTemplate(customTemplate);
-        ua.setUnlocked(false);
-        ua.setNewlyUnlocked(false);
-        ua.setSeen(false);
-        ua.setDisplayTitle(savedGoal.getTitle()); // use goal title for display
-        userAchievementRepository.save(ua);
+        // Only create if not already exists for this user+template
+        boolean exists = userAchievementRepository
+            .existsByUserAndTemplate(user, customTemplate);
+
+        if (!exists) {
+            UserAchievement ua = new UserAchievement();
+            ua.setUser(user);
+            ua.setGoal(savedGoal);
+            ua.setTemplate(customTemplate);
+            ua.setUnlocked(false);
+            ua.setNewlyUnlocked(false);
+            ua.setSeen(false);
+            ua.setDisplayTitle(savedGoal.getTitle());
+            userAchievementRepository.save(ua);
+        }
 
         return savedGoal;
     }
