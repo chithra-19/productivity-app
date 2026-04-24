@@ -35,10 +35,8 @@
 
         <!-- PROFILE IMAGE -->
         <div class="text-center mb-4">
-			<div class="profile-pic-container"
-			     onclick="if (!document.getElementById('profilePictureFile').disabled) {
-			                  document.getElementById('profilePictureFile').click();
-			              }">
+			<div class="profile-pic-container">
+			    
 
             <img
               id="profilePreview"
@@ -65,7 +63,6 @@
 		         name="file"
 		         accept="image/*"
 		         class="d-none"
-		         disabled
 		         onchange="previewImage(this)">
 
 
