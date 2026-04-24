@@ -46,16 +46,17 @@ public class AchievementService {
         }
 
         List<UserAchievement> list = templateService.getAll().stream()
-                .map(template -> {
-                    UserAchievement ua = new UserAchievement();
-                    ua.setUser(user);
-                    ua.setTemplate(template);
-                    ua.setUnlocked(false);
-                    ua.setNewlyUnlocked(false);
-                    ua.setSeen(false);
-                    return ua;
-                })
-                .toList();
+        	    .filter(template -> template.getCode() != AchievementCode.CUSTOM_GOAL)
+        	    .map(template -> {
+        	        UserAchievement ua = new UserAchievement();
+        	        ua.setUser(user);
+        	        ua.setTemplate(template);
+        	        ua.setUnlocked(false);
+        	        ua.setNewlyUnlocked(false);
+        	        ua.setSeen(false);
+        	        return ua;
+        	    })
+        	    .toList();
 
         return userAchievementRepository.saveAll(list)
                 .stream()
