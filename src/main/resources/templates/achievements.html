@@ -221,9 +221,10 @@
 	    <div class="achievement-icon">
 	      <i class="bi ${a.icon || 'bi-trophy'}"></i>
 	    </div>
-		<div class="achievement-title">${a.displayTitle || a.title}</div>
-
-	    <div class="achievement-desc">${a.description || ''}</div>
+	    <div class="achievement-title">${a.displayTitle || a.title}</div>
+	    <div class="achievement-desc">
+	      ${a.unlocked ? '🏆 Achievement Unlocked!' : (a.description || 'Complete to unlock')}
+	    </div>
 	  `;
 
 	  col.appendChild(card);
@@ -304,7 +305,6 @@
 	  const customGrid = document.getElementById('custom-achievements');
 	  customGrid.innerHTML = '';
 
-	  // Fetch achievements to get unlock state
 	  const achRes = await axios.get('/api/achievements', { withCredentials: true });
 	  const achievements = Array.isArray(achRes.data.customGoals)
 	    ? achRes.data.customGoals
@@ -316,7 +316,7 @@
 	  }
 
 	  cachedGoals.forEach(g => {
-	    const linkedAch = achievements.find(a => a.goalId === g.id);
+	    const linkedAch = achievements.find(a => a.relatedGoalId === g.id); // ✅ fixed
 	    const unlocked = linkedAch?.unlocked;
 
 	    const div = document.createElement('div');
@@ -329,7 +329,7 @@
 	        </div>
 	        <div class="achievement-title">${g.title}</div>
 	        <div class="achievement-desc">
-	          ${unlocked ? 'Achievement Unlocked!' : 'Locked'}
+	          ${unlocked ? '🏆 Achievement Unlocked!' : 'Complete The Goal'}
 	        </div>
 	      </div>
 	    `;
@@ -337,7 +337,6 @@
 	    customGrid.appendChild(div);
 	  });
 	}
-
 	
 	function showAchievementToast(a) {
 	  const container = document.getElementById('achievement-toast');
@@ -412,15 +411,16 @@
 	  const templateSection = document.getElementById('template-achievements');
 
 	  toggle.addEventListener('click', () => {
-	    if (templateSection.style.display === 'none') {
-	      templateSection.style.display = 'block';
-	      toggle.style.color = '#0056b3';
-	      toggle.innerHTML = '📜 Hide Template Goals';
-	    } else {
-	      templateSection.style.display = 'none';
-	      toggle.style.color = '#333';
-	      toggle.innerHTML = '📜 Default Template Goals';
-	    }
+	      if (templateSection.style.display === 'none') {
+	          templateSection.style.display = 'flex';
+	          templateSection.style.flexWrap = 'wrap';
+	          toggle.style.color = '#0056b3';
+	          toggle.innerHTML = '📜 Hide Template Goals';
+	      } else {
+	          templateSection.style.display = 'none';
+	          toggle.style.color = '#333';
+	          toggle.innerHTML = '📜 Default Template Goals';
+	      }
 	  });
 
 	  const customToggle = document.getElementById('toggle-custom-goals');
