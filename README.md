@@ -82,34 +82,6 @@ Dynamic achievement unlocking based on:
 ClimbUp uses a **service-based modular architecture** where each responsibility is isolated into its own service layer:
 
 ```
-┌─────────────────────────────────────────────┐
-│               User Action                   │
-│         (create / complete goal)            │
-└───────────────────┬─────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│              GoalService                    │
-│         Goal lifecycle management           │
-└───────────────────┬─────────────────────────┘
-          ┌─────────┴──────────┐
-          ▼                    ▼
-┌──────────────────┐  ┌──────────────────────┐
-│   XPService      │  │  StreakTrackerService │
-│  XP calculation  │  │   Streak computation  │
-└────────┬─────────┘  └──────────┬───────────┘
-         └────────────┬──────────┘
-                      ▼
-┌─────────────────────────────────────────────┐
-│       AchievementEvaluationService          │
-│        Centralized achievement engine       │
-└───────────────────┬─────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│         Updated State → Frontend            │
-└─────────────────────────────────────────────┘
-```
 
 **Design benefits:**
 - Clear separation of concerns
