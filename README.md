@@ -66,10 +66,10 @@ Users set goals, complete tasks, earn XP, maintain streaks, and unlock achieveme
 - Encourages consistent daily progress
 
 ### 🏆 Achievement System
-Dynamic achievement unlocking based on:
-- Number of tasks completed
+Dynamic achievement unlocking triggered by **goal completion**, evaluated against:
 - Total XP earned
 - Current streak count
+- Number of tasks completed
 
 ### 🔄 Real-Time Sync
 - Axios-powered REST communication
@@ -83,39 +83,17 @@ Dynamic achievement unlocking based on:
 ClimbUp uses a **service-based modular architecture** where each responsibility is isolated into its own service layer:
 
 ```
-                    ┌─────────────────────────┐
-                    │       User Action        │
-                    │     (complete task)      │
-                    └────────────┬────────────┘
-                                 │
-               ┌─────────────────┴─────────────────┐
-               ▼                                   ▼
-┌──────────────────────────┐       ┌──────────────────────────┐
-│        GoalService        │       │       TaskService         │
-│  Goal lifecycle mgmt      │       │   Task lifecycle mgmt     │
-│  (independent of XP/      │       │   Completing a task       │
-│   streak logic)           │       │   triggers downstream     │
-└──────────────────────────┘       └────────────┬─────────────┘
-                                                 │
-                                    ┌────────────┴────────────┐
-                                    ▼                         ▼
-                         ┌──────────────────┐   ┌────────────────────────┐
-                         │   XPService      │   │  StreakTrackerService   │
-                         │  Awards XP for   │   │  Updates daily streak  │
-                         │  task completion │   │  on task completion    │
-                         └────────┬─────────┘   └───────────┬────────────┘
-                                  └──────────────┬──────────┘
-                                                 ▼
-                                ┌────────────────────────────┐
-                                │  AchievementEvaluationService│
-                                │  Evaluates: tasks completed, │
-                                │  XP earned, streak count    │
-                                └───────────────┬────────────┘
-                                                │
-                                                ▼
-                                ┌────────────────────────────┐
-                                │   Updated State → Frontend  │
-                                └────────────────────────────┘
+┌─────────────────────────┐        ┌─────────────────────────┐
+│     Task Completed       │        │     Goal Completed       │
+└────────────┬────────────┘        └────────────┬────────────┘
+             │                                   │
+    ┌────────┴────────┐                          │
+    ▼                 ▼                          ▼
+┌──────────┐  ┌───────────────┐    ┌─────────────────────────────┐
+│ XPService│  │StreakTracker  │    │  AchievementEvaluationService│
+│ Award XP │  │Service        │    │  Unlocks achievements based  │
+│ for task │  │Update streak  │    │  on goal completion          │
+└──────────┘  └───────────────┘    └─────────────────────────────┘
 ```
 
 **Design benefits:**
@@ -164,16 +142,31 @@ Server validates session → request processed
 
 ## System Flow
 
-```
-1. User completes a task
-2. Task state updated in MySQL via JPA
-3. XPService calculates and awards XP for the completed task
-4. StreakTrackerService updates the daily streak
-5. AchievementEvaluationService evaluates all criteria (tasks, XP, streak)
-6. Updated state returned to frontend via REST response
+**When a Task is Completed**
 
-Note: Goals are managed independently — completing a goal does NOT
-      trigger XP or streak updates. Only task completion does.
+```
+1. User marks a task as complete
+2. Task status updated to COMPLETED in MySQL via JPA
+3. XPService triggered
+       → Calculates XP based on task
+       → Adds XP to user's total
+4. StreakTrackerService triggered
+       → Checks if user has already completed a task today
+       → If no  → increments streak count
+       → If yes → streak count unchanged (already credited)
+5. Updated XP + streak returned to frontend
+```
+
+**When a Goal is Completed**
+
+```
+1. All tasks under the goal are completed
+2. Goal status updated to COMPLETED in MySQL via JPA
+3. AchievementEvaluationService triggered
+       → Reads user's current stats (XP, streak, completed tasks/goals)
+       → Evaluates against all achievement criteria
+       → Unlocks any newly eligible achievements
+4. Achievement state returned to frontend
 ```
 
 ---
@@ -204,11 +197,11 @@ Cookie: JSESSIONID=<session_id>
 
 ## Key Engineering Decisions
 
-**1. Centralized Achievement Evaluation**
-All achievement logic lives in `AchievementEvaluationService`. It evaluates criteria (tasks completed, XP, streak) in one place after every task completion, preventing duplicated logic and ensuring consistency.
+**1. Two Distinct Trigger Paths**
+Task completion and goal completion serve different purposes in the system. Completing a task drives **XP and streak** via `XPService` and `StreakTrackerService`. Completing a goal is what **unlocks achievements** via `AchievementEvaluationService`. These two paths are intentionally decoupled — mixing them would create fragile, hard-to-maintain logic.
 
-**2. Tasks as the Atomic Unit of Progress**
-XP and streak are tied to **task completion**, not goals. Goals are organisational containers — they don't trigger downstream services. This keeps the gamification engine clean and predictable.
+**2. Centralized Achievement Evaluation**
+Achievement logic lives entirely in `AchievementEvaluationService`, triggered only on goal completion. This keeps evaluation predictable and ensures achievements are never partially evaluated or duplicated.
 
 **3. Backend-Driven State (No Frontend Trust)**
 The frontend never assumes state. Every operation fetches the updated state from the backend, preventing stale data bugs and maintaining consistency.
