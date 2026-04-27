@@ -19,8 +19,8 @@
 
 <br/>
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-000000?style=for-the-badge)](https://your-live-link.com)
-[![GitHub Repo](https://img.shields.io/badge/📦_Source_Code-181717?style=for-the-badge&logo=github)](https://github.com/your-username/climbup)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-000000?style=for-the-badge)](https://productivity-app-4jj3.onrender.com)
+[![GitHub Repo](https://img.shields.io/badge/📦_Source_Code-181717?style=for-the-badge&logo=github)](https://github.com/chithra-19/productivity-app/)
 
 <br/>
 
@@ -61,12 +61,13 @@ Users set goals, complete tasks, earn XP, maintain streaks, and unlock achieveme
 - Filtering and goal lifecycle management
 
 ### ⚡ Gamification Engine
-- XP system that rewards user actions
-- Daily streak tracking to encourage habit consistency
+- XP awarded when a **task** is completed (not goals)
+- Daily streak updated on **task** completion
+- Encourages consistent daily progress
 
 ### 🏆 Achievement System
 Dynamic achievement unlocking based on:
-- Completed goals and tasks
+- Number of tasks completed
 - Total XP earned
 - Current streak count
 
@@ -81,6 +82,40 @@ Dynamic achievement unlocking based on:
 
 ClimbUp uses a **service-based modular architecture** where each responsibility is isolated into its own service layer:
 
+```
+                    ┌─────────────────────────┐
+                    │       User Action        │
+                    │     (complete task)      │
+                    └────────────┬────────────┘
+                                 │
+               ┌─────────────────┴─────────────────┐
+               ▼                                   ▼
+┌──────────────────────────┐       ┌──────────────────────────┐
+│        GoalService        │       │       TaskService         │
+│  Goal lifecycle mgmt      │       │   Task lifecycle mgmt     │
+│  (independent of XP/      │       │   Completing a task       │
+│   streak logic)           │       │   triggers downstream     │
+└──────────────────────────┘       └────────────┬─────────────┘
+                                                 │
+                                    ┌────────────┴────────────┐
+                                    ▼                         ▼
+                         ┌──────────────────┐   ┌────────────────────────┐
+                         │   XPService      │   │  StreakTrackerService   │
+                         │  Awards XP for   │   │  Updates daily streak  │
+                         │  task completion │   │  on task completion    │
+                         └────────┬─────────┘   └───────────┬────────────┘
+                                  └──────────────┬──────────┘
+                                                 ▼
+                                ┌────────────────────────────┐
+                                │  AchievementEvaluationService│
+                                │  Evaluates: tasks completed, │
+                                │  XP earned, streak count    │
+                                └───────────────┬────────────┘
+                                                │
+                                                ▼
+                                ┌────────────────────────────┐
+                                │   Updated State → Frontend  │
+                                └────────────────────────────┘
 ```
 
 **Design benefits:**
@@ -130,12 +165,15 @@ Server validates session → request processed
 ## System Flow
 
 ```
-1. User performs action (create / complete goal)
-2. Goal state updated in MySQL via JPA
-3. XPService calculates and awards XP
-4. StreakTrackerService updates daily streak
-5. AchievementEvaluationService evaluates all criteria
+1. User completes a task
+2. Task state updated in MySQL via JPA
+3. XPService calculates and awards XP for the completed task
+4. StreakTrackerService updates the daily streak
+5. AchievementEvaluationService evaluates all criteria (tasks, XP, streak)
 6. Updated state returned to frontend via REST response
+
+Note: Goals are managed independently — completing a goal does NOT
+      trigger XP or streak updates. Only task completion does.
 ```
 
 ---
@@ -167,9 +205,12 @@ Cookie: JSESSIONID=<session_id>
 ## Key Engineering Decisions
 
 **1. Centralized Achievement Evaluation**
-All achievement logic lives in `AchievementEvaluationService`. This prevents duplicated evaluation logic and ensures consistency regardless of which action triggered the check.
+All achievement logic lives in `AchievementEvaluationService`. It evaluates criteria (tasks completed, XP, streak) in one place after every task completion, preventing duplicated logic and ensuring consistency.
 
-**2. Backend-Driven State (No Frontend Trust)**
+**2. Tasks as the Atomic Unit of Progress**
+XP and streak are tied to **task completion**, not goals. Goals are organisational containers — they don't trigger downstream services. This keeps the gamification engine clean and predictable.
+
+**3. Backend-Driven State (No Frontend Trust)**
 The frontend never assumes state. Every operation fetches the updated state from the backend, preventing stale data bugs and maintaining consistency.
 
 **3. Session-Based Auth**
