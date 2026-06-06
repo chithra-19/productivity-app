@@ -54,51 +54,31 @@ function previewImage(input) {
     }
 }
 
-async function uploadProfilePicture(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/profile/picture", {
-        method: "POST",
-        body: formData
-    });
-
-    if (response.ok) {
-        const updated = await response.json();
-        document.getElementById("profilePreview").src = updated.profilePictureUrl;
-    } else {
-        alert("Failed to upload picture");
-    }
-}
-
 async function saveProfile() {
-    const payload = {
-        firstName: document.querySelector('[name="firstName"]').value,
-        lastName: document.querySelector('[name="lastName"]').value,
-        bio: document.querySelector('[name="bio"]').value
-    };
+    const formData = new FormData();
+    formData.append("firstName", document.querySelector('[name="firstName"]').value);
+    formData.append("lastName", document.querySelector('[name="lastName"]').value);
+    formData.append("bio", document.querySelector('[name="bio"]').value);
+
+    // Add file if selected, otherwise append empty blob (required by Spring)
+    if (fileInput.files.length > 0) {
+        formData.append("profilePictureFile", fileInput.files[0]);
+    } else {
+        formData.append("profilePictureFile", new Blob([]), "");
+    }
 
     try {
-        const response = await fetch('/api/profile', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const response = await fetch('/dashboard/profile/update', {
+            method: 'POST',   // ← matches @PostMapping in your Java controller
+            body: formData    // ← no Content-Type header! browser sets it automatically
         });
 
-        if (!response.ok) {
-            alert("Failed to update profile text.");
-            return;
+        if (response.ok || response.redirected) {
+            window.location.href = '/dashboard/profile';
+        } else {
+            alert("Failed to update profile.");
         }
 
-        const updated = await response.json();
-        console.log("Profile text updated:", updated);
-
-        if (fileInput.files.length > 0) {
-            await uploadProfilePicture(fileInput.files[0]);
-        }
-
-        disableEditMode();
-        alert("Profile updated successfully!");
     } catch (err) {
         console.error(err);
         alert("Error updating profile.");
