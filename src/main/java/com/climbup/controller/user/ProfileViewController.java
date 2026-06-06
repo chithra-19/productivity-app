@@ -106,7 +106,7 @@ public class ProfileViewController {
             Principal principal,
             @Valid @ModelAttribute("profileRequestDTO") ProfileRequestDTO dto,
             BindingResult result,
-            @RequestParam("profilePictureFile") MultipartFile file,
+            @RequestParam(value = "profilePictureFile", required = false) MultipartFile file,  // ← add required=false
             Model model) {
 
         if (principal == null) {
