@@ -56,11 +56,13 @@
 		      th:object="${profileRequestDTO}"
 		      method="post"
 		      enctype="multipart/form-data">
+			  
+			  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
 		  <!-- Hidden file input -->
 		  <input type="file"
 		         id="profilePictureFile"
-		         name="file"
+		         name="profilePictureFile"
 		         accept="image/*"
 		         class="d-none"
 		         onchange="previewImage(this)">
