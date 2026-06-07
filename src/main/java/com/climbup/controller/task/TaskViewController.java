@@ -52,6 +52,8 @@ public class TaskViewController {
     public String showAllTasks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "title") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDir,
             Model model,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
@@ -63,10 +65,12 @@ public class TaskViewController {
         model.addAttribute("tasks", taskPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", taskPage.getTotalPages());
+        model.addAttribute("size", size);               // ← add this
+        model.addAttribute("sortField", sortField);     // ← add this
+        model.addAttribute("sortDir", sortDir);         // ← add this
 
         return "tasks/task-all";
     }
-
     // =========================
     // TODAY TASKS
     // =========================
