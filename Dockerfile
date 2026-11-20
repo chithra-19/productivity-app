@@ -4,6 +4,7 @@ COPY . .
 RUN mvn clean install -DskipTests
 
 FROM eclipse-temurin:17
+ENV TZ=Asia/Kolkata
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080

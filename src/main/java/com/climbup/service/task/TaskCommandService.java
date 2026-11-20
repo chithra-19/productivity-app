@@ -89,6 +89,9 @@ public class TaskCommandService {
 
         Task task = taskRepository.findByIdAndUser(taskId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        // Remember what this task was worth when it was completed
+        final boolean wasCompleted = task.isCompleted();
+        final int pointsAwarded = getPriorityPoints(task);
 
         Optional.ofNullable(dto.getTitle()).ifPresent(task::setTitle);
         Optional.ofNullable(dto.getDescription()).ifPresent(task::setDescription);
@@ -96,12 +99,20 @@ public class TaskCommandService {
         Optional.ofNullable(dto.getDueDate()).ifPresent(task::setDueDate);
         Optional.ofNullable(dto.getPriority()).ifPresent(task::setPriority);
 
-        if (Boolean.FALSE.equals(dto.getCompleted())) {
+        boolean reopened = false;
+        if (Boolean.FALSE.equals(dto.getCompleted()) && wasCompleted) {
             task.setCompleted(false);
             task.setCompletedDateTime(null);
+            reopened = true;
         }
 
         Task updated = taskRepository.save(task);
+
+        if (reopened) {
+            // Take the XP back so a task cannot be completed again for free XP
+            xpService.removeXp(user, pointsAwarded);
+            streakTrackerService.refreshUserStreak(user);
+        }
 
         return TaskMapper.toResponse(updated, getPriorityPoints(updated));
     }

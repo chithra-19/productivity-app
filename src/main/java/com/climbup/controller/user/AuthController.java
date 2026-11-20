@@ -13,7 +13,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -23,6 +26,12 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequestMapping("/auth") // All routes prefixed with /auth
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    // Public URL of the app, e.g. https://climbup-app.onrender.com (set APP_BASE_URL in Render)
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
 
 	
     private final UserService userService;
@@ -110,7 +119,7 @@ public class AuthController {
                         );
                 tokenRepository.save(resetToken);
 
-                String resetLink = "http://localhost:8080/auth/reset-password?token=" + token;
+                String resetLink = baseUrl.replaceAll("/+$", "") + "/auth/reset-password?token=" + token;
                 emailService.sendEmail(email, "ClimbUp Password Reset", "Click here to reset your password: " + resetLink);
             }
 
@@ -118,7 +127,9 @@ public class AuthController {
             return "forgot-password";
 
         } catch (Exception e) {
-            model.addAttribute("error", "Something went wrong. Please try again.");
+            // Log the real cause (e.g. mail login failed, SMTP blocked) so it shows in the console / Render logs
+            log.error("Password reset email could not be sent", e);
+            model.addAttribute("error", "We could not send the reset email right now. Please try again later.");
             return "forgot-password";
         }
     }
@@ -143,6 +154,11 @@ public class AuthController {
                                 Model model) {
         if (!newPassword.equals(confirmPassword)) {
             model.addAttribute("error", "Passwords do not match.");
+            model.addAttribute("token", token);
+            return "reset-password";
+        }
+        if (newPassword.length() < 8) {
+            model.addAttribute("error", "Password must be at least 8 characters.");
             model.addAttribute("token", token);
             return "reset-password";
         }

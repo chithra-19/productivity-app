@@ -2,6 +2,7 @@ package com.climbup.service.productivity;
 
 import com.climbup.dto.request.GoalRequestDTO;
 import com.climbup.exception.ResourceNotFoundException;
+import com.climbup.service.task.ActivityService;
 import com.climbup.model.*;
 import com.climbup.repository.AchievementTemplateRepository;
 import com.climbup.repository.GoalRepository;
@@ -14,22 +15,28 @@ import java.util.List;
 @Service
 public class GoalService {
 
+    // XP awarded when a goal is completed
+    private static final int GOAL_COMPLETION_XP = 10;
     private final GoalRepository goalRepository;
     private final XPService xpService;
     private final AchievementEvaluationService achievementEvaluationService;
     private final UserAchievementRepository userAchievementRepository;
     private final AchievementTemplateRepository achievementTemplateRepository;
+    private final ActivityService activityService;
 
     public GoalService(GoalRepository goalRepository,
-                       XPService xpService,
-                       AchievementEvaluationService achievementEvaluationService,
-                       UserAchievementRepository userAchievementRepository,
-                       AchievementTemplateRepository achievementTemplateRepository) {
-        this.goalRepository = goalRepository;
-        this.xpService = xpService;
-        this.achievementEvaluationService = achievementEvaluationService;
-        this.userAchievementRepository = userAchievementRepository;
-        this.achievementTemplateRepository = achievementTemplateRepository;
+            XPService xpService,
+            AchievementEvaluationService achievementEvaluationService,
+            UserAchievementRepository userAchievementRepository,
+            AchievementTemplateRepository achievementTemplateRepository,
+            ActivityService activityService) {
+    	
+    		this.goalRepository = goalRepository;
+    		this.xpService = xpService;
+    		this.achievementEvaluationService = achievementEvaluationService;
+    		this.userAchievementRepository = userAchievementRepository;
+    		this.achievementTemplateRepository = achievementTemplateRepository;
+    		this.activityService = activityService;
     }
 
     // ================= GET =================
@@ -81,6 +88,8 @@ public class GoalService {
         ua.setSeen(false);
         ua.setDisplayTitle(savedGoal.getTitle());
         userAchievementRepository.save(ua);
+
+        activityService.log("Created Goal: " + savedGoal.getTitle(), ActivityType.GOAL_CREATED, user);
 
         return savedGoal;
     }
@@ -137,7 +146,8 @@ public class GoalService {
     private void handleCompletion(Goal goal, User user) {
 
         // XP reward
-        xpService.addXp(user, 50);
+        xpService.addXp(user, GOAL_COMPLETION_XP);
+        activityService.log("Completed Goal: " + goal.getTitle(), ActivityType.GOAL_COMPLETED, user);
 
         // unlock achievements linked to this goal
         List<UserAchievement> achievements =

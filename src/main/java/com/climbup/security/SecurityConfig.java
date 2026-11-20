@@ -22,21 +22,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
     	http
-    	.csrf(csrf -> csrf
-    		    .ignoringRequestMatchers(
-    		        new AntPathRequestMatcher("/goals/**"),
-    		        new AntPathRequestMatcher("/tasks/**"),
-    		        new AntPathRequestMatcher("/api/**"),
-    		        new AntPathRequestMatcher("/logout") 
-    		        
-    		    )
-    		)
+    	
 
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
-
-            	    // H2 console
-            	    .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
 
             	    // Auth & public pages
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/auth/register")).permitAll()
@@ -52,7 +41,6 @@ public class SecurityConfig {
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/css/**")).permitAll()
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/js/**")).permitAll()
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/images/**")).permitAll()
-            	    .requestMatchers(new MvcRequestMatcher(introspector, "/uploads/**")).permitAll()
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/favicon.ico")).permitAll()
             	    .requestMatchers(new MvcRequestMatcher(introspector, "/error")).permitAll()
 
@@ -87,7 +75,7 @@ public class SecurityConfig {
                 .maxSessionsPreventsLogin(false)
             );
 
-        http.headers(headers -> headers.frameOptions().disable()); // for H2 console
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
@@ -106,6 +94,6 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
-    
-    
 }
+    
+    

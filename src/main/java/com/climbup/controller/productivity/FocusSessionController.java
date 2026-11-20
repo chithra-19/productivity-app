@@ -151,19 +151,6 @@ public class FocusSessionController {
         );
     }
 
-    // 🌍 ADMIN / DEBUG ONLY - all sessions
-    @GetMapping("/all")
-    public ResponseEntity<Page<FocusSessionResponseDTO>> getAllSessions(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-
-        Pageable pageable = PageRequest.of(page, size);
-
-        return ResponseEntity.ok(
-                focusSessionService.getAllSessions(pageable)
-        );
-    }
 
     
     @PostMapping("/abort")

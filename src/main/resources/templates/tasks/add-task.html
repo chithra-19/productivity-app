@@ -162,9 +162,12 @@ body {
             <a th:href="@{/tasks/edit/{id}(id=${task.id})}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-pencil"></i>
             </a>
-            <a th:href="@{/tasks/delete/{id}(id=${task.id})}" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-trash"></i>
-            </a>
+			<form th:action="@{/tasks/delete/{id}(id=${task.id})}" method="post" class="d-inline"
+			      onsubmit="return confirm('Delete this task?');">
+			  <button type="submit" class="btn btn-sm btn-outline-danger">
+			    <i class="bi bi-trash"></i>
+			  </button>
+			</form>
           </div>
         </div>
       </div>

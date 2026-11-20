@@ -2,6 +2,9 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <script src="/js/csrf.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClimbUP Dashboard</title>
 
@@ -27,7 +30,13 @@
 
       <div class="dropdown">
         <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-          <i class="bi bi-person-circle me-1"></i>
+			<img th:if="${profilePictureUrl != null and !#strings.isEmpty(profilePictureUrl)}"
+			     th:src="${profilePictureUrl}" alt="Profile"
+			     class="rounded-circle me-1"
+			     style="width:28px;height:28px;object-fit:cover;"
+			     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+			<i class="bi bi-person-circle me-1"
+			   th:style="${profilePictureUrl != null and !#strings.isEmpty(profilePictureUrl)} ? 'display:none' : ''"></i>
 		  <span th:text="${displayName}">User</span> 
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -165,12 +174,12 @@
 	        <strong th:text="${dashboard.level + 1}">2</strong>.
 	      </p>
 		  
-		  <div class="progress" style="height: 36px; width: 100%;">
+		  <div class="progress" style="height: 36px; width: 100%;"
+		       th:with="pct=${dashboard.xpForNextLevel > 0 ? (dashboard.xpProgress * 100 / dashboard.xpForNextLevel) : 0}">
 		    <div class="progress-bar text-dark fw-bold px-3"
-		         th:classappend="${dashboard.xpProgress > 0} ? 'bg-warning' : ''"
-		         th:style="'width:' + (${dashboard.xpProgress != null ? dashboard.xpProgress : 0}) + '%' + ';background:' + (${dashboard.xpProgress == 0 ? 'transparent' : ''})">
-		      <span th:if="${dashboard.xpProgress > 0}"
-		            th:text="${dashboard.xpProgress + '%'}"></span>
+		         th:classappend="${pct > 0} ? 'bg-warning' : ''"
+		         th:style="'width:' + ${pct} + '%'">
+		      <span th:if="${pct > 0}" th:text="${pct + '%'}"></span>
 		    </div>
 		  </div>
 

@@ -165,7 +165,7 @@ public class ProfileViewController {
         int xpForNextLevel = xpService.xpRequiredForNextLevel(level);
 
         // XP earned within current level
-        int currentXP = (int) (totalXP % xpForNextLevel);
+        int currentXP = xpService.xpProgressInCurrentLevel(user);
         int xpPercentage = (int) ((double) currentXP / xpForNextLevel * 100);
         // ===== DTO (IMPORTANT FIX) =====
         if (!model.containsAttribute("profileRequestDTO")) {

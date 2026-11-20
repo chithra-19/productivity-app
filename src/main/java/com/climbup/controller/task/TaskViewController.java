@@ -155,7 +155,7 @@ public class TaskViewController {
     // =========================
     // DELETE TASK
     // =========================
-    @GetMapping("/delete/{id}")
+    @PostMapping("/delete/{id}")
     public String deleteTask(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails,

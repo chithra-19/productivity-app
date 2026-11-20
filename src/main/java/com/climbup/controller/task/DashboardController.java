@@ -83,6 +83,12 @@ public class DashboardController {
         }
 
         model.addAttribute("displayName", displayName);
+
+        // Small avatar in the top bar (null when the user has not uploaded a picture)
+        String profilePictureUrl = (user.getProfile() != null)
+                ? user.getProfile().getProfilePictureUrl()
+                : null;
+        model.addAttribute("profilePictureUrl", profilePictureUrl);
         
         model.addAttribute("firstName", displayName);
         // ONLY ONE DTO

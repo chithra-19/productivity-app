@@ -1,3 +1,26 @@
-/target/
-/.apt_generated/
-/.apt_generated_tests/
+# Build output
+target/
+build/
+bin/
+out/
+
+# Eclipse / IDE
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.apt_generated_tests/
+.idea/
+*.iml
+.vscode/
+
+# Uploaded user files
+/uploads/
+
+# Secrets
+.env
+*.env
+
+# Logs
+*.log

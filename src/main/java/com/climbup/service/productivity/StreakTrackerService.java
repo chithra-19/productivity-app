@@ -2,7 +2,6 @@ package com.climbup.service.productivity;
 
 import com.climbup.model.ActivityType;
 import com.climbup.model.StreakTracker;
-import com.climbup.model.Task;
 import com.climbup.model.User;
 import com.climbup.repository.StreakTrackerRepository;
 import com.climbup.repository.TaskRepository;
@@ -18,7 +17,6 @@ import java.time.ZoneId;
 
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,31 +25,33 @@ import java.util.stream.Collectors;
 @Service
 public class StreakTrackerService {
 
-	 private static final String DEFAULT_CATEGORY = "GLOBAL";
-	
+    /**
+     * How many tasks must be completed in a day for that day to count towards a streak.
+     * Used by the current streak, the best streak and the consistency score,
+     * so they can never disagree with each other.
+     */
+    public static final int DAILY_TASK_TARGET = 4;
+
     private final StreakTrackerRepository streakTrackerRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ActivityService activityService;
 
     public StreakTrackerService(StreakTrackerRepository streakTrackerRepository,
-    							TaskRepository taskRepository,
-    							UserRepository userRepository,
-    							ActivityService activityService) {
-    		this.streakTrackerRepository = streakTrackerRepository;
-    		this.taskRepository = taskRepository;
-    		this.userRepository = userRepository;
-    		this.activityService = activityService;
-}
- 
-  
- 
+                                TaskRepository taskRepository,
+                                UserRepository userRepository,
+                                ActivityService activityService) {
+        this.streakTrackerRepository = streakTrackerRepository;
+        this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
+        this.activityService = activityService;
+    }
 
     // 🔹 Get all streaks for a user
     public List<StreakTracker> getAllStreaksForUser(Long userId) {
         return streakTrackerRepository.findAllByUserId(userId);
     }
- 
+
     public void refreshUserStreak(User user) {
 
         int oldStreak = user.getCurrentStreak();
@@ -62,7 +62,7 @@ public class StreakTrackerService {
         user.setCurrentStreak(current);
         user.setBestStreak(best);
 
-        userRepository.save(user); // 🔥 THIS IS MISSING
+        userRepository.save(user);
 
         if (current > oldStreak) {
             activityService.log(
@@ -72,33 +72,14 @@ public class StreakTrackerService {
             );
         }
     }
-    
-    public int getBestStreak(User user) {
 
-        List<LocalDate> dates = taskRepository.findCompletedDates(user)
-                .stream()
-                .sorted()
-                .toList();
+    // =========================================================
+    // SHARED HELPERS (single definition of "a streak day")
+    // =========================================================
 
-        if (dates.isEmpty()) return 0;
-
-        int best = 1, current = 1;
-
-        for (int i = 1; i < dates.size(); i++) {
-            if (dates.get(i).equals(dates.get(i - 1).plusDays(1))) {
-                current++;
-            } else {
-                best = Math.max(best, current);
-                current = 1;
-            }
-        }
-
-        return Math.max(best, current);
-    }
- 
-    public int getCurrentStreak(User user) {
-
-        Map<LocalDate, Long> counts = taskRepository.findByUserAndCompletedTrue(user)
+    /** Number of tasks completed per calendar day (server time zone). */
+    private Map<LocalDate, Long> completedCountsByDate(User user) {
+        return taskRepository.findByUserAndCompletedTrue(user)
                 .stream()
                 .filter(t -> t.getCompletedDateTime() != null)
                 .collect(Collectors.groupingBy(
@@ -107,16 +88,48 @@ public class StreakTrackerService {
                                 .toLocalDate(),
                         Collectors.counting()
                 ));
+    }
 
-        Set<LocalDate> validDates = counts.entrySet().stream()
-                .filter(e -> e.getValue() >= 4)
+    /** Days on which the daily target was reached. */
+    private Set<LocalDate> streakDates(User user) {
+        return completedCountsByDate(user).entrySet().stream()
+                .filter(e -> e.getValue() >= DAILY_TASK_TARGET)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
+    }
+
+    public int getBestStreak(User user) {
+
+        List<LocalDate> dates = streakDates(user)
+                .stream()
+                .sorted()
+                .toList();
+
+        if (dates.isEmpty()) return 0;
+
+        int best = 1, run = 1;
+
+        for (int i = 1; i < dates.size(); i++) {
+            if (dates.get(i).equals(dates.get(i - 1).plusDays(1))) {
+                run++;
+            } else {
+                best = Math.max(best, run);
+                run = 1;
+            }
+        }
+
+        return Math.max(best, run);
+    }
+
+    public int getCurrentStreak(User user) {
+
+        Set<LocalDate> validDates = streakDates(user);
 
         if (validDates.isEmpty()) return 0;
 
         LocalDate today = LocalDate.now();
 
+        // A streak is still alive if today OR yesterday was a streak day
         LocalDate cursor = validDates.contains(today)
                 ? today
                 : today.minusDays(1);
@@ -140,15 +153,11 @@ public class StreakTrackerService {
 
         return streak;
     }
-   
- 
 
     public StreakTracker getStreakByUserAndCategory(Long userId, String category) {
         return streakTrackerRepository.findByUserIdAndCategory(userId, category)
                 .orElse(null); // or throw exception if preferred
     }
-    
-  
 
     private void resetWeeklyFreezeIfNeeded(User user, LocalDate today) {
         if (user.getLastFreezeResetDate() == null ||
@@ -162,7 +171,6 @@ public class StreakTrackerService {
     public List<Map<String, Object>> getMonthlyHeatmap(User user, YearMonth yearMonth) {
 
         LocalDate startOfMonth = yearMonth.atDay(1);
-        LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
         Instant start = startOfMonth
                 .atStartOfDay(ZoneId.systemDefault())
@@ -225,12 +233,11 @@ public class StreakTrackerService {
 
         for (int i = 0; i < 30; i++) {
             LocalDate date = LocalDate.now().minusDays(i);
-            if (counts.getOrDefault(date, 0L) >= 4) {
+            if (counts.getOrDefault(date, 0L) >= DAILY_TASK_TARGET) {
                 activeDays++;
             }
         }
 
         return (activeDays * 100) / 30;
     }
-   
 }

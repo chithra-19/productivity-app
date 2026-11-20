@@ -115,29 +115,6 @@ public class FocusSessionService {
 
         return mapToResponse(session);
     }
-
-    @Transactional
-    public FocusSessionResponseDTO endSession(Long sessionId) {
-
-        FocusSession session = focusSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
-
-        if (session.getEndTime() != null) {
-            return mapToResponse(session); // already completed
-        }
-
-        session.setEndTime(OffsetDateTime.now());
-        session.setStatus(SessionStatus.COMPLETED);
-
-        long elapsed = Duration
-                .between(session.getStartTime(), session.getEndTime())
-                .toMinutes();
-
-        session.setElapsedMinutes((int) Math.max(elapsed, 0));
-        focusSessionRepository.save(session);
-
-        return mapToResponse(session);
-    }
     
     public Page<FocusSessionResponseDTO> getUserSessionsByStatus(
             User user,
@@ -351,10 +328,6 @@ public class FocusSessionService {
         }
 
         focusSessionRepository.delete(session);
-    }
-    public Page<FocusSessionResponseDTO> getAllSessions(Pageable pageable) {
-        return focusSessionRepository.findAll(pageable)
-                .map(this::mapToResponse);
     }
     
 

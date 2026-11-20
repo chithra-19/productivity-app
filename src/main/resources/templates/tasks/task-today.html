@@ -271,7 +271,15 @@ tr:hover td {
         <!-- Category -->
         <div class="mb-3">
           <label for="taskCategory" class="form-label">Category</label>
-          <input type="text" id="taskCategory" class="form-control">
+          <select id="taskCategory" class="form-select">
+            <option value="">-- Select Category --</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
+            <option value="Study">Study</option>
+            <option value="Health">Health</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Project">Project</option>
+          </select>
         </div>
 
         <!-- ✅ Priority -->
@@ -419,12 +427,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const taskId = this.dataset.id;
 
             try {
-                const res = await fetch(`/tasks/single/${taskId}`);
+                const res = await fetch(`/api/tasks/single/${taskId}`);
+                if (!res.ok) throw new Error("Could not load task (HTTP " + res.status + ")");
                 const task = await res.json();
 
                 document.getElementById('taskTitle').value = task.title || "";
                 document.getElementById('taskDesc').value = task.description || "";
-                document.getElementById('taskCategory').value = task.category || "";
+
+                // Category dropdown: keep an older free-text category selectable
+                const catSelect = document.getElementById('taskCategory');
+                const cat = task.category || "";
+                if (cat && !Array.from(catSelect.options).some(o => o.value === cat)) {
+                    catSelect.add(new Option(cat, cat));
+                }
+                catSelect.value = cat;
+
                 document.getElementById('taskId').value = task.id;
                 document.getElementById('taskPriority').value = task.priority || "LOW";
 
@@ -458,10 +475,21 @@ document.addEventListener("DOMContentLoaded", () => {
             priority: document.getElementById("taskPriority").value
         };
 
+        if (!payload.title.trim()) {
+            alert("Title cannot be empty");
+            return;
+        }
+
         try {
-            const res = await fetch("/tasks/update/json", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+            const token = document.querySelector('meta[name="_csrf"]').content;
+            const header = document.querySelector('meta[name="_csrf_header"]').content;
+
+            const res = await fetch(`/api/tasks/${payload.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    [header]: token
+                },
                 body: JSON.stringify(payload)
             });
 

@@ -192,14 +192,5 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
     
-    public int calculateLevel(int xp) {
-        return (xp / 100) + 1;
-    }
-    public int getUserLevel(User user) {
-        return calculateLevel(user.getProductivityScore());
-    }
-
-
-    
     
 }
