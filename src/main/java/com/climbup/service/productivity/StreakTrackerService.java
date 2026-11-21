@@ -66,7 +66,7 @@ public class StreakTrackerService {
 
         if (current > oldStreak) {
             activityService.log(
-                "🔥 Streak increased to " + current + " days",
+                    "Streak increased to " + current + " days",
                 ActivityType.STREAK_UPDATED,
                 user
             );
