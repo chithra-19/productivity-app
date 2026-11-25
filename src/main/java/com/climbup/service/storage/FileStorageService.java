@@ -3,5 +3,5 @@ package com.climbup.service.storage;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStorageService {
-    String uploadProfileImage(MultipartFile file);
+    String uploadProfileImage(MultipartFile file, Long userId);
 }

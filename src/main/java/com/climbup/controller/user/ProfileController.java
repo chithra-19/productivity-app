@@ -69,7 +69,8 @@ public class ProfileController {
 
         User user = userService.findByEmail(principal.getName());
 
-        String imageUrl = fileStorageService.uploadProfileImage(file);
+       
+        String imageUrl = fileStorageService.uploadProfileImage(file, user.getId());
 
         return ResponseEntity.ok(
                 profileService.updateProfilePicture(user.getId(), imageUrl)

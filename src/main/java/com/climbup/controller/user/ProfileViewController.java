@@ -124,7 +124,7 @@ public class ProfileViewController {
         }
 
         if (file != null && !file.isEmpty()) {
-            String imageUrl = fileStorageService.uploadProfileImage(file);
+        	String imageUrl = fileStorageService.uploadProfileImage(file, user.getId());
             dto.setProfilePictureUrl(imageUrl);
         }
 

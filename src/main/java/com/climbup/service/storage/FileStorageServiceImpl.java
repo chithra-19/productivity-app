@@ -1,32 +1,36 @@
 package com.climbup.service.storage;
 
+import com.climbup.model.ProfilePicture;
+import com.climbup.repository.ProfilePictureRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class FileStorageServiceImpl implements FileStorageService {
 
-    private static final String UPLOAD_DIR = "uploads/profile-images/";
     private static final long MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
-    // Allowed content types -> the extension WE choose (never trust the user's file name)
+    // Allowed content types -> the extension used to check the real file bytes
     private static final Map<String, String> ALLOWED = Map.of(
             "image/jpeg", ".jpg",
             "image/png", ".png",
             "image/webp", ".webp"
     );
 
+    private final ProfilePictureRepository pictureRepository;
+
+    public FileStorageServiceImpl(ProfilePictureRepository pictureRepository) {
+        this.pictureRepository = pictureRepository;
+    }
+
     @Override
-    public String uploadProfileImage(MultipartFile file) {
+    @Transactional
+    public String uploadProfileImage(MultipartFile file, Long userId) {
 
         if (file == null || file.isEmpty()) return null;
 
@@ -34,37 +38,39 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new IllegalArgumentException("Picture must be 2 MB or smaller.");
         }
 
-        String extension = ALLOWED.get(file.getContentType());
+        String contentType = file.getContentType();
+        String extension = ALLOWED.get(contentType);
         if (extension == null) {
             throw new IllegalArgumentException("Only JPG, PNG or WEBP pictures are allowed.");
         }
 
         try {
+            byte[] bytes = file.getBytes();
+
             // Check the real file bytes, not just the type the browser claims
-            if (!looksLikeImage(file, extension)) {
+            if (!looksLikeImage(bytes, extension)) {
                 throw new IllegalArgumentException("That file is not a valid picture.");
             }
 
-            Path dir = Paths.get(UPLOAD_DIR);
-            Files.createDirectories(dir);
+            // One picture per user: update it if it exists, otherwise create it
+            ProfilePicture picture = pictureRepository.findByUserId(userId)
+                    .orElseGet(ProfilePicture::new);
+            picture.setUserId(userId);
+            picture.setContentType(contentType);
+            picture.setData(bytes);
+            picture.setUpdatedAt(Instant.now());
+            pictureRepository.save(picture);
 
-            String filename = UUID.randomUUID() + extension;
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, dir.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            return "/" + UPLOAD_DIR + filename;
+            // ?v=... makes the browser reload the new picture instead of showing the old one
+            return "/profile/picture/" + userId + "?v=" + System.currentTimeMillis();
 
         } catch (IOException e) {
             throw new RuntimeException("File upload failed", e);
         }
     }
 
-    private boolean looksLikeImage(MultipartFile file, String ext) throws IOException {
-        byte[] h = new byte[12];
-        try (InputStream in = file.getInputStream()) {
-            if (in.read(h) < 12) return false;
-        }
+    private boolean looksLikeImage(byte[] h, String ext) {
+        if (h.length < 12) return false;
         switch (ext) {
             case ".jpg":  return (h[0] & 0xFF) == 0xFF && (h[1] & 0xFF) == 0xD8;
             case ".png":  return (h[0] & 0xFF) == 0x89 && h[1] == 'P' && h[2] == 'N' && h[3] == 'G';
