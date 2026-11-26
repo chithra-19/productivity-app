@@ -44,7 +44,7 @@
               class="profile-pic"
               alt="Profile Picture">
 
-            <div class="overlay">Change</div>
+			<div class="overlay" th:if="${editMode}">Change</div>
           </div>
         </div>
 
@@ -65,6 +65,7 @@
 		         name="profilePictureFile"
 		         accept="image/*"
 		         class="d-none"
+		         th:disabled="${!editMode}"
 		         onchange="previewImage(this)">
 
 
