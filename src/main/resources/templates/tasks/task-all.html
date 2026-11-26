@@ -140,7 +140,10 @@
               TITLE <i th:class="${sortField == 'title'} ? (${sortDir == 'asc'} ? 'bi bi-arrow-up' : 'bi bi-arrow-down') : 'bi bi-arrow-down-up'"></i>
             </a>
           </th>
-          <th>DESCRIPTION</th>
+          
+		  <th>DESCRIPTION</th>
+		  <th>CATEGORY</th>
+		  <th>PRIORITY</th>
           <th>
             <a th:href="@{/tasks/all(page=0, size=${size}, sortField='completed', sortDir=${sortField == 'completed' and sortDir == 'asc' ? 'desc' : 'asc'})}"
                style="color:white; text-decoration:none;">
@@ -156,19 +159,32 @@
         </tr>
       </thead>
       <tbody>
-        <tr th:each="task : ${tasks}">
-          <td th:text="${task.title}"></td>
-          <td th:text="${task.description}"></td>
-          <td>
-            <span th:class="${task.completed} ? 'status-done' : 'status-pending'"
-                  th:text="${task.completed} ? 'Done' : 'Not Done'"></span>
-          </td>
-          <td th:text="${task.dueDate} ?: '-'"></td>
-        </tr>
+		<tr th:each="task : ${tasks}">
+		  <td th:text="${task.title}"></td>
+		  <td th:text="${task.description}"></td>
+		  <td th:text="${task.category} ?: '-'"></td>
+
+		  <td>
+		    <span th:if="${task.priority == 'HIGH'}" class="badge bg-danger" th:text="${task.priority}"></span>
+		    <span th:if="${task.priority == 'MEDIUM'}" class="badge bg-warning text-dark" th:text="${task.priority}"></span>
+		    <span th:if="${task.priority == 'LOW'}" class="badge bg-success" th:text="${task.priority}"></span>
+		    <span th:if="${task.priority == null}" class="badge bg-secondary">None</span>
+		  </td>
+
+		  <td>
+		    <span th:class="${task.completed} ? 'status-done' : 'status-pending'"
+		          th:text="${task.completed} ? 'Done' : 'Pending'"></span>
+		  </td>
+
+		  <td th:with="overdue=${!task.completed and task.dueDate != null and #temporals.format(task.dueDate,'yyyy-MM-dd') lt #temporals.format(#temporals.createToday(),'yyyy-MM-dd')}">
+		    <span th:text="${task.dueDate} ?: '-'"></span>
+		    <span th:if="${overdue}" class="badge bg-danger ms-1">Overdue</span>
+		  </td>
+		</tr>
 
         <!-- Empty state -->
         <tr th:if="${#lists.isEmpty(tasks)}">
-          <td colspan="4" class="text-center text-muted py-4">No tasks found.</td>
+          <td colspan="6" class="text-center text-muted py-4">No tasks found.</td>
         </tr>
       </tbody>
     </table>
