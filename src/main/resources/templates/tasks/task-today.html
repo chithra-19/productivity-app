@@ -11,7 +11,6 @@
 	<meta name="_csrf" th:content="${_csrf.token}"/>
 	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
-	</head>
 
 <style>
 body {
@@ -148,9 +147,9 @@ tr:hover td {
     font-size: 1rem;
 }
 </style>
+</head>
 
 <body>
-
 <a href="/dashboard" class="back-arrow">
     <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
 </a>
@@ -167,6 +166,10 @@ tr:hover td {
             <i class="message">Stay consistent. Regret is more painful than consistency 💪</i>
         </div>
     </div>
+	<div class="alert alert-info py-2 small">
+	  <i class="bi bi-info-circle"></i>
+	  Complete <strong>4 tasks</strong> in a day to keep your streak going.
+	</div>
 	
 	<div class="toast-container position-fixed bottom-0 end-0 p-3">
 	  <div id="taskToast" class="toast" role="alert">
@@ -198,7 +201,7 @@ tr:hover td {
 	        <!-- ✅ Priority Badge with null-safe check -->
 			<td>
 			  <span th:if="${task.priority == 'HIGH'}"
-			        class="badge bg-success text-white"
+			        class="badge bg-danger text-white"
 			        th:text="${task.priority}"></span>
 
 			  <span th:if="${task.priority == 'MEDIUM'}"
@@ -206,7 +209,7 @@ tr:hover td {
 			        th:text="${task.priority}"></span>
 
 			  <span th:if="${task.priority == 'LOW'}"
-			        class="badge bg-danger text-white"
+			        class="badge bg-success text-white"
 			        th:text="${task.priority}"></span>
 
 			  <span th:if="${task.priority == null}"
