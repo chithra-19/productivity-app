@@ -357,16 +357,19 @@ body.dark .card {
 
 
 .progress-ring { transform: rotate(-90deg); }
-.progress-ring__circle { transition: stroke-dashoffset 1s linear; transform-origin: 50% 50%; }
+.progress-ring__circle,
+.progress-ring-circle { transition: stroke-dashoffset 1s linear; transform-origin: 50% 50%; }
 
 .timer {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 4rem;
+  font-size: 2.4rem;
   font-weight: 600;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   text-align: center;
   text-shadow: 0 0 10px rgba(159,108,255,0.6);
 }
@@ -486,7 +489,7 @@ canvas { display: block; margin: 0 auto; max-width: 100%; }
 
 @media (max-width: 480px) {
   .stats-bar { flex-direction: column; gap: 10px; }
-  .timer { font-size: 3rem; }
+  .timer { font-size: 2.2rem; }
   .controls button { padding: 8px 16px; font-size: 14px; }
   .session-type { padding: 8px 14px; font-size: 14px; }
 }
