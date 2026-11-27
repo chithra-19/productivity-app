@@ -68,6 +68,19 @@
       color: #5c6bc0;
       cursor: pointer;
     }
+	.remember {
+	  display: flex;
+	  align-items: center;
+	  gap: 8px;
+	  margin-bottom: 15px;
+	  font-size: 14px;
+	  color: #333;
+	}
+	.remember input {
+	  width: auto;
+	  margin: 0;
+	  padding: 0;
+	}
     button {
       width: 100%;
       padding: 12px;
@@ -127,6 +140,11 @@
 	        <input type="password" name="password" placeholder="Password" required />
 	        <span id="togglePassword">Show</span>
 	    </div>
+		
+		<label class="remember">
+		    <input type="checkbox" name="remember-me" />
+		    Keep me signed in
+		</label>
 
 	    <button type="submit">Sign In</button>
 	</form>

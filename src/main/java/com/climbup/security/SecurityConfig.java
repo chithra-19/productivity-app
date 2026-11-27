@@ -12,12 +12,25 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.UUID;
 
 @Configuration
 public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+    
+    @Value("${app.remember-me-key:}")
+    private String rememberMeKey;
+
+    // Use the key from the environment; if it is missing, use a random one
+    // (login still works, but "remember me" will not survive a restart)
+    private String resolveRememberMeKey() {
+        return (rememberMeKey == null || rememberMeKey.isBlank())
+                ? UUID.randomUUID().toString()
+                : rememberMeKey;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
@@ -68,8 +81,13 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )
-            
-           
+
+            .rememberMe(remember -> remember
+                .key(resolveRememberMeKey())
+                .tokenValiditySeconds(14 * 24 * 60 * 60)   // 14 days
+                .userDetailsService(userDetailsService)
+            )
+
             .sessionManagement(session -> session
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)
