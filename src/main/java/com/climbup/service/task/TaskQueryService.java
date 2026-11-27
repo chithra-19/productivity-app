@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 public class TaskQueryService {
@@ -90,17 +91,35 @@ public class TaskQueryService {
     // =========================================================
     // PAGINATED TASKS
     // =========================================================
+    private static final Set<String> SORTABLE_FIELDS =
+            Set.of("title", "completed", "dueDate", "createdAt");
+
     public Page<TaskResponseDTO> getTasksForUserPaginated(
             User user,
             int page,
             int size
     ) {
+        return getTasksForUserPaginated(user, page, size, "createdAt", "desc");
+    }
 
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by("createdAt").descending()
-        );
+    public Page<TaskResponseDTO> getTasksForUserPaginated(
+            User user,
+            int page,
+            int size,
+            String sortField,
+            String sortDir
+    ) {
+        // Only allow known fields, so the URL can't ask for any column name
+        String field = SORTABLE_FIELDS.contains(sortField) ? sortField : "createdAt";
+
+        Sort sort = "asc".equalsIgnoreCase(sortDir)
+                ? Sort.by(field).ascending()
+                : Sort.by(field).descending();
+
+        // Second sort key keeps the page order stable when values are equal
+        sort = sort.and(Sort.by("id").descending());
+
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         return taskRepository.findByUser(user, pageable)
                 .map(task -> TaskMapper.toResponse(task, getPriorityPoints(task)));

@@ -52,16 +52,15 @@ public class TaskViewController {
     public String showAllTasks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "title") String sortField,
-            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "createdAt") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir,
             Model model,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         User user = getUser(userDetails);
 
         Page<TaskResponseDTO> taskPage =
-                taskQueryService.getTasksForUserPaginated(user, page, size);
-
+                taskQueryService.getTasksForUserPaginated(user, page, size, sortField, sortDir);
         model.addAttribute("tasks", taskPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", taskPage.getTotalPages());
