@@ -52,7 +52,7 @@ public class UserServiceTest {
         User user = userService.getUserById(1L);
 
         assertNotNull(user);
-        assertEquals("testuser", user.getUsername());
+        assertEquals("test@example.com", user.getUsername());
         verify(userRepository).findById(1L);
     }
 
@@ -71,8 +71,7 @@ public class UserServiceTest {
 
         User saved = userService.save(testUser);
 
-        assertNotNull(saved);
-        assertEquals("testuser", saved.getUsername());
+        assertNotNull(saved);        assertEquals("test@example.com", saved.getUsername());
         verify(passwordEncoder).encode("password123");
         verify(userRepository).save(testUser);
     }
@@ -81,7 +80,7 @@ public class UserServiceTest {
     @DisplayName("Should update username and email")
     void updateUser_ShouldModifyUser() {
         Long userId = 1L;
-        String loggedInUsername = "testuser";
+        String loggedInUsername = "test@example.com";
 
         UserRequestDTO updateInfo = new UserRequestDTO();
         updateInfo.setFirstName("updatedUser");
@@ -102,7 +101,7 @@ public class UserServiceTest {
     @DisplayName("Should encode password during update")
     void updateUser_ShouldEncodePasswordIfPresent() {
         Long userId = 1L;
-        String loggedInUsername = "testuser";
+        String loggedInUsername = "test@example.com";
 
         UserRequestDTO updateInfo = new UserRequestDTO();
         updateInfo.setPassword("newpass");
@@ -137,19 +136,21 @@ public class UserServiceTest {
     }
     
     @Test
-    @DisplayName("Should throw exception if updated username already exists")
-    void updateUser_UsernameExists_ShouldThrowException() {
+    @DisplayName("Should throw exception if updated email already exists")
+    void updateUser_EmailExists_ShouldThrowException() {
         Long userId = 1L;
-        String loggedInUsername = "testuser";
+        String loggedInUsername = "test@example.com";
 
         UserRequestDTO updateInfo = new UserRequestDTO();
-        updateInfo.setFirstName("existingUser");
+        updateInfo.setEmail("taken@example.com");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail("existingUser")).thenReturn(true);
+        when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(userId, updateInfo, loggedInUsername));
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.updateUser(userId, updateInfo, loggedInUsername));
     }
+    
     
     @Test
     @DisplayName("Should throw exception if user tries to update another user")

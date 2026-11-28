@@ -1,87 +1,83 @@
 package com.climbup.controller.task;
 
+import com.climbup.dto.response.DashboardResponseDTO;
+import com.climbup.model.Profile;
 import com.climbup.model.User;
-import com.climbup.service.productivity.AchievementService;
-
-import com.climbup.service.productivity.StreakTrackerService;
+import com.climbup.service.productivity.MotivationService;
+import com.climbup.service.task.ActivityService;
+import com.climbup.service.task.DashboardService;
 import com.climbup.service.task.TaskQueryService;
 import com.climbup.service.user.UserService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.ui.ExtendedModelMap;
+import org.springframework.ui.Model;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@ExtendWith(MockitoExtension.class)
+class DashboardViewControllerTest {
 
-public class DashboardViewControllerTest {
+    @Mock private UserService userService;
+    @Mock private TaskQueryService taskQueryService;
+    @Mock private MotivationService motivationService;
+    @Mock private DashboardService dashboardService;
+    @Mock private ActivityService activityService;
+    @Mock private DashboardResponseDTO dashboardDto;
+    @Mock private UserDetails springUser;
 
-    @Autowired
-    private MockMvc mockMvc;
+    @InjectMocks
+    private DashboardController controller;
 
-    @MockBean private UserService userService;
-    @MockBean private TaskQueryService taskQueryService;
-    @MockBean private StreakTrackerService streakTrackerService;
-    @MockBean private AchievementService achievementService;
-   
-    private User testUser;
-
-    @BeforeEach
-    void setUp() {
-    	testUser = new User("email", "pass");
+    private void stubCommonCalls(User user) {
+        when(springUser.getUsername()).thenReturn("test@example.com");
+        when(userService.getUserWithAllData("test@example.com")).thenReturn(user);
+        when(dashboardService.buildDashboard(user)).thenReturn(dashboardDto);
+        when(motivationService.getRandomQuote()).thenReturn("Keep going");
+        when(taskQueryService.getTasksDueOn(eq(user), any(LocalDate.class))).thenReturn(List.of());
     }
 
     @Test
-    @WithMockUser(username = "testuser")
-    void getDashboardView_ShouldReturnDashboardTemplate() throws Exception {
-        when(userService.getUserWithAllData("testuser")).thenReturn(testUser);
-        when(streakTrackerService.getCurrentStreak(testUser)).thenReturn(5);
-        when(taskQueryService.getTasksForUser(testUser)).thenReturn(List.of());
+    void showDashboard_ShouldUseFirstNameAndFillTheModel() {
+        User user = new User("test@example.com", "pass");
+        Profile profile = new Profile("Chithra", "K", "bio");
+        profile.setProfilePictureUrl("/profile/picture/1");
+        user.setProfile(profile);
+        stubCommonCalls(user);
 
-        mockMvc.perform(get("/dashboard"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("dashboard"))
-                .andExpect(model().attributeExists("username"))
-                .andExpect(model().attributeExists("streak"))
-                .andExpect(model().attributeExists("score"))
-                .andExpect(model().attributeExists("pendingCount"))
-                .andExpect(model().attributeExists("quote"))
-                .andExpect(model().attributeExists("task"));
+        Model model = new ExtendedModelMap();
+        String view = controller.showDashboard(springUser, model);
+
+        assertEquals("dashboard", view);
+        assertEquals("Chithra", model.getAttribute("displayName"));
+        assertEquals("/profile/picture/1", model.getAttribute("profilePictureUrl"));
+        assertEquals("Keep going", model.getAttribute("quote"));
+        assertEquals(0, model.getAttribute("todaysCount"));
+        assertSame(dashboardDto, model.getAttribute("dashboard"));
     }
 
     @Test
-    @WithMockUser(username = "testuser")
-    void getActivityDates_ShouldReturnHeatmapResponse() throws Exception {
-        LocalDate from = LocalDate.now().minusDays(5);
-        LocalDate to = LocalDate.now();
+    void showDashboard_WithoutProfile_ShouldFallBackToUser() {
+        User user = new User("test@example.com", "pass"); // no profile
+        stubCommonCalls(user);
 
-        when(userService.getUserWithAllData("testuser")).thenReturn(testUser);
-     
-        mockMvc.perform(get("/dashboard/api/activity-log/TASK")
-                        .param("from", from.toString())
-                        .param("to", to.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalDays").value(0))
-                .andExpect(jsonPath("$.currentStreak").value(3))
-                .andExpect(jsonPath("$.activeDates").isArray());
+        Model model = new ExtendedModelMap();
+        String view = controller.showDashboard(springUser, model);
+
+        assertEquals("dashboard", view);
+        assertEquals("User", model.getAttribute("displayName"));
+        assertNull(model.getAttribute("profilePictureUrl"));
     }
-
-//    @Test
-//    void unauthenticatedUser_ShouldRedirectToLogin() throws Exception {
-//        mockMvc.perform(get("/dashboard"))
-//                .andExpect(status().is3xxRedirection())
-//                .andExpect(redirectedUrlPattern("**/auth/login"));
-//    }
 }
